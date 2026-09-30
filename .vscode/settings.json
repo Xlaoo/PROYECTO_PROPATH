@@ -1,0 +1,11 @@
+{
+    "java.project.sourcePaths": [
+        "PROPATH/src/java"
+    ],
+    "java.project.outputPath": "PROPATH/build/web/WEB-INF/classes",
+    "java.project.referencedLibraries": [
+        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/*.jar",
+        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/servlet-api.jar",
+        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/jsp-api.jar"
+    ]
+}
