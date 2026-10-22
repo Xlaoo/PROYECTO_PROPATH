@@ -2,9 +2,6 @@ package com.propath.modelo;
 
 import java.io.Serializable;
 
-/**
- * Modelo para representar a los estudiantes postulantes en ProPath.
- */
 public class Estudiante implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -15,6 +12,8 @@ public class Estudiante implements Serializable {
     private String universidad;
     private String carrera;
     private int ciclo;
+    private String telefono;
+    private String cv;
     private String estado;
 
     public Estudiante() {
@@ -28,6 +27,19 @@ public class Estudiante implements Serializable {
         this.universidad = universidad;
         this.carrera = carrera;
         this.ciclo = ciclo;
+        this.estado = estado;
+    }
+
+    public Estudiante(int id, String nombre, String apellido, String correo, String universidad, String carrera, int ciclo, String telefono, String cv, String estado) {
+        this.id = id;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.correo = correo;
+        this.universidad = universidad;
+        this.carrera = carrera;
+        this.ciclo = ciclo;
+        this.telefono = telefono;
+        this.cv = cv;
         this.estado = estado;
     }
 
@@ -48,11 +60,19 @@ public class Estudiante implements Serializable {
     }
 
     public String getApellido() {
-        return apellido;
+        return apellido != null ? apellido : "";
     }
 
     public void setApellido(String apellido) {
         this.apellido = apellido;
+    }
+
+    public String getApellidos() {
+        return getApellido();
+    }
+
+    public void setApellidos(String apellidos) {
+        this.apellido = apellidos;
     }
 
     public String getCorreo() {
@@ -87,6 +107,22 @@ public class Estudiante implements Serializable {
         this.ciclo = ciclo;
     }
 
+    public String getTelefono() {
+        return telefono != null ? telefono : "";
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getCv() {
+        return cv != null ? cv : "";
+    }
+
+    public void setCv(String cv) {
+        this.cv = cv;
+    }
+
     public String getEstado() {
         return estado;
     }
@@ -96,6 +132,10 @@ public class Estudiante implements Serializable {
     }
 
     public String getNombreCompleto() {
-        return (nombre != null ? nombre : "") + " " + (apellido != null ? apellido : "");
+        String n = nombre != null ? nombre.trim() : "";
+        String a = apellido != null ? apellido.trim() : "";
+        if (n.isEmpty()) return a;
+        if (a.isEmpty()) return n;
+        return n + " " + a;
     }
 }

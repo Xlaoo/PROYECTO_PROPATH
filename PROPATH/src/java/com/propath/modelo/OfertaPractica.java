@@ -2,9 +2,6 @@ package com.propath.modelo;
 
 import java.io.Serializable;
 
-/**
- * Modelo para representar ofertas de prácticas preprofesionales en ProPath.
- */
 public class OfertaPractica implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -16,7 +13,11 @@ public class OfertaPractica implements Serializable {
     private int vacantes;
     private String fechaPublicacion;
     private String estado;
-
+private String fechaLimite;
+private String ubicacion;
+private String descripcion;
+private String requisitos;
+private String remuneracion;
     public OfertaPractica() {
     }
 
@@ -94,4 +95,42 @@ public class OfertaPractica implements Serializable {
     public void setEstado(String estado) {
         this.estado = estado;
     }
+    public String getFechaLimite() {
+    return fechaLimite;
+}
+
+public void setFechaLimite(String fechaLimite) {
+    this.fechaLimite = fechaLimite;
+}
+
+public String getUbicacion() {
+    return ubicacion;
+}
+
+public void setUbicacion(String ubicacion) {
+    this.ubicacion = ubicacion;
+}
+
+public String getDescripcion() {
+    return descripcion;
+}
+
+public void setDescripcion(String descripcion) {
+    this.descripcion = descripcion;
+}
+public String getRequisitos() {
+    return requisitos;
+}
+
+public void setRequisitos(String requisitos) {
+    this.requisitos = requisitos;
+}
+public String getRemuneracion() {
+    return remuneracion;
+}
+
+public void setRemuneracion(String remuneracion) {
+    this.remuneracion = remuneracion;
+}
+    
 }

@@ -1,43 +1,42 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.OfertaPractica"%>
-<%@page import="com.propath.dao.DatosSimuladosDAO"%>
+<%@page import="com.propath.servicio.BackendCliente"%>
 <%
     request.setAttribute("activePage", "ofertas");
-    List<OfertaPractica> listaOfertas = DatosSimuladosDAO.obtenerOfertas();
+    List<OfertaPractica> listaOfertas = BackendCliente.listarOfertas();
 %>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Gestión de Ofertas de Prácticas | ProPath</title>
 
-        <!-- Google Fonts: Inter -->
+        
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-        <!-- Bootstrap 5 CSS & Bootstrap Icons CDN -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-        <!-- Estilos institucionales ProPath -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css">
     </head>
     <body>
         <div class="admin-layout">
-            <!-- Sidebar -->
+            
             <jsp:include page="/admin/includes/sidebar.jsp" />
 
-            <!-- Contenido Principal -->
+            
             <main class="admin-main">
-                <!-- Barra superior -->
+                
                 <jsp:include page="/admin/includes/topbar.jsp" />
 
-                <!-- Cuerpo de Gestión de Ofertas -->
+                
                 <div class="admin-content">
-                    <!-- Cabecera de Página -->
+                    
                     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
                         <div>
                             <nav aria-label="breadcrumb">
@@ -51,19 +50,19 @@
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge bg-teal-subtle border px-3 py-2 rounded-pill fw-semibold" style="background-color: #ccfbf1; color: #0f766e; border-color: #99f6e4 !important;">
-                                <i class="bi bi-briefcase-fill me-1"></i> <%= listaOfertas.size() %> Ofertas en plataforma
+                                <i class="bi bi-briefcase-fill me-1"></i> <%= (listaOfertas != null ? listaOfertas.size() : 0) %> Ofertas en plataforma
                             </span>
                         </div>
                     </div>
 
-                    <!-- Tarjeta con Tabla de Ofertas -->
+                    
                     <div class="propath-card">
                         <div class="propath-card-header">
                             <h2 class="propath-card-title">
                                 <i class="bi bi-briefcase-fill"></i>
                                 <span>Convocatorias de Prácticas Preprofesionales</span>
                             </h2>
-                            <!-- Buscador en tiempo real -->
+                            
                             <div class="search-box-custom">
                                 <i class="bi bi-search search-icon"></i>
                                 <input type="text" 
@@ -87,10 +86,18 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <% for (OfertaPractica ofr : listaOfertas) { 
-                                        boolean esActiva = "Activa".equalsIgnoreCase(ofr.getEstado());
-                                        boolean esPendiente = "Pendiente".equalsIgnoreCase(ofr.getEstado());
-                                        boolean esRechazada = "Rechazada".equalsIgnoreCase(ofr.getEstado());
+                                    <% if (listaOfertas == null || listaOfertas.isEmpty()) { %>
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
+                                            <span>No hay registros disponibles</span>
+                                        </td>
+                                    </tr>
+                                    <% } else {
+                                        for (OfertaPractica ofr : listaOfertas) { 
+                                            boolean esActiva = "Activa".equalsIgnoreCase(ofr.getEstado());
+                                            boolean esPendiente = "Pendiente".equalsIgnoreCase(ofr.getEstado());
+                                            boolean esRechazada = "Rechazada".equalsIgnoreCase(ofr.getEstado());
                                     %>
                                     <tr>
                                         <td>
@@ -134,45 +141,55 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="action-btn-group justify-content-center">
-                                                <!-- Botón Ver Detalle -->
                                                 <button type="button" 
                                                         class="btn-action btn-action-view" 
                                                         title="Ver detalle"
                                                         data-bs-toggle="tooltip"
-                                                        onclick="verDetalleOferta('<%= ofr.getTitulo() %>', '<%= ofr.getEmpresa() %>', '<%= ofr.getCarrera() %>', '<%= ofr.getModalidad() %>', '<%= ofr.getVacantes() %>', '<%= ofr.getFechaPublicacion() %>', '<%= ofr.getEstado() %>')">
+                                                        data-titulo="<%= ofr.getTitulo() %>"
+                                                        data-empresa="<%= ofr.getEmpresa() %>"
+                                                        data-carrera="<%= ofr.getCarrera() %>"
+                                                        data-modalidad="<%= ofr.getModalidad() %>"
+                                                        data-vacantes="<%= ofr.getVacantes() %>"
+                                                        data-fecha="<%= ofr.getFechaPublicacion() %>"
+                                                        data-estado="<%= ofr.getEstado() %>"
+                                                        onclick="verDetalleOfertaBtn(this)">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
 
-                                                <!-- Botón Aprobar -->
                                                 <button type="button" 
                                                         class="btn-action btn-action-success" 
                                                         title="Aprobar oferta"
                                                         data-bs-toggle="tooltip"
-                                                        onclick="cambiarEstadoOferta(<%= ofr.getId() %>, 'Activa', this)">
+                                                        data-id="<%= ofr.getId() %>"
+                                                        data-estado="Activa"
+                                                        onclick="cambiarEstadoOfertaBtn(this)">
                                                     <i class="bi bi-check-lg"></i>
                                                 </button>
 
-                                                <!-- Botón Rechazar -->
                                                 <button type="button" 
                                                         class="btn-action btn-action-danger" 
                                                         title="Rechazar oferta"
                                                         data-bs-toggle="tooltip"
-                                                        onclick="cambiarEstadoOferta(<%= ofr.getId() %>, 'Rechazada', this)">
+                                                        data-id="<%= ofr.getId() %>"
+                                                        data-estado="Rechazada"
+                                                        onclick="cambiarEstadoOfertaBtn(this)">
                                                     <i class="bi bi-x-lg"></i>
                                                 </button>
 
-                                                <!-- Botón Desactivar -->
                                                 <button type="button" 
                                                         class="btn-action btn-action-warning" 
                                                         title="Desactivar oferta"
                                                         data-bs-toggle="tooltip"
-                                                        onclick="cambiarEstadoOferta(<%= ofr.getId() %>, 'Desactivada', this)">
+                                                        data-id="<%= ofr.getId() %>"
+                                                        data-estado="Desactivada"
+                                                        onclick="cambiarEstadoOfertaBtn(this)">
                                                     <i class="bi bi-pause-fill"></i>
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                    <% } %>
+                                    <%  }
+                                       } %>
                                 </tbody>
                             </table>
                         </div>
@@ -181,7 +198,7 @@
             </main>
         </div>
 
-        <!-- Modal de Detalle de la Oferta -->
+        
         <div class="modal fade" id="modalDetalleOferta" tabindex="-1" aria-labelledby="modalOfertaTitle" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content modal-content-propath">
@@ -196,31 +213,31 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <div class="detail-label">Puesto de Prácticas</div>
-                                <div class="detail-value fs-5" id="modalOfertaPuesto">Practicante de Desarrollo Web</div>
+                                <div class="detail-value fs-5" id="modalOfertaPuesto">—</div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="detail-label">Empresa Solicitante</div>
-                                <div class="detail-value" id="modalOfertaEmpresa">Tech Solutions SAC</div>
+                                <div class="detail-value" id="modalOfertaEmpresa">—</div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="detail-label">Carrera Requerida</div>
-                                <div class="detail-value" id="modalOfertaCarrera">Ingeniería de Sistemas</div>
+                                <div class="detail-value" id="modalOfertaCarrera">—</div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="detail-label">Modalidad</div>
-                                <div class="detail-value" id="modalOfertaModalidad">Híbrida</div>
+                                <div class="detail-value" id="modalOfertaModalidad">—</div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="detail-label">Número de Vacantes</div>
-                                <div class="detail-value" id="modalOfertaVacantes">2 vacantes</div>
+                                <div class="detail-value" id="modalOfertaVacantes">—</div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="detail-label">Fecha de Publicación</div>
-                                <div class="detail-value" id="modalOfertaFecha">28/09/2026</div>
+                                <div class="detail-value" id="modalOfertaFecha">—</div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="detail-label">Estado de Publicación</div>
-                                <span id="modalOfertaEstado" class="badge-status badge-activo">Activa</span>
+                                <span id="modalOfertaEstado" class="badge-status badge-activo">—</span>
                             </div>
                         </div>
                     </div>
@@ -231,9 +248,7 @@
             </div>
         </div>
 
-        <!-- Bootstrap 5 Bundle JS -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Lógica JavaScript ProPath -->
-        <script src="${pageContext.request.contextPath}/js/script.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
+        <script type="module" src="${pageContext.request.contextPath}/js/script.js"></script>
     </body>
 </html>

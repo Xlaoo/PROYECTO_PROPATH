@@ -2,9 +2,6 @@ package com.propath.modelo;
 
 import java.io.Serializable;
 
-/**
- * Modelo para representar una postulación a una oferta de prácticas en ProPath.
- */
 public class Postulacion implements Serializable {
     private static final long serialVersionUID = 1L;
 
