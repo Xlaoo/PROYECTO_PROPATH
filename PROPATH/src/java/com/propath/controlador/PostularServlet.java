@@ -167,26 +167,83 @@ public class PostularServlet extends HttpServlet {
             }
             return;
         }
-        if ("retirar".equalsIgnoreCase(accion) || "eliminar".equalsIgnoreCase(accion)) {
-            String idPostulacionStr = request.getParameter("idPostulacion");
-            int idPostulacion = 0;
-            try {
-                if (idPostulacionStr != null)
-                    idPostulacion = Integer.parseInt(idPostulacionStr);
-            } catch (NumberFormatException ignored) {
-            }
+if ("retirar".equalsIgnoreCase(accion) || "eliminar".equalsIgnoreCase(accion)) {
+    int idPostulacion;
 
-            if (idPostulacion > 0) {
-                boolean ok = BackendCliente.eliminarRegistro("postulaciones", idPostulacion);
-                if (ok) {
-                    response.sendRedirect(
-                            request.getContextPath() + "/estudiante/dashboard.jsp?exito=postulacion_retirada");
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
-                            URLEncoder.encode("No se pudo retirar la postulación.", StandardCharsets.UTF_8));
-                }
-                return;
-            }
+    try {
+        idPostulacion = Integer.parseInt(request.getParameter("idPostulacion"));
+    } catch (Exception e) {
+        response.sendError(400, "Postulación inválida.");
+        return;
+    }
+
+    if (idPostulacion <= 0) {
+        response.sendError(400, "Postulación inválida.");
+        return;
+    }
+
+    String detalle = BackendCliente.obtenerDetallePostulacion(idPostulacion);
+
+    if (detalle == null) {
+        response.sendError(404, "Postulación no encontrada.");
+        return;
+    }
+
+    java.util.regex.Matcher matcher = java.util.regex.Pattern
+            .compile("\"estudiante\"\\s*:\\s*\\{[^{}]*\"id\"\\s*:\\s*(\\d+)")
+            .matcher(detalle);
+
+    if (!matcher.find()
+            || Integer.parseInt(matcher.group(1)) != idEstudiante) {
+        response.sendError(403, "Esta postulación no te pertenece.");
+        return;
+    }
+
+    com.propath.modelo.Postulacion postulacionActual = null;
+
+    for (com.propath.modelo.Postulacion p : BackendCliente.listarPostulaciones()) {
+        if (p.getId() == idPostulacion) {
+            postulacionActual = p;
+            break;
+        }
+    }
+
+    if (postulacionActual == null) {
+        response.sendError(404, "Postulación no encontrada.");
+        return;
+    }
+
+    String estado = postulacionActual.getEstado();
+
+    boolean retirar = "retirar".equalsIgnoreCase(accion);
+    boolean eliminar = "eliminar".equalsIgnoreCase(accion);
+
+    if (retirar && !"POSTULADO".equalsIgnoreCase(estado)) {
+        response.sendError(409, "Esta postulación ya no puede retirarse.");
+        return;
+    }
+
+    if (eliminar && !"NO_SELECCIONADO".equalsIgnoreCase(estado)) {
+        response.sendError(409, "Solo puedes eliminar postulaciones rechazadas.");
+        return;
+    }
+
+    boolean ok = BackendCliente.eliminarRegistro("postulaciones", idPostulacion);
+
+    if (ok) {
+        String mensaje = retirar
+                ? "postulacion_retirada"
+                : "postulacion_eliminada";
+
+        response.sendRedirect(request.getContextPath()
+                + "/estudiante/dashboard.jsp?exito=" + mensaje);
+    } else {
+        response.sendRedirect(request.getContextPath()
+                + "/estudiante/dashboard.jsp?error="
+                + URLEncoder.encode("No se pudo eliminar la postulación.",
+                        StandardCharsets.UTF_8));
+    }
+    return;
         } else if ("darDeBaja".equalsIgnoreCase(accion)) {
             String error = BackendCliente.actualizarUsuario(usuario.getId(), usuario.getNombre(),
                     usuario.getApellidos(), usuario.getCorreo(), "", "INACTIVO");
@@ -315,3 +372,4 @@ public class PostularServlet extends HttpServlet {
         }
     }
 }
+ 

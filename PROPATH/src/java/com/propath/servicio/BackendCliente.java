@@ -7,6 +7,7 @@ import com.propath.modelo.OfertaPractica;
 import com.propath.modelo.Postulacion;
 import com.propath.modelo.Usuario;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -535,8 +536,13 @@ public class BackendCliente {
                     String oferta = extraerCadena(item, "titulo");
                     String empresa = extraerCadena(item, "razonSocial");
 
-                    lista.add(new Postulacion(id, estudiante, oferta, empresa, fecha,
-                            estado != null && !estado.isEmpty() ? estado : "Postulado"));
+                    Postulacion post = new Postulacion(
+                            id, estudiante, oferta, empresa, fecha,
+                            estado != null && !estado.isEmpty() ? estado : "Postulado");
+
+                    post.setMotivoRechazo(extraerCampoOferta(item, "motivoRechazo"));
+
+                    lista.add(post);
                 }
             }
         } catch (Exception e) {
@@ -777,10 +783,24 @@ public class BackendCliente {
     }
 
     public static boolean actualizarEstadoPostulacion(int id, String nuevoEstado) {
+        return actualizarEstadoPostulacion(id, nuevoEstado, "");
+    }
+
+    public static boolean actualizarEstadoPostulacion(
+            int id, String nuevoEstado, String motivoRechazo) {
         try {
+            String estado = nuevoEstado.toUpperCase().trim();
+            String motivo = motivoRechazo != null ? motivoRechazo.trim() : "";
+
+            if ("NO_SELECCIONADO".equals(estado)
+                    && (motivo.isEmpty() || motivo.length() > 1000)) {
+                return false;
+            }
+
             String jsonBody = String.format(
-                    "{\"estado\":\"%s\"}",
-                    escaparJson(nuevoEstado.toUpperCase().trim()));
+                    "{\"estado\":\"%s\",\"motivoRechazo\":\"%s\"}",
+                    escaparJson(estado),
+                    escaparJson(motivo));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(BASE_URL + "/postulaciones/" + id))
@@ -795,11 +815,18 @@ public class BackendCliente {
                     request,
                     HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-            return response.statusCode() == 200;
+            if (response.statusCode() != 200) {
+                System.err.println("Error al actualizar postulación "
+                        + id + " HTTP " + response.statusCode()
+                        + ": " + response.body());
+                return false;
+            }
+
+            System.out.println("Postulación actualizada: " + response.body());
+            return true;
 
         } catch (Exception e) {
-            System.err.println(
-                    "Error en actualizarEstadoPostulacion: " + e.getMessage());
+            System.err.println("Error en actualizarEstadoPostulacion: " + e.getMessage());
             return false;
         }
     }
@@ -852,6 +879,23 @@ public class BackendCliente {
             return err != null && !err.isEmpty() ? err : "Error al activar la cuenta (HTTP " + res.statusCode() + ")";
         } catch (Exception e) {
             return "Error de conexión: " + e.getMessage();
+        }
+    }
+
+    public static String obtenerDetallePostulacion(int idPostulacion) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(BASE_URL + "/postulaciones/" + idPostulacion))
+                    .header("X-ProPath-Internal-Key", INTERNAL_KEY)
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            return response.statusCode() == 200 ? response.body() : null;
+        } catch (Exception e) {
+            System.err.println("Error en obtenerDetallePostulacion: " + e.getMessage());
+            return null;
         }
     }
 
@@ -1417,5 +1461,87 @@ public class BackendCliente {
             }
         }
         return objetos;
+    }
+
+    public static String consultarEntrevistasEstudiante(int idEstudiante) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(BASE_URL + "/entrevistas?idEstudiante=" + idEstudiante))
+                    .header("X-ProPath-Internal-Key", INTERNAL_KEY)
+                    .timeout(Duration.ofSeconds(10)).GET().build();
+            HttpResponse<String> res = client.send(req,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (res.statusCode() != 200)
+                throw new IOException("HTTP " + res.statusCode());
+            return res.body();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    public static String consultarEntrevistas(int idEmpresa) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(BASE_URL + "/entrevistas?idEmpresa=" + idEmpresa))
+                    .header("X-ProPath-Internal-Key", INTERNAL_KEY)
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> res = client.send(req,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            if (res.statusCode() != 200) {
+                throw new IOException("HTTP " + res.statusCode());
+            }
+            return res.body();
+        } catch (Exception e) {
+            throw new IllegalStateException("No se pudieron consultar las entrevistas.", e);
+        }
+    }
+
+    public static String guardarEntrevista(
+            Integer idEntrevista, int idPostulacion,
+            String fecha, String hora, String modalidad,
+            String enlaceLugar, String estado, String observaciones) {
+
+        try {
+            String json = String.format(
+                    "{\"idPostulacion\":%d,\"fecha\":\"%s\",\"hora\":\"%s\","
+                            + "\"modalidad\":\"%s\",\"enlaceLugar\":\"%s\","
+                            + "\"estado\":\"%s\",\"observaciones\":\"%s\"}",
+                    idPostulacion, escaparJson(fecha), escaparJson(hora),
+                    escaparJson(modalidad), escaparJson(enlaceLugar),
+                    escaparJson(estado), escaparJson(observaciones));
+
+            String ruta = BASE_URL + "/entrevistas"
+                    + (idEntrevista != null ? "/" + idEntrevista : "");
+
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(ruta))
+                    .header("X-ProPath-Internal-Key", INTERNAL_KEY)
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(10));
+
+            HttpRequest req = idEntrevista == null
+                    ? builder.POST(HttpRequest.BodyPublishers.ofString(json)).build()
+                    : builder.PUT(HttpRequest.BodyPublishers.ofString(json)).build();
+
+            HttpResponse<String> res = client.send(req,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            if (res.statusCode() == 200 || res.statusCode() == 201) {
+                return null;
+            }
+
+            return "Error HTTP " + res.statusCode() + ": " + res.body();
+
+        } catch (Exception e) {
+            return "Error de conexión: " + e.getMessage();
+        }
+    }
+
+    public static String eliminarEntrevista(int idEntrevista) {
+        return eliminarRegistroConDetalle("entrevistas", idEntrevista);
     }
 }

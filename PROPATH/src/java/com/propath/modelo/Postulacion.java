@@ -1,8 +1,10 @@
+
 package com.propath.modelo;
 
 import java.io.Serializable;
 
 public class Postulacion implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     private int id;
@@ -11,11 +13,13 @@ public class Postulacion implements Serializable {
     private String empresa;
     private String fechaPostulacion;
     private String estado;
+    private String motivoRechazo;
 
     public Postulacion() {
     }
 
-    public Postulacion(int id, String estudiante, String oferta, String empresa, String fechaPostulacion, String estado) {
+    public Postulacion(int id, String estudiante, String oferta, String empresa, String fechaPostulacion,
+            String estado) {
         this.id = id;
         this.estudiante = estudiante;
         this.oferta = oferta;
@@ -70,5 +74,13 @@ public class Postulacion implements Serializable {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public String getMotivoRechazo() {
+        return motivoRechazo;
+    }
+
+    public void setMotivoRechazo(String motivoRechazo) {
+        this.motivoRechazo = motivoRechazo;
     }
 }

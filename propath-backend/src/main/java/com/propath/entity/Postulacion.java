@@ -18,9 +18,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "postulaciones", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_estudiante_oferta", columnNames = {"id_estudiante", "id_oferta"})
+        @UniqueConstraint(name = "uk_estudiante_oferta", columnNames = { "id_estudiante", "id_oferta" })
 })
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Postulacion implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -48,6 +48,8 @@ public class Postulacion implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
     private Estado estado = Estado.POSTULADO;
+    @Column(name = "motivo_rechazo", length = 1000)
+    private String motivoRechazo;
 
     public Postulacion() {
     }
@@ -90,5 +92,13 @@ public class Postulacion implements Serializable {
 
     public void setEstado(Estado estado) {
         this.estado = estado;
+    }
+
+    public String getMotivoRechazo() {
+        return motivoRechazo;
+    }
+
+    public void setMotivoRechazo(String motivoRechazo) {
+        this.motivoRechazo = motivoRechazo;
     }
 }

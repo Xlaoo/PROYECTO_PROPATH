@@ -14,15 +14,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 import java.util.List;
+import com.propath.repository.EntrevistaRepository;
 
 @RestController
 @RequestMapping("/api/postulaciones")
 public class PostulacionController {
 
     private final PostulacionService postulacionService;
+    private final EntrevistaRepository entrevistaRepository;
 
-    public PostulacionController(PostulacionService postulacionService) {
+    public PostulacionController(
+            PostulacionService postulacionService,
+            EntrevistaRepository entrevistaRepository) {
         this.postulacionService = postulacionService;
+        this.entrevistaRepository = entrevistaRepository;
     }
 
     @GetMapping
@@ -78,9 +83,50 @@ public class PostulacionController {
                     "Debe indicar el estado de la postulación.");
         }
 
+        if (actual.getEstado() == Postulacion.Estado.NO_SELECCIONADO) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Esta postulación ya fue rechazada definitivamente.");
+        }
+
+        if (actual.getEstado() == Postulacion.Estado.SELECCIONADO
+                && postulacion.getEstado() != Postulacion.Estado.NO_SELECCIONADO) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Un postulante seleccionado solo puede ser rechazado.");
+        }
+
+        if (postulacion.getEstado() == Postulacion.Estado.NO_SELECCIONADO) {
+
+            if (entrevistaRepository.existsByPostulacionId(id)) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "No puedes rechazar al postulante porque tiene una entrevista registrada.");
+            }
+
+            String motivo = postulacion.getMotivoRechazo();
+
+            if (motivo == null || motivo.trim().isEmpty()
+                    || motivo.trim().length() > 1000) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Debes ingresar un motivo de rechazo válido.");
+            }
+
+            actual.setMotivoRechazo(motivo.trim());
+        }
+
         actual.setEstado(postulacion.getEstado());
 
         Postulacion actualizada = postulacionService.guardar(actual);
+
+        if (postulacion.getEstado() == Postulacion.Estado.NO_SELECCIONADO
+                && (actualizada.getMotivoRechazo() == null
+                        || actualizada.getMotivoRechazo().trim().isEmpty())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "No se pudo guardar el motivo de rechazo.");
+        }
 
         return ResponseEntity.ok(actualizada);
     }
