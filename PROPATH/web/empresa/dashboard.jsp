@@ -1,7 +1,7 @@
-<%! private String entrevistaCampo(String objeto, String campo) { java.util.regex.Matcher m=java.util.regex.Pattern
-    .compile(java.util.regex.Pattern.quote("\"" + campo + "\"")
-            + " \\s*:\\s*(?:\"([^\"]*)\"|([0-9]+))") .matcher(objeto); return m.find() ? (m.group(1) !=null ?
-    m.group(1) : m.group(2)) : "" ; } private java.util.List<String> entrevistasJson(String json) {
+<%! private String entrevistaCampo(String objeto, String campo) { java.util.regex.Matcher
+    m=java.util.regex.Pattern.compile( java.util.regex.Pattern.quote("\"" + campo + "\"")
+        + "\\s*:\\s*(?:\"([^\"]*)\"|([0-9]+))").matcher(objeto); return m.find() ? (m.group(1) !=null ? m.group(1) :
+    m.group(2)) : "" ; } private java.util.List<String> entrevistasJson(String json) {
     java.util.List<String> lista = new java.util.ArrayList<>();
             if (json == null) return lista;
             java.util.regex.Matcher m = java.util.regex.Pattern
@@ -956,7 +956,10 @@
                                                                                                                                                                                                                         : ""
                                                                                                                                                                                                                         %>
                                                                                                                                                                                                                         "
-                                                                                                                                                                                                                        data-descripcion="<%= escaparHtml(o.getDescripcion()) %>"
+                                                                                                                                                                                                                        data-descripcion="
+                                                                                                                                                                                                                        <%= escaparHtml(o.getDescripcion())
+                                                                                                                                                                                                                            %>
+                                                                                                                                                                                                                            "
                                                                                                                                                                                                                             data-estado="
                                                                                                                                                                                                                             <%= o.getEstado()
                                                                                                                                                                                                                                 %>
@@ -1119,25 +1122,21 @@
                                                                                                                                                                         </div>
                                                                                                                                                                         <div
                                                                                                                                                                             class="d-flex gap-2 align-items-center pt-2 border-top">
-                                                                                                                                                                            <button
-                                                                                                                                                                                type="button"
-                                                                                                                                                                                class="btn btn-sm btn-outline-primary rounded-pill"
-                                                                                                                                                                                data-id-postulacion="<%= p.getId() %>"
-                                                                                                                                                                                data-estudiante="<%= p.getEstudiante() %>"
-                                                                                                                                                                                data-oferta="<%= p.getOferta() %>"
-                                                                                                                                                                                 data-evaluado="<%= "SELECCIONADO".equalsIgnoreCase(p.getEstado()) || "NO_SELECCIONADO".equalsIgnoreCase(p.getEstado()) %>"
-                                                                                                                                                                                data-bs-toggle="modal"
-                                                                                                                                                                                data-bs-target="#modalEvaluacion"
-                                                                                                                                                                                onclick="abrirEvaluacion(this)"
-                                                                                                                                                                                <%=!puedeOperar
-                                                                                                                                                                                    ? "disabled"
-                                                                                                                                                                                    : ""
-                                                                                                                                                                                    %>
-                                                                                                                                                                                    >
-                                                                                                                                                                                    <i
-                                                                                                                                                                                        class="bi bi-eye me-1"></i>
-                                                                                                                                                                                    Evaluar
-                                                                                                                                                                            </button>
+                                                                                                                                                                           <button type="button"
+        class="btn btn-sm btn-outline-primary rounded-pill"
+        data-id-postulacion="<%= p.getId() %>"
+        data-estudiante="<%= escaparHtml(p.getEstudiante()) %>"
+        data-oferta="<%= escaparHtml(p.getOferta()) %>"
+        data-seleccionado="<%= "SELECCIONADO".equalsIgnoreCase(p.getEstado()) %>"
+        data-evaluado="<%= entrevistasEmpresa.stream().anyMatch(item -> String.valueOf(p.getId()).equals(entrevistaCampo(item, "idPostulacion")) && !"CANCELADA".equalsIgnoreCase(entrevistaCampo(item, "estado"))) %>"
+        data-bs-toggle="modal"
+        data-bs-target="#modalEvaluacion"
+        onclick="abrirEvaluacion(this)"
+        <%= !puedeOperar ? "disabled" : "" %>>
+    <i class="bi bi-eye me-1"></i>
+    Evaluar
+</button> 
+                                                                                                                                                                            
                                                                                                                                                                         </div>
 
                                                                                                                                                                         <% if
@@ -1155,8 +1154,7 @@
                                                                                                                                                                                 entrevistasEmpresa)
                                                                                                                                                                                 {
                                                                                                                                                                                 if
-                                                                                                                                                                                (String.valueOf(p.getId()).equals(
-                                                                                                                                                                                entrevistaCampo(item, "idPostulacion"
+                                                                                                                                                                                (String.valueOf(p.getId()).equals(entrevistaCampo(item, "idPostulacion"
                                                                                                                                                                                 )))
                                                                                                                                                                                 {
                                                                                                                                                                                 tieneEntrevista=true;
@@ -1164,120 +1162,129 @@
                                                                                                                                                                                 }
                                                                                                                                                                                 }
                                                                                                                                                                                 %>
-
                                                                                                                                                                                 <% if
-                                                                                                                                                                                    (!tieneEntrevista)
+                                                                                                                                                                                    (tieneEntrevista)
                                                                                                                                                                                     {
                                                                                                                                                                                     %>
                                                                                                                                                                                     <button
                                                                                                                                                                                         type="button"
-                                                                                                                                                                                        class="btn btn-sm btn-primary rounded-pill mt-2"
-                                                                                                                                                                                        data-id-postulacion="<%= p.getId() %>"
-                                                                                                                                                                                        data-bs-toggle="modal"
-                                                                                                                                                                                        data-bs-target="#modalEntrevista"
-                                                                                                                                                                                        onclick="abrirEntrevista(this.dataset.idPostulacion)">
+                                                                                                                                                                                        class="btn btn-sm btn-secondary rounded-pill mt-2"
+                                                                                                                                                                                        disabled>
                                                                                                                                                                                         <i
-                                                                                                                                                                                            class="bi bi-calendar-plus me-1"></i>
-                                                                                                                                                                                        Programar
-                                                                                                                                                                                        entrevista
+                                                                                                                                                                                            class="bi bi-lock-fill me-1"></i>Entrevista
+                                                                                                                                                                                        programada
                                                                                                                                                                                     </button>
-                                                                                                                                                                                    <% }
+                                                                                                                                                                                    <% } else
+                                                                                                                                                                                        {
                                                                                                                                                                                         %>
-                                                                                                                                                                                        <% for
-                                                                                                                                                                                            (String
-                                                                                                                                                                                            entrevistaItem
-                                                                                                                                                                                            :
-                                                                                                                                                                                            entrevistasEmpresa)
-                                                                                                                                                                                            {
-                                                                                                                                                                                            if
-                                                                                                                                                                                            (!String.valueOf(p.getId()).equals(entrevistaCampo(entrevistaItem, "idPostulacion"
-                                                                                                                                                                                            )))
-                                                                                                                                                                                            continue;
-                                                                                                                                                                                            String
-                                                                                                                                                                                            eid=entrevistaCampo(entrevistaItem, "id"
-                                                                                                                                                                                            );
-                                                                                                                                                                                            String
-                                                                                                                                                                                            ef=entrevistaCampo(entrevistaItem, "fecha"
-                                                                                                                                                                                            );
-                                                                                                                                                                                            String
-                                                                                                                                                                                            eh=entrevistaCampo(entrevistaItem, "hora"
-                                                                                                                                                                                            );
-                                                                                                                                                                                            String
-                                                                                                                                                                                            em=entrevistaCampo(entrevistaItem, "modalidad"
-                                                                                                                                                                                            );
-                                                                                                                                                                                            String
-                                                                                                                                                                                            el=entrevistaCampo(entrevistaItem, "enlaceLugar"
-                                                                                                                                                                                            );
-                                                                                                                                                                                            String
-                                                                                                                                                                                            ee=entrevistaCampo(entrevistaItem, "estado"
-                                                                                                                                                                                            );
-                                                                                                                                                                                            String
-                                                                                                                                                                                            eo=entrevistaCampo(entrevistaItem, "observaciones"
-                                                                                                                                                                                            );
+                                                                                                                                                                                        <button
+                                                                                                                                                                                            type="button"
+                                                                                                                                                                                            class="btn btn-sm btn-primary rounded-pill mt-2"
+                                                                                                                                                                                            data-id-postulacion="<%= p.getId() %>"
+                                                                                                                                                                                            data-bs-toggle="modal"
+                                                                                                                                                                                            data-bs-target="#modalEntrevista"
+                                                                                                                                                                                            onclick="abrirEntrevista(this.dataset.idPostulacion)">
+                                                                                                                                                                                            <i
+                                                                                                                                                                                                class="bi bi-calendar-plus me-1"></i>Programar
+                                                                                                                                                                                            entrevista
+                                                                                                                                                                                        </button>
+                                                                                                                                                                                        <% }
                                                                                                                                                                                             %>
-                                                                                                                                                                                            <div
-                                                                                                                                                                                                class="border rounded-3 p-2 mt-2 bg-white">
+                                                                                                                                                                                            <% for
+                                                                                                                                                                                                (String
+                                                                                                                                                                                                entrevistaItem
+                                                                                                                                                                                                :
+                                                                                                                                                                                                entrevistasEmpresa)
+                                                                                                                                                                                                {
+                                                                                                                                                                                                if
+                                                                                                                                                                                                (!String.valueOf(p.getId()).equals(entrevistaCampo(entrevistaItem, "idPostulacion"
+                                                                                                                                                                                                )))
+                                                                                                                                                                                                continue;
+                                                                                                                                                                                                String
+                                                                                                                                                                                                eid=entrevistaCampo(entrevistaItem, "id"
+                                                                                                                                                                                                );
+                                                                                                                                                                                                String
+                                                                                                                                                                                                ef=entrevistaCampo(entrevistaItem, "fecha"
+                                                                                                                                                                                                );
+                                                                                                                                                                                                String
+                                                                                                                                                                                                eh=entrevistaCampo(entrevistaItem, "hora"
+                                                                                                                                                                                                );
+                                                                                                                                                                                                String
+                                                                                                                                                                                                em=entrevistaCampo(entrevistaItem, "modalidad"
+                                                                                                                                                                                                );
+                                                                                                                                                                                                String
+                                                                                                                                                                                                el=entrevistaCampo(entrevistaItem, "enlaceLugar"
+                                                                                                                                                                                                );
+                                                                                                                                                                                                String
+                                                                                                                                                                                                ee=entrevistaCampo(entrevistaItem, "estado"
+                                                                                                                                                                                                );
+                                                                                                                                                                                                String
+                                                                                                                                                                                                eo=entrevistaCampo(entrevistaItem, "observaciones"
+                                                                                                                                                                                                );
+                                                                                                                                                                                                %>
                                                                                                                                                                                                 <div
-                                                                                                                                                                                                    class="small fw-semibold mb-2">
-                                                                                                                                                                                                    <i
-                                                                                                                                                                                                        class="bi bi-calendar-check me-1"></i>
-                                                                                                                                                                                                    Entrevista:
-                                                                                                                                                                                                    <%= escaparHtml(ef)
-                                                                                                                                                                                                        %>
-                                                                                                                                                                                                        a
-                                                                                                                                                                                                        las
-                                                                                                                                                                                                        <%= escaparHtml(eh)
+                                                                                                                                                                                                    class="border rounded-3 p-2 mt-2 bg-white">
+                                                                                                                                                                                                    <div
+                                                                                                                                                                                                        class="small fw-semibold mb-2">
+                                                                                                                                                                                                        <i
+                                                                                                                                                                                                            class="bi bi-calendar-check me-1"></i>
+                                                                                                                                                                                                        Entrevista:
+                                                                                                                                                                                                        <%= escaparHtml(ef)
                                                                                                                                                                                                             %>
-                                                                                                                                                                                                            ·
-                                                                                                                                                                                                            <%= escaparHtml(em)
+                                                                                                                                                                                                            a
+                                                                                                                                                                                                            las
+                                                                                                                                                                                                            <%= escaparHtml(eh)
                                                                                                                                                                                                                 %>
                                                                                                                                                                                                                 ·
-                                                                                                                                                                                                                <%= escaparHtml(ee)
+                                                                                                                                                                                                                <%= escaparHtml(em)
                                                                                                                                                                                                                     %>
-                                                                                                                                                                                                </div>
-                                                                                                                                                                                                <div
-                                                                                                                                                                                                    class="d-flex flex-wrap gap-2">
-                                                                                                                                                                                                    <button
-                                                                                                                                                                                                        type="button"
-                                                                                                                                                                                                        class="btn btn-sm btn-outline-primary rounded-pill"
-                                                                                                                                                                                                        data-bs-toggle="modal"
-                                                                                                                                                                                                        data-bs-target="#modalEntrevista"
-                                                                                                                                                                                                        data-id="<%= escaparHtml(eid) %>"
-                                                                                                                                                                                                        data-postulacion="<%= p.getId() %>"
-                                                                                                                                                                                                        data-fecha="<%= escaparHtml(ef) %>"
-                                                                                                                                                                                                        data-hora="<%= escaparHtml(eh) %>"
-                                                                                                                                                                                                        data-modalidad="<%= escaparHtml(em) %>"
-                                                                                                                                                                                                        data-lugar="<%= escaparHtml(el) %>"
-                                                                                                                                                                                                        data-estado="<%= escaparHtml(ee) %>"
-                                                                                                                                                                                                        data-observaciones="<%= escaparHtml(eo) %>"
-                                                                                                                                                                                                        onclick="editarEntrevista(this)"><i
-                                                                                                                                                                                                            class="bi bi-pencil-square me-1"></i>Editar
-                                                                                                                                                                                                        entrevista</button>
-                                                                                                                                                                                                    <form
-                                                                                                                                                                                                        action="${pageContext.request.contextPath}/empresa/entrevista"
-                                                                                                                                                                                                        method="POST"
-                                                                                                                                                                                                        class="m-0"
-                                                                                                                                                                                                        onsubmit="return confirm('¿Eliminar esta entrevista?')">
-                                                                                                                                                                                                        <input
-                                                                                                                                                                                                            type="hidden"
-                                                                                                                                                                                                            name="accion"
-                                                                                                                                                                                                            value="eliminar"><input
-                                                                                                                                                                                                            type="hidden"
-                                                                                                                                                                                                            name="idEntrevista"
-                                                                                                                                                                                                            value="<%= escaparHtml(eid) %>">
+                                                                                                                                                                                                                    ·
+                                                                                                                                                                                                                    <%= escaparHtml(ee)
+                                                                                                                                                                                                                        %>
+                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                    <div
+                                                                                                                                                                                                        class="d-flex flex-wrap gap-2">
                                                                                                                                                                                                         <button
-                                                                                                                                                                                                            type="submit"
-                                                                                                                                                                                                            class="btn btn-sm btn-outline-danger rounded-pill"><i
-                                                                                                                                                                                                                class="bi bi-trash me-1"></i>Eliminar
+                                                                                                                                                                                                            type="button"
+                                                                                                                                                                                                            class="btn btn-sm btn-outline-primary rounded-pill"
+                                                                                                                                                                                                            data-bs-toggle="modal"
+                                                                                                                                                                                                            data-bs-target="#modalEntrevista"
+                                                                                                                                                                                                            data-id="<%= escaparHtml(eid) %>"
+                                                                                                                                                                                                            data-postulacion="<%= p.getId() %>"
+                                                                                                                                                                                                            data-fecha="<%= escaparHtml(ef) %>"
+                                                                                                                                                                                                            data-hora="<%= escaparHtml(eh) %>"
+                                                                                                                                                                                                            data-modalidad="<%= escaparHtml(em) %>"
+                                                                                                                                                                                                            data-lugar="<%= escaparHtml(el) %>"
+                                                                                                                                                                                                            data-estado="<%= escaparHtml(ee) %>"
+                                                                                                                                                                                                            data-observaciones="<%= escaparHtml(eo) %>"
+                                                                                                                                                                                                            onclick="editarEntrevista(this)"><i
+                                                                                                                                                                                                                class="bi bi-pencil-square me-1"></i>Editar
                                                                                                                                                                                                             entrevista</button>
-                                                                                                                                                                                                    </form>
+                                                                                                                                                                                                        <form
+                                                                                                                                                                                                            action="${pageContext.request.contextPath}/empresa/entrevista"
+                                                                                                                                                                                                            method="POST"
+                                                                                                                                                                                                            class="m-0"
+                                                                                                                                                                                                            onsubmit="return confirm('¿Eliminar esta entrevista?')">
+                                                                                                                                                                                                            <input
+                                                                                                                                                                                                                type="hidden"
+                                                                                                                                                                                                                name="accion"
+                                                                                                                                                                                                                value="eliminar"><input
+                                                                                                                                                                                                                type="hidden"
+                                                                                                                                                                                                                name="idEntrevista"
+                                                                                                                                                                                                                value="<%= escaparHtml(eid) %>">
+                                                                                                                                                                                                            <button
+                                                                                                                                                                                                                type="submit"
+                                                                                                                                                                                                                class="btn btn-sm btn-outline-danger rounded-pill"><i
+                                                                                                                                                                                                                    class="bi bi-trash me-1"></i>Eliminar
+                                                                                                                                                                                                                entrevista</button>
+                                                                                                                                                                                                        </form>
+                                                                                                                                                                                                    </div>
                                                                                                                                                                                                 </div>
-                                                                                                                                                                                            </div>
-                                                                                                                                                                                            <% }
-                                                                                                                                                                                                %>
-
                                                                                                                                                                                                 <% }
                                                                                                                                                                                                     %>
+
+                                                                                                                                                                                                    <% }
+                                                                                                                                                                                                        %>
                                                                                                                                                                     </div>
                                                                                                                                                                     <% }
                                                                                                                                                                         %>
@@ -1364,13 +1371,14 @@
                                                                                                                 value="SELECCIONADO"
                                                                                                                 class="btn btn-success">Seleccionar</button>
 
-<button type="button"
-        name="estado"
-        value="NO_SELECCIONADO"
-        class="btn btn-danger"
-        onclick="abrirModalRechazo()">
-    Rechazar
-</button>
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                name="estado"
+                                                                                                                value="NO_SELECCIONADO"
+                                                                                                                class="btn btn-danger"
+                                                                                                                onclick="abrirModalRechazo()">
+                                                                                                                Rechazar
+                                                                                                            </button>
                                                                                                         </form>
 
                                                                                                         <button
@@ -1381,30 +1389,73 @@
                                                                                                 </div>
                                                                                             </div>
                                                                                         </div>
-                                                                                     <div class="modal fade" id="modalRechazo" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form action="${pageContext.request.contextPath}/empresa/oferta" method="POST">
-                <div class="modal-header">
-                    <h5 class="modal-title">Rechazar postulante</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Escribe el motivo que podrá consultar el estudiante.</p>
-                    <input type="hidden" name="accion" value="cambiarEstadoPostulacion">
-                    <input type="hidden" name="estado" value="NO_SELECCIONADO">
-                    <input type="hidden" name="idPostulacion" id="rechazoIdPostulacion">
-                    <textarea name="motivoRechazo" class="form-control"
-                              maxlength="1000" rows="4" required></textarea>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Confirmar rechazo</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>                       
+                                                                                        <div class="modal fade"
+                                                                                            id="modalRechazo"
+                                                                                            tabindex="-1">
+                                                                                            <div
+                                                                                                class="modal-dialog modal-dialog-centered">
+                                                                                                <div
+                                                                                                    class="modal-content">
+                                                                                                    <form
+                                                                                                        action="${pageContext.request.contextPath}/empresa/oferta"
+                                                                                                        method="POST">
+                                                                                                        <div
+                                                                                                            class="modal-header">
+                                                                                                            <h5
+                                                                                                                class="modal-title">
+                                                                                                                Rechazar
+                                                                                                                postulante
+                                                                                                            </h5>
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                class="btn-close"
+                                                                                                                data-bs-dismiss="modal"></button>
+                                                                                                        </div>
+                                                                                                        <div
+                                                                                                            class="modal-body">
+                                                                                                            <p>Escribe
+                                                                                                                el
+                                                                                                                motivo
+                                                                                                                que
+                                                                                                                podrá
+                                                                                                                consultar
+                                                                                                                el
+                                                                                                                estudiante.
+                                                                                                            </p>
+                                                                                                            <input
+                                                                                                                type="hidden"
+                                                                                                                name="accion"
+                                                                                                                value="cambiarEstadoPostulacion">
+                                                                                                            <input
+                                                                                                                type="hidden"
+                                                                                                                name="estado"
+                                                                                                                value="NO_SELECCIONADO">
+                                                                                                            <input
+                                                                                                                type="hidden"
+                                                                                                                name="idPostulacion"
+                                                                                                                id="rechazoIdPostulacion">
+                                                                                                            <textarea
+                                                                                                                name="motivoRechazo"
+                                                                                                                class="form-control"
+                                                                                                                maxlength="1000"
+                                                                                                                rows="4"
+                                                                                                                required></textarea>
+                                                                                                        </div>
+                                                                                                        <div
+                                                                                                            class="modal-footer">
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                class="btn btn-secondary"
+                                                                                                                data-bs-dismiss="modal">Cancelar</button>
+                                                                                                            <button
+                                                                                                                type="submit"
+                                                                                                                class="btn btn-danger">Confirmar
+                                                                                                                rechazo</button>
+                                                                                                        </div>
+                                                                                                    </form>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
                                                                                         <div class="modal fade"
                                                                                             id="modalEntrevista"
                                                                                             tabindex="-1">
@@ -2000,17 +2051,17 @@
                                                                                                 }
                                                                                             }
                                                                                             function abrirModalRechazo() {
-    document.getElementById("rechazoIdPostulacion").value =
-        document.getElementById("evaluacionIdPostulacion").value;
+                                                                                                document.getElementById("rechazoIdPostulacion").value =
+                                                                                                    document.getElementById("evaluacionIdPostulacion").value;
 
-    bootstrap.Modal.getOrCreateInstance(
-        document.getElementById("modalEvaluacion")
-    ).hide();
+                                                                                                bootstrap.Modal.getOrCreateInstance(
+                                                                                                    document.getElementById("modalEvaluacion")
+                                                                                                ).hide();
 
-    bootstrap.Modal.getOrCreateInstance(
-        document.getElementById("modalRechazo")
-    ).show();
-}
+                                                                                                bootstrap.Modal.getOrCreateInstance(
+                                                                                                    document.getElementById("modalRechazo")
+                                                                                                ).show();
+                                                                                            }
                                                                                             async function abrirEvaluacion(boton) {
                                                                                                 const id = boton.dataset.idPostulacion;
                                                                                                 const cv = document.getElementById("evaluacionCV");
@@ -2029,10 +2080,10 @@
                                                                                                     "¿Qué aspecto profesional deseas mejorar?",
                                                                                                     "¿Cuáles son tus objetivos profesionales?"
                                                                                                 ];
-                                                                                                const decisionFinal = boton.dataset.evaluado === "true";
-                                                                                                document.querySelectorAll('#modalEvaluacion button[name="estado"]').forEach(b => {
-    b.disabled = decisionFinal && b.value !== "NO_SELECCIONADO";
-});
+                                                                                                const seleccionado = boton.dataset.seleccionado === "true";
+                                                                                                const tieneEntrevista = boton.dataset.evaluado === "true";
+                                                                                                document.querySelector('#modalEvaluacion button[value="SELECCIONADO"]').disabled = seleccionado || tieneEntrevista;
+                                                                                                document.querySelector('#modalEvaluacion button[value="NO_SELECCIONADO"]').disabled = tieneEntrevista;
                                                                                                 document.getElementById("evaluacionIdPostulacion").value = id;
                                                                                                 document.getElementById("evaluacionEstudiante").textContent = boton.dataset.estudiante || "Postulante";
                                                                                                 document.getElementById("evaluacionOferta").textContent = "Oferta: " + (boton.dataset.oferta || "");

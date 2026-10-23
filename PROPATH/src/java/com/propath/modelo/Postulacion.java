@@ -8,6 +8,8 @@ public class Postulacion implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
+    private int idEstudiante;
+    private int idOferta;
     private String estudiante;
     private String oferta;
     private String empresa;
@@ -34,6 +36,22 @@ public class Postulacion implements Serializable {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int getIdEstudiante() {
+        return idEstudiante;
+    }
+
+    public void setIdEstudiante(int idEstudiante) {
+        this.idEstudiante = idEstudiante;
+    }
+
+    public int getIdOferta() {
+        return idOferta;
+    }
+
+    public void setIdOferta(int idOferta) {
+        this.idOferta = idOferta;
     }
 
     public String getEstudiante() {

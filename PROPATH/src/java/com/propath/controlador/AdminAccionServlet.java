@@ -1,11 +1,20 @@
 package com.propath.controlador;
 
-import com.propath.servicio.BackendCliente;
+import com.propath.dao.EmpresaDAO;
+import com.propath.dao.EntrevistaDAO;
+import com.propath.dao.EstudianteDAO;
+import com.propath.dao.OfertaPracticaDAO;
+import com.propath.dao.PostulacionDAO;
+import com.propath.dao.UsuarioDAO;
+import com.propath.modelo.Empresa;
+import com.propath.modelo.Estudiante;
+import com.propath.modelo.Usuario;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
@@ -19,14 +28,14 @@ public class AdminAccionServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("{\"exito\":false,\"mensaje\":\"Sesión no válida o expirada.\"}");
             return;
         }
 
-        com.propath.modelo.Usuario usuarioLogueado = (com.propath.modelo.Usuario) session.getAttribute("usuarioLogueado");
+        Usuario usuarioLogueado = (Usuario) session.getAttribute("usuarioLogueado");
         if (!"ADMIN".equalsIgnoreCase(usuarioLogueado.getRol())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.getWriter().write("{\"exito\":false,\"mensaje\":\"Permisos insuficientes.\"}");
@@ -42,6 +51,13 @@ public class AdminAccionServlet extends HttpServlet {
         try {
             if (idStr != null) id = Integer.parseInt(idStr);
         } catch (NumberFormatException ignored) {}
+
+        UsuarioDAO usuarioDAO = new UsuarioDAO();
+        EmpresaDAO empresaDAO = new EmpresaDAO();
+        EstudianteDAO estudianteDAO = new EstudianteDAO();
+        OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
+        PostulacionDAO postulacionDAO = new PostulacionDAO();
+        EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
 
         boolean ok = false;
         String mensaje = null;
@@ -70,10 +86,20 @@ public class AdminAccionServlet extends HttpServlet {
                 if (universidad == null || universidad.trim().isEmpty() || carrera == null || carrera.trim().isEmpty()) {
                     ok = false;
                     mensaje = "Debe completar la universidad y carrera para el perfil de estudiante.";
+                } else if (usuarioDAO.obtenerPorCorreo(correo) != null) {
+                    ok = false;
+                    mensaje = "El correo electrónico ya se encuentra registrado.";
                 } else {
-                    String error = BackendCliente.registrarEstudiante(nombre, apellidos != null ? apellidos : "", correo, contrasena, universidad, carrera, ciclo, telefono);
-                    ok = (error == null);
-                    mensaje = error != null ? error : "Estudiante registrado exitosamente.";
+                    Estudiante est = new Estudiante();
+                    est.setNombre(nombre != null ? nombre.trim() : "");
+                    est.setApellido(apellidos != null ? apellidos.trim() : "");
+                    est.setUniversidad(universidad.trim());
+                    est.setCarrera(carrera.trim());
+                    est.setCiclo(ciclo);
+                    est.setTelefono(telefono != null ? telefono.trim() : "");
+                    int idGen = estudianteDAO.registrarConUsuario(est, correo.trim(), contrasena);
+                    ok = (idGen > 0);
+                    mensaje = ok ? "Estudiante registrado exitosamente." : "Error al registrar el estudiante.";
                 }
             } else if ("EMPRESA".equalsIgnoreCase(rol)) {
                 String razonSocial = request.getParameter("razonSocial");
@@ -85,10 +111,23 @@ public class AdminAccionServlet extends HttpServlet {
                 if (razonSocial == null || razonSocial.trim().isEmpty() || ruc == null || ruc.trim().length() != 11) {
                     ok = false;
                     mensaje = "Debe proporcionar una razón social válida y un RUC de 11 dígitos.";
+                } else if (usuarioDAO.obtenerPorCorreo(correo) != null) {
+                    ok = false;
+                    mensaje = "El correo electrónico ya se encuentra registrado.";
+                } else if (empresaDAO.obtenerPorRuc(ruc) != null) {
+                    ok = false;
+                    mensaje = "El RUC ya se encuentra registrado.";
                 } else {
-                    String error = BackendCliente.registrarEmpresa(nombre, razonSocial, ruc, correo, contrasena, telefono, direccion, descripcion);
-                    ok = (error == null);
-                    mensaje = error != null ? error : "Empresa registrada exitosamente.";
+                    Empresa emp = new Empresa();
+                    emp.setRazonSocial(razonSocial.trim());
+                    emp.setRuc(ruc.trim());
+                    emp.setTelefono(telefono != null ? telefono.trim() : "");
+                    emp.setDireccion(direccion != null ? direccion.trim() : "");
+                    emp.setDescripcion(descripcion != null ? descripcion.trim() : "");
+                    emp.setEstado("APROBADA");
+                    int idGen = empresaDAO.registrarConUsuario(emp, correo.trim(), contrasena, nombre != null ? nombre.trim() : "", apellidos != null ? apellidos.trim() : "");
+                    ok = (idGen > 0);
+                    mensaje = ok ? "Empresa registrada exitosamente." : "Error al registrar la empresa.";
                 }
             } else {
                 ok = false;
@@ -115,9 +154,19 @@ public class AdminAccionServlet extends HttpServlet {
                 }
             }
 
-            String error = BackendCliente.actualizarUsuario(id, nombre, apellidos != null ? apellidos : "", correo, contrasena, est != null ? est : "ACTIVO");
-            ok = (error == null);
-            mensaje = error != null ? error : "Usuario actualizado exitosamente.";
+            Usuario u = usuarioDAO.obtenerPorId(id);
+            if (u != null) {
+                if (nombre != null && !nombre.trim().isEmpty()) u.setNombre(nombre.trim());
+                if (apellidos != null) u.setApellidos(apellidos.trim());
+                if (correo != null && !correo.trim().isEmpty()) u.setCorreo(correo.trim());
+                if (contrasena != null && !contrasena.trim().isEmpty()) u.setContrasena(contrasena.trim());
+                if (est != null && !est.trim().isEmpty()) u.setEstado(est.trim().toUpperCase());
+                ok = usuarioDAO.actualizar(u);
+                mensaje = ok ? "Usuario actualizado exitosamente." : "Error al actualizar el usuario.";
+            } else {
+                ok = false;
+                mensaje = "Usuario no encontrado.";
+            }
         } else if ("crearEmpresa".equalsIgnoreCase(accion)) {
             String nombre = request.getParameter("nombre");
             String razonSocial = request.getParameter("razonSocial");
@@ -129,9 +178,24 @@ public class AdminAccionServlet extends HttpServlet {
             String descripcion = request.getParameter("descripcion");
             String est = request.getParameter("estado");
 
-            String error = BackendCliente.crearEmpresaAdmin(nombre, razonSocial, ruc, correo, contrasena, telefono, direccion, descripcion, est);
-            ok = (error == null);
-            mensaje = error != null ? error : "Empresa registrada exitosamente.";
+            if (usuarioDAO.obtenerPorCorreo(correo) != null) {
+                ok = false;
+                mensaje = "El correo electrónico ya se encuentra registrado.";
+            } else if (empresaDAO.obtenerPorRuc(ruc) != null) {
+                ok = false;
+                mensaje = "El RUC ya se encuentra registrado.";
+            } else {
+                Empresa emp = new Empresa();
+                emp.setRazonSocial(razonSocial != null ? razonSocial.trim() : "");
+                emp.setRuc(ruc != null ? ruc.trim() : "");
+                emp.setTelefono(telefono != null ? telefono.trim() : "");
+                emp.setDireccion(direccion != null ? direccion.trim() : "");
+                emp.setDescripcion(descripcion != null ? descripcion.trim() : "");
+                emp.setEstado(est != null && !est.trim().isEmpty() ? est.trim().toUpperCase() : "APROBADA");
+                int idGen = empresaDAO.registrarConUsuario(emp, correo.trim(), contrasena, nombre != null ? nombre.trim() : "", "");
+                ok = (idGen > 0);
+                mensaje = ok ? "Empresa registrada exitosamente." : "Error al registrar la empresa.";
+            }
         } else if ("actualizarEmpresa".equalsIgnoreCase(accion) && id > 0) {
             String razonSocial = request.getParameter("razonSocial");
             String ruc = request.getParameter("ruc");
@@ -140,37 +204,68 @@ public class AdminAccionServlet extends HttpServlet {
             String descripcion = request.getParameter("descripcion");
             String est = request.getParameter("estado");
 
-            String error = BackendCliente.actualizarEmpresa(id, razonSocial, ruc, telefono, direccion, descripcion, est);
-            ok = (error == null);
-            mensaje = error != null ? error : "Empresa actualizada exitosamente.";
+            Empresa emp = empresaDAO.obtenerPorId(id);
+            if (emp != null) {
+                if (razonSocial != null && !razonSocial.trim().isEmpty()) emp.setRazonSocial(razonSocial.trim());
+                if (ruc != null && !ruc.trim().isEmpty()) emp.setRuc(ruc.trim());
+                if (telefono != null) emp.setTelefono(telefono.trim());
+                if (direccion != null) emp.setDireccion(direccion.trim());
+                if (descripcion != null) emp.setDescripcion(descripcion.trim());
+                if (est != null && !est.trim().isEmpty()) emp.setEstado(est.trim().toUpperCase());
+                ok = empresaDAO.actualizar(emp);
+                if (est != null && !est.trim().isEmpty()) {
+                    empresaDAO.actualizarEstado(id, est.trim().toUpperCase());
+                }
+                mensaje = ok ? "Empresa actualizada exitosamente." : "No se pudo actualizar la empresa.";
+            } else {
+                ok = false;
+                mensaje = "Empresa no encontrada.";
+            }
         } else if ("aprobarEmpresa".equalsIgnoreCase(accion) && id > 0) {
-            ok = BackendCliente.actualizarEstadoEmpresa(id, "APROBADA");
+            ok = empresaDAO.actualizarEstado(id, "APROBADA");
             mensaje = ok ? "Empresa aprobada exitosamente." : "No se pudo aprobar la empresa.";
         } else if ("cambiarEstadoEmpresa".equalsIgnoreCase(accion) && id > 0 && estado != null) {
-            ok = BackendCliente.actualizarEstadoEmpresa(id, estado);
+            ok = empresaDAO.actualizarEstado(id, estado);
             mensaje = ok ? "Estado de empresa actualizado." : "No se pudo actualizar el estado de la empresa.";
         } else if ("cambiarEstadoEstudiante".equalsIgnoreCase(accion) && id > 0 && estado != null) {
-            ok = BackendCliente.actualizarEstadoEstudiante(id, estado);
+            ok = estudianteDAO.actualizarEstado(id, estado);
             mensaje = ok ? "Estado de estudiante actualizado." : "No se pudo actualizar el estado del estudiante.";
         } else if ("cambiarEstadoOferta".equalsIgnoreCase(accion) && id > 0 && estado != null) {
-            ok = BackendCliente.actualizarEstadoOferta(id, estado);
+            ok = ofertaDAO.actualizarEstado(id, estado);
             mensaje = ok ? "Estado de oferta actualizado." : "No se pudo actualizar el estado de la oferta.";
         } else if ("cambiarEstadoPostulacion".equalsIgnoreCase(accion) && id > 0 && estado != null) {
-            ok = BackendCliente.actualizarEstadoPostulacion(id, estado);
+            ok = postulacionDAO.actualizarEstado(id, estado);
             mensaje = ok ? "Estado de postulación actualizado." : "No se pudo actualizar el estado de la postulación.";
         } else if ("activarCuentaEmpresa".equalsIgnoreCase(accion) && id > 0) {
-            String err = BackendCliente.activarCuentaEmpresa(id);
-            ok = (err == null);
-            mensaje = ok ? "Cuenta de empresa reactivada exitosamente." : err;
+            Empresa emp = empresaDAO.obtenerPorId(id);
+            if (emp != null) {
+                empresaDAO.actualizarEstado(id, "APROBADA");
+                ok = usuarioDAO.actualizarEstado(emp.getIdUsuario(), "ACTIVO");
+                mensaje = ok ? "Cuenta de empresa reactivada exitosamente." : "No se pudo reactivar la cuenta.";
+            } else {
+                ok = false;
+                mensaje = "Empresa no encontrada.";
+            }
         } else if ("eliminar".equalsIgnoreCase(accion) && id > 0 && recurso != null) {
             if (("usuario".equalsIgnoreCase(recurso) || "usuarios".equalsIgnoreCase(recurso)) && id == 60) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.getWriter().write("{\"exito\":false,\"prohibido\":true,\"mensaje\":\"No está permitido eliminar la cuenta del administrador principal del sistema.\"}");
                 return;
             }
-            String err = BackendCliente.eliminarRegistroConDetalle(recurso, id);
-            ok = (err == null);
-            mensaje = ok ? "Registro eliminado exitosamente." : err;
+            if ("usuario".equalsIgnoreCase(recurso) || "usuarios".equalsIgnoreCase(recurso)) {
+                ok = usuarioDAO.eliminar(id);
+            } else if ("empresa".equalsIgnoreCase(recurso) || "empresas".equalsIgnoreCase(recurso)) {
+                ok = empresaDAO.eliminar(id);
+            } else if ("estudiante".equalsIgnoreCase(recurso) || "estudiantes".equalsIgnoreCase(recurso)) {
+                ok = estudianteDAO.eliminar(id);
+            } else if ("oferta".equalsIgnoreCase(recurso) || "ofertas".equalsIgnoreCase(recurso)) {
+                ok = ofertaDAO.eliminar(id);
+            } else if ("postulacion".equalsIgnoreCase(recurso) || "postulaciones".equalsIgnoreCase(recurso)) {
+                ok = postulacionDAO.eliminar(id);
+            } else if ("entrevista".equalsIgnoreCase(recurso) || "entrevistas".equalsIgnoreCase(recurso)) {
+                ok = entrevistaDAO.eliminar(id);
+            }
+            mensaje = ok ? "Registro eliminado exitosamente." : "No se pudo eliminar el registro seleccionado.";
         }
 
         String jsonResp = String.format("{\"exito\":%b,\"prohibido\":%b,\"mensaje\":\"%s\"}",

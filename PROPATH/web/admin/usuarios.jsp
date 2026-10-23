@@ -209,7 +209,6 @@
                                             </main>
                                         </div>
 
-                                        <!-- Modal Detalles del Usuario (SOLO LECTURA) -->
                                         <div class="modal fade" id="modalDetallesUsuario" tabindex="-1"
                                             aria-labelledby="modalDetallesUsuarioLabel" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered modal-lg">

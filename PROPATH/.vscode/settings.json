@@ -4,6 +4,7 @@
     ],
     "java.project.outputPath": "build/web/WEB-INF/classes",
     "java.project.referencedLibraries": [
-        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/*.jar"
+        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/*.jar",
+        "web/WEB-INF/lib/*.jar"
     ]
 }

@@ -54,7 +54,9 @@
                                         <div class="small fw-semibold">
                                             <%= "cuenta_desactivada" .equals(exitoParam)
                                                 ? "Tu cuenta ha sido dada de baja correctamente."
-                                                : "Operación realizada exitosamente." %>
+                                                : ("password_actualizada".equals(exitoParam)
+                                                    ? "Tu contraseña ha sido restablecida exitosamente. Inicia sesión con tu nueva contraseña."
+                                                    : "Operación realizada exitosamente.") %>
                                         </div>
                                     </div>
                                     <% } %>
@@ -73,6 +75,13 @@
                                                     title="Mostrar/ocultar contraseña" tabindex="-1">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
+                                            </div>
+
+                                            <div class="text-end mt-2 mb-3">
+                                                <a href="${pageContext.request.contextPath}/recuperar-contrasena.jsp"
+                                                    class="small text-decoration-none fw-semibold">
+                                                    ¿Olvidaste tu contraseña?
+                                                </a>
                                             </div>
 
                                             <div class="d-grid mt-4">

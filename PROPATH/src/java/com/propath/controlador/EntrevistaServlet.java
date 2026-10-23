@@ -1,8 +1,12 @@
-
 package com.propath.controlador;
 
+import com.propath.dao.EntrevistaDAO;
+import com.propath.dao.OfertaPracticaDAO;
+import com.propath.dao.PostulacionDAO;
+import com.propath.modelo.Entrevista;
+import com.propath.modelo.OfertaPractica;
+import com.propath.modelo.Postulacion;
 import com.propath.modelo.Usuario;
-import com.propath.servicio.BackendCliente;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,24 +15,14 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @WebServlet("/empresa/entrevista")
 public class EntrevistaServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
 
-    private String valor(String json, String clave) {
-        Matcher m = Pattern.compile(
-                "\"" + clave + "\"\\s*:\\s*(\\d+)")
-                .matcher(json);
-        return m.find() ? m.group(1) : "";
-    }
-
-    private boolean contieneRelacion(String json, String campo, int id) {
-        return Pattern.compile(
-                "\"" + campo + "\"\\s*:\\s*" + id + "(?!\\d)")
-                .matcher(json).find();
-    }
+    private final EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
+    private final PostulacionDAO postulacionDAO = new PostulacionDAO();
+    private final OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
 
     private void volver(HttpServletRequest req, HttpServletResponse res,
             String tipo, String mensaje) throws IOException {
@@ -44,8 +38,7 @@ public class EntrevistaServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         HttpSession sesion = req.getSession(false);
 
-        if (sesion == null
-                || !(sesion.getAttribute("usuarioLogueado") instanceof Usuario)) {
+        if (sesion == null || !(sesion.getAttribute("usuarioLogueado") instanceof Usuario)) {
             res.sendRedirect(req.getContextPath() + "/login.jsp");
             return;
         }
@@ -63,27 +56,35 @@ public class EntrevistaServlet extends HttpServlet {
 
         try {
             String accion = req.getParameter("accion");
-            String json = BackendCliente.consultarEntrevistas(idEmpresa);
 
             if ("eliminar".equals(accion)) {
                 int id = Integer.parseInt(req.getParameter("idEntrevista"));
 
-                String entrevista = buscarObjeto(json, id);
+                Entrevista entrevista = entrevistaDAO.obtenerPorId(id);
+                if (entrevista == null) {
+                    res.sendError(404);
+                    return;
+                }
 
-                if (entrevista == null
-                        || !contieneRelacion(entrevista, "idEmpresa", idEmpresa)) {
+                Postulacion p = postulacionDAO.obtenerPorId(entrevista.getIdPostulacion());
+                if (p == null) {
                     res.sendError(403);
                     return;
                 }
 
-                String error = BackendCliente.eliminarEntrevista(id);
-                volver(req, res, error == null ? "exito" : "error",
-                        error == null ? "entrevista_eliminada" : error);
+                OfertaPractica o = ofertaDAO.obtenerPorId(p.getIdOferta());
+                if (o == null || o.getIdEmpresa() != idEmpresa) {
+                    res.sendError(403, "No estás autorizado para eliminar esta entrevista.");
+                    return;
+                }
+
+                boolean ok = entrevistaDAO.eliminar(id);
+                volver(req, res, ok ? "exito" : "error",
+                        ok ? "entrevista_eliminada" : "No se pudo eliminar la entrevista.");
                 return;
             }
 
-            int idPostulacion = Integer.parseInt(
-                    req.getParameter("idPostulacion"));
+            int idPostulacion = Integer.parseInt(req.getParameter("idPostulacion"));
 
             String fecha = req.getParameter("fecha");
             String hora = req.getParameter("hora");
@@ -104,120 +105,64 @@ public class EntrevistaServlet extends HttpServlet {
                 return;
             }
 
-            Integer idEntrevista = null;
-
-            if ("actualizar".equals(accion)) {
-                idEntrevista = Integer.valueOf(
-                        req.getParameter("idEntrevista"));
-
-                String existente = buscarObjeto(json, idEntrevista);
-
-                if (existente == null
-                        || !contieneRelacion(existente, "idEmpresa", idEmpresa)
-                        || !contieneRelacion(existente, "idPostulacion", idPostulacion)) {
-                    res.sendError(403);
-                    return;
-                }
-            } else if (!"crear".equals(accion)) {
-                res.sendError(400);
+            Postulacion p = postulacionDAO.obtenerPorId(idPostulacion);
+            if (p == null) {
+                res.sendError(404, "Postulación no encontrada.");
                 return;
             }
 
-            String postulaciones = consultarPostulacionesEmpresa(idEmpresa);
-
-            if (!contienePostulacion(postulaciones, idPostulacion, idEmpresa)) {
-                res.sendError(403);
+            OfertaPractica o = ofertaDAO.obtenerPorId(p.getIdOferta());
+            if (o == null || o.getIdEmpresa() != idEmpresa) {
+                res.sendError(403, "La postulación no pertenece a tu empresa.");
                 return;
             }
-            boolean seleccionado = false;
 
-            for (com.propath.modelo.Postulacion p : BackendCliente.listarPostulaciones()) {
-                if (p.getId() == idPostulacion
-                        && "SELECCIONADO".equalsIgnoreCase(p.getEstado())) {
-                    seleccionado = true;
-                    break;
-                }
-            }
-
-            if (!seleccionado) {
+            if (!"SELECCIONADO".equalsIgnoreCase(p.getEstado())) {
                 volver(req, res, "error",
                         "Debes seleccionar al postulante antes de programar una entrevista.");
                 return;
             }
-            String error = BackendCliente.guardarEntrevista(
-                    idEntrevista, idPostulacion, fecha, hora,
-                    modalidad, lugar, estado == null ? "PROGRAMADA" : estado,
-                    observaciones == null ? "" : observaciones);
 
-            volver(req, res, error == null ? "exito" : "error",
-                    error == null ? "entrevista_guardada" : error);
+            if ("actualizar".equals(accion)) {
+                int idEntrevista = Integer.parseInt(req.getParameter("idEntrevista"));
+
+                Entrevista existente = entrevistaDAO.obtenerPorId(idEntrevista);
+                if (existente == null || existente.getIdPostulacion() != idPostulacion) {
+                    res.sendError(403, "Entrevista no autorizada.");
+                    return;
+                }
+
+                existente.setFecha(fecha);
+                existente.setHora(hora);
+                existente.setModalidad(modalidad);
+                existente.setEnlaceLugar(lugar);
+                existente.setEstado(estado == null ? "PROGRAMADA" : estado);
+                existente.setObservaciones(observaciones == null ? "" : observaciones);
+
+                boolean ok = entrevistaDAO.actualizar(existente);
+                volver(req, res, ok ? "exito" : "error",
+                        ok ? "entrevista_guardada" : "Error al actualizar la entrevista.");
+            } else if ("crear".equals(accion)) {
+                Entrevista nueva = new Entrevista();
+                nueva.setIdPostulacion(idPostulacion);
+                nueva.setFecha(fecha);
+                nueva.setHora(hora);
+                nueva.setModalidad(modalidad);
+                nueva.setEnlaceLugar(lugar);
+                nueva.setEstado(estado == null ? "PROGRAMADA" : estado);
+                nueva.setObservaciones(observaciones == null ? "" : observaciones);
+
+                int idGen = entrevistaDAO.crear(nueva);
+                volver(req, res, idGen > 0 ? "exito" : "error",
+                        idGen > 0 ? "entrevista_guardada" : "Error al crear la entrevista.");
+            } else {
+                res.sendError(400);
+            }
 
         } catch (NumberFormatException e) {
             volver(req, res, "error", "Identificador inválido.");
         } catch (Exception e) {
             volver(req, res, "error", "Error al gestionar entrevistas.");
         }
-    }
-
-    private String consultarPostulacionesEmpresa(int idEmpresa) {
-        com.propath.modelo.Empresa empresa = BackendCliente.obtenerEmpresaPorId(idEmpresa);
-
-        if (empresa == null || empresa.getRazonSocial() == null) {
-            return "[]";
-        }
-
-        String razon = empresa.getRazonSocial();
-        StringBuilder json = new StringBuilder("[");
-        boolean primero = true;
-
-        for (com.propath.modelo.Postulacion p : BackendCliente.listarPostulaciones()) {
-
-            if (p.getEmpresa() == null
-                    || !razon.equalsIgnoreCase(p.getEmpresa().trim())) {
-                continue;
-            }
-
-            if (!primero) {
-                json.append(",");
-            }
-
-            json.append("{\"idPostulacion\":")
-                    .append(p.getId())
-                    .append(",\"idEmpresa\":")
-                    .append(idEmpresa)
-                    .append("}");
-
-            primero = false;
-        }
-
-        return json.append("]").toString();
-    }
-
-    private boolean contienePostulacion(
-            String json, int idPostulacion, int idEmpresa) {
-        if (json == null)
-            return false;
-        Matcher m = Pattern.compile(
-                "\\{[^{}]*\"idPostulacion\"\\s*:\\s*"
-                        + idPostulacion + "(?!\\d)[^{}]*\\}")
-                .matcher(json);
-        while (m.find()) {
-            if (contieneRelacion(m.group(), "idEmpresa", idEmpresa)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private String buscarObjeto(String json, int id) {
-        if (json == null)
-            return null;
-        Matcher m = Pattern.compile("\\{[^{}]*\\}").matcher(json);
-        while (m.find()) {
-            String objeto = m.group();
-            if (contieneRelacion(objeto, "id", id))
-                return objeto;
-        }
-        return null;
     }
 }

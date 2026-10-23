@@ -6,6 +6,7 @@ public class Estudiante implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
+    private int idUsuario;
     private String nombre;
     private String apellido;
     private String correo;
@@ -51,12 +52,28 @@ public class Estudiante implements Serializable {
         this.id = id;
     }
 
+    public int getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(int idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
     public String getNombre() {
         return nombre;
     }
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public String getNombres() {
+        return nombre;
+    }
+
+    public void setNombres(String nombres) {
+        this.nombre = nombres;
     }
 
     public String getApellido() {

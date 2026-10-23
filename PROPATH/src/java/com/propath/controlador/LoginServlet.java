@@ -1,7 +1,7 @@
 package com.propath.controlador;
 
+import com.propath.dao.UsuarioDAO;
 import com.propath.modelo.Usuario;
-import com.propath.servicio.BackendCliente;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -33,9 +33,17 @@ public class LoginServlet extends HttpServlet {
             correo = correo.trim();
         }
 
-        Usuario usuario = BackendCliente.autenticar(correo, contrasena);
+        UsuarioDAO usuarioDAO = new UsuarioDAO();
+        Usuario usuario = usuarioDAO.autenticar(correo, contrasena);
 
         if (usuario != null) {
+            if (!"ACTIVO".equalsIgnoreCase(usuario.getEstado())) {
+                request.setAttribute("error", "Su cuenta está " + usuario.getEstado().toLowerCase() + ". Comuníquese con el administrador.");
+                request.setAttribute("correoIngresado", correo != null ? correo : "");
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+                return;
+            }
+
             HttpSession session = request.getSession(true);
 
             session.setAttribute("usuarioLogueado", usuario);

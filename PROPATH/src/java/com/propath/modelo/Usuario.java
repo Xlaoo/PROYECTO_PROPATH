@@ -11,6 +11,7 @@ public class Usuario implements Serializable {
     private String correo;
     private String rol;
     private String estado;
+    private String contrasena;
     private Integer idEstudiante;
     private Integer idEmpresa;
     private String razonSocial;
@@ -82,6 +83,14 @@ public class Usuario implements Serializable {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public String getContrasena() {
+        return contrasena;
+    }
+
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
     }
 
     public Integer getIdEstudiante() {

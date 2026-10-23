@@ -1,8 +1,18 @@
 package com.propath.controlador;
 
+import com.propath.dao.DocumentoEstudianteDAO;
+import com.propath.dao.EmpresaDAO;
+import com.propath.dao.EntrevistaDAO;
+import com.propath.dao.OfertaPracticaDAO;
+import com.propath.dao.PostulacionDAO;
+import com.propath.dao.UsuarioDAO;
+import com.propath.modelo.DocumentoEstudiante;
 import com.propath.modelo.Empresa;
+import com.propath.modelo.Entrevista;
+import com.propath.modelo.OfertaPractica;
+import com.propath.modelo.Postulacion;
+import com.propath.modelo.RespuestaPostulacion;
 import com.propath.modelo.Usuario;
-import com.propath.servicio.BackendCliente;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,35 +24,28 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @WebServlet(name = "OfertaEmpresaServlet", urlPatterns = { "/empresa/oferta", "/OfertaEmpresaServlet" })
 public class OfertaEmpresaServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    private final OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
+    private final EmpresaDAO empresaDAO = new EmpresaDAO();
+    private final PostulacionDAO postulacionDAO = new PostulacionDAO();
+    private final EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
+    private final DocumentoEstudianteDAO documentoDAO = new DocumentoEstudianteDAO();
+    private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+
     private int idEstudiantePostulacion(int idPostulacion, int idEmpresa) {
-        Empresa empresa = BackendCliente.obtenerEmpresaPorId(idEmpresa);
-        if (empresa == null || empresa.getRazonSocial() == null)
+        Postulacion p = postulacionDAO.obtenerPorId(idPostulacion);
+        if (p == null) {
             return 0;
-        boolean pertenece = false;
-        for (com.propath.modelo.Postulacion p : BackendCliente.listarPostulaciones()) {
-            if (p.getId() == idPostulacion && p.getEmpresa() != null
-                    && empresa.getRazonSocial().trim().equalsIgnoreCase(p.getEmpresa().trim())) {
-                pertenece = true;
-                break;
-            }
         }
-        if (!pertenece)
+        OfertaPractica o = ofertaDAO.obtenerPorId(p.getIdOferta());
+        if (o == null || o.getIdEmpresa() != idEmpresa) {
             return 0;
-        String detalle = BackendCliente.obtenerDetallePostulacion(idPostulacion);
-        if (detalle == null)
-            return 0;
-        Matcher estudiante = Pattern.compile("\"estudiante\"\\s*:\\s*\\{[^{}]*\"id\"\\s*:\\s*(\\d+)", Pattern.DOTALL)
-                .matcher(detalle);
-        if (!estudiante.find())
-            return 0;
-        return Integer.parseInt(estudiante.group(1));
+        }
+        return p.getIdEstudiante();
     }
 
     @Override
@@ -58,7 +61,7 @@ public class OfertaEmpresaServlet extends HttpServlet {
             response.sendError(403);
             return;
         }
-        Empresa empresa = BackendCliente.obtenerEmpresaPorId(usuario.getIdEmpresa());
+        Empresa empresa = empresaDAO.obtenerPorId(usuario.getIdEmpresa());
         if (empresa == null || !"APROBADA".equalsIgnoreCase(empresa.getEstado())
                 || !"ACTIVO".equalsIgnoreCase(empresa.getEstadoCuenta())) {
             response.sendError(403);
@@ -79,7 +82,12 @@ public class OfertaEmpresaServlet extends HttpServlet {
         String accion = request.getParameter("accion");
         response.setHeader("Cache-Control", "no-store");
         if ("cv".equals(accion)) {
-            byte[] pdf = BackendCliente.descargarCvEstudiante(idEstudiante, true);
+            DocumentoEstudiante doc = documentoDAO.obtenerCvPorEstudiante(idEstudiante);
+            if (doc == null || doc.getRutaArchivo() == null) {
+                response.sendError(404, "CV no encontrado");
+                return;
+            }
+            byte[] pdf = documentoDAO.descargarCv(doc.getRutaArchivo());
             if (pdf == null || pdf.length < 4 || pdf[0] != '%' || pdf[1] != 'P'
                     || pdf[2] != 'D' || pdf[3] != 'F') {
                 response.sendError(404, "CV PDF no disponible");
@@ -95,15 +103,24 @@ public class OfertaEmpresaServlet extends HttpServlet {
             response.sendError(400);
             return;
         }
-        String respuestas = BackendCliente.obtenerRespuestasPostulacion(idPostulacion, idEstudiante);
-        if (respuestas == null || !respuestas.trim().startsWith("[")) {
-            response.sendError(502, "No se pudieron obtener las respuestas");
-            return;
+        List<RespuestaPostulacion> lista = postulacionDAO.obtenerRespuestas(idPostulacion);
+        StringBuilder jsonRespuestas = new StringBuilder("[");
+        for (int i = 0; i < lista.size(); i++) {
+            if (i > 0) {
+                jsonRespuestas.append(",");
+            }
+            RespuestaPostulacion r = lista.get(i);
+            String preg = r.getPregunta() != null ? r.getPregunta().replace("\"", "\\\"") : "";
+            String resp = r.getRespuesta() != null ? r.getRespuesta().replace("\"", "\\\"") : "";
+            jsonRespuestas.append("{\"numeroPregunta\":").append(r.getNumeroPregunta())
+                    .append(",\"pregunta\":\"").append(preg).append("\"")
+                    .append(",\"respuesta\":\"").append(resp).append("\"}");
         }
-        boolean cvDisponible = BackendCliente.obtenerCvEstudiante(idEstudiante) != null;
+        jsonRespuestas.append("]");
+        boolean cvDisponible = documentoDAO.obtenerCvPorEstudiante(idEstudiante) != null;
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write("{\"cvDisponible\":" + cvDisponible
-                + ",\"respuestas\":" + respuestas + "}");
+                + ",\"respuestas\":" + jsonRespuestas.toString() + "}");
     }
 
     @Override
@@ -125,14 +142,11 @@ public class OfertaEmpresaServlet extends HttpServlet {
         Integer idEmpresa = usuario.getIdEmpresa();
 
         if (idEmpresa == null || idEmpresa == 0) {
-            List<Empresa> empresas = BackendCliente.listarEmpresas();
-            for (Empresa emp : empresas) {
-                if (emp.getCorreo() != null && emp.getCorreo().equalsIgnoreCase(usuario.getCorreo())) {
-                    idEmpresa = emp.getId();
-                    usuario.setIdEmpresa(idEmpresa);
-                    usuario.setRazonSocial(emp.getRazonSocial());
-                    break;
-                }
+            Empresa emp = empresaDAO.obtenerPorCorreo(usuario.getCorreo());
+            if (emp != null) {
+                idEmpresa = emp.getId();
+                usuario.setIdEmpresa(idEmpresa);
+                usuario.setRazonSocial(emp.getRazonSocial());
             }
         }
 
@@ -145,7 +159,7 @@ public class OfertaEmpresaServlet extends HttpServlet {
         String accion = request.getParameter("accion");
 
         if (!"actualizarPerfilEmpresa".equalsIgnoreCase(accion) && !"darDeBaja".equalsIgnoreCase(accion)) {
-            Empresa empresaActual = BackendCliente.obtenerEmpresaPorId(idEmpresa);
+            Empresa empresaActual = empresaDAO.obtenerPorId(idEmpresa);
             String estEmp = empresaActual != null ? empresaActual.getEstado() : "PENDIENTE";
             String estCta = empresaActual != null ? empresaActual.getEstadoCuenta() : usuario.getEstado();
 
@@ -170,8 +184,9 @@ public class OfertaEmpresaServlet extends HttpServlet {
             String idStr = request.getParameter("id");
             int id = 0;
             try {
-                if (idStr != null)
+                if (idStr != null) {
                     id = Integer.parseInt(idStr);
+                }
             } catch (NumberFormatException ignored) {
             }
 
@@ -187,8 +202,9 @@ public class OfertaEmpresaServlet extends HttpServlet {
 
             int vacantes = 1;
             try {
-                if (vacantesStr != null)
+                if (vacantesStr != null) {
                     vacantes = Integer.parseInt(vacantesStr);
+                }
             } catch (NumberFormatException ignored) {
             }
 
@@ -199,29 +215,48 @@ public class OfertaEmpresaServlet extends HttpServlet {
                                 StandardCharsets.UTF_8));
                 return;
             }
-            String error = BackendCliente.actualizarOferta(
-                    id, idEmpresa, titulo.trim(), descripcion, requisitos,
-                    carrera.trim(), modalidad, vacantes, fechaLimite.trim(),
-                    ubicacion, remuneracion, null);
 
-            if (error == null) {
+            OfertaPractica existente = ofertaDAO.obtenerPorId(id);
+            if (existente == null || existente.getIdEmpresa() != idEmpresa) {
+                response.sendError(403, "No estás autorizado para modificar esta oferta.");
+                return;
+            }
+
+            existente.setTitulo(titulo.trim());
+            existente.setDescripcion(descripcion != null ? descripcion.trim() : "");
+            existente.setRequisitos(requisitos != null ? requisitos.trim() : "");
+            existente.setCarrera(carrera.trim());
+            existente.setModalidad(modalidad != null ? modalidad.trim() : "PRESENCIAL");
+            existente.setVacantes(vacantes > 0 ? vacantes : 1);
+            existente.setFechaLimite(fechaLimite.trim());
+            existente.setUbicacion(ubicacion != null ? ubicacion.trim() : "");
+            existente.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
+
+            boolean ok = ofertaDAO.actualizar(existente);
+            if (ok) {
                 response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=actualizada");
             } else {
                 response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode(error, StandardCharsets.UTF_8));
+                        URLEncoder.encode("Error al actualizar la oferta.", StandardCharsets.UTF_8));
             }
             return;
         } else if ("eliminar".equalsIgnoreCase(accion)) {
             String idStr = request.getParameter("id");
             int id = 0;
             try {
-                if (idStr != null)
+                if (idStr != null) {
                     id = Integer.parseInt(idStr);
+                }
             } catch (NumberFormatException ignored) {
             }
 
             if (id > 0) {
-                BackendCliente.eliminarRegistro("ofertas", id);
+                OfertaPractica existente = ofertaDAO.obtenerPorId(id);
+                if (existente == null || existente.getIdEmpresa() != idEmpresa) {
+                    response.sendError(403, "No estás autorizado para eliminar esta oferta.");
+                    return;
+                }
+                ofertaDAO.eliminar(id);
                 response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=eliminada");
                 return;
             }
@@ -235,16 +270,9 @@ public class OfertaEmpresaServlet extends HttpServlet {
             String telefono = request.getParameter("telefono");
             String direccion = request.getParameter("direccion");
             String descripcion = request.getParameter("descripcion");
-            Empresa curEmp = BackendCliente.obtenerEmpresaPorId(idEmpresa);
-            if (curEmp == null) {
-                List<Empresa> emps = BackendCliente.listarEmpresas();
-                for (Empresa emp : emps) {
-                    if (emp.getId() == idEmpresa) {
-                        curEmp = emp;
-                        break;
-                    }
-                }
-            }
+
+            Empresa curEmp = empresaDAO.obtenerPorId(idEmpresa);
+
             if (rucParam == null || !rucParam.trim().matches("\\d{11}")) {
                 response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
                         URLEncoder.encode("El RUC debe contener exactamente 11 dígitos numéricos.",
@@ -253,8 +281,6 @@ public class OfertaEmpresaServlet extends HttpServlet {
             }
 
             String ruc = rucParam.trim();
-            String estado = curEmp != null ? curEmp.getEstado() : null;
-
             String repNombreFinal = (repNombre != null && !repNombre.trim().isEmpty()) ? repNombre.trim()
                     : usuario.getNombre();
             String repApellidosFinal = (repApellidos != null && !repApellidos.trim().isEmpty()) ? repApellidos.trim()
@@ -263,42 +289,33 @@ public class OfertaEmpresaServlet extends HttpServlet {
             String razonFinal = (razonSocial != null && !razonSocial.trim().isEmpty()) ? razonSocial.trim()
                     : (curEmp != null ? curEmp.getRazonSocial() : usuario.getRazonSocial());
 
-            String error = BackendCliente.actualizarEmpresa(idEmpresa,
-                    razonFinal,
-                    ruc,
-                    telefono != null ? telefono.trim() : "",
-                    direccion != null ? direccion.trim() : "",
-                    descripcion != null ? descripcion.trim() : "",
-                    estado,
-                    repNombreFinal,
-                    repApellidosFinal,
-                    correoFinal,
-                    contrasena != null ? contrasena.trim() : "");
-
-            if (error == null) {
-                usuario.setNombre(repNombreFinal);
-                usuario.setApellidos(repApellidosFinal);
-                usuario.setCorreo(correoFinal);
-                usuario.setRazonSocial(razonFinal);
-                session.setAttribute("usuarioLogueado", usuario);
-                session.setAttribute("nombreUsuario", razonFinal);
-                session.setAttribute("correoUsuario", correoFinal);
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=perfil_actualizado");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode(error, StandardCharsets.UTF_8));
+            if (curEmp != null) {
+                curEmp.setRazonSocial(razonFinal);
+                curEmp.setRuc(ruc);
+                curEmp.setTelefono(telefono != null ? telefono.trim() : "");
+                curEmp.setDireccion(direccion != null ? direccion.trim() : "");
+                curEmp.setDescripcion(descripcion != null ? descripcion.trim() : "");
+                empresaDAO.actualizar(curEmp);
             }
+
+            usuario.setNombre(repNombreFinal);
+            usuario.setApellidos(repApellidosFinal);
+            usuario.setCorreo(correoFinal);
+            usuario.setRazonSocial(razonFinal);
+            if (contrasena != null && !contrasena.trim().isEmpty()) {
+                usuario.setContrasena(com.propath.conexion.SeguridadUtil.encriptar(contrasena.trim()));
+            }
+            usuarioDAO.actualizar(usuario);
+
+            session.setAttribute("usuarioLogueado", usuario);
+            session.setAttribute("nombreUsuario", razonFinal);
+            session.setAttribute("correoUsuario", correoFinal);
+            response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=perfil_actualizado");
             return;
         } else if ("darDeBaja".equalsIgnoreCase(accion)) {
-            String error = BackendCliente.actualizarUsuario(usuario.getId(), usuario.getNombre(),
-                    usuario.getApellidos(), usuario.getCorreo(), "", "INACTIVO");
-            if (error == null) {
-                session.invalidate();
-                response.sendRedirect(request.getContextPath() + "/login.jsp?exito=cuenta_desactivada");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode(error, StandardCharsets.UTF_8));
-            }
+            usuarioDAO.actualizarEstado(usuario.getId(), "INACTIVO");
+            session.invalidate();
+            response.sendRedirect(request.getContextPath() + "/login.jsp?exito=cuenta_desactivada");
             return;
         } else if ("cambiarEstadoPostulacion".equalsIgnoreCase(accion)) {
             String idStr = request.getParameter("idPostulacion");
@@ -319,68 +336,38 @@ public class OfertaEmpresaServlet extends HttpServlet {
                 return;
             }
 
-            Empresa empresa = BackendCliente.obtenerEmpresaPorId(idEmpresa);
-
-            if (empresa == null || empresa.getRazonSocial() == null) {
-                response.sendError(403);
+            Postulacion p = postulacionDAO.obtenerPorId(id);
+            if (p == null) {
+                response.sendError(404, "Postulación no encontrada.");
                 return;
             }
 
-            boolean pertenece = false;
-
-            for (com.propath.modelo.Postulacion p : BackendCliente.listarPostulaciones()) {
-                if (p.getId() != id) {
-                    continue;
-                }
-                if (p.getEmpresa() == null
-                        || !empresa.getRazonSocial().trim()
-                                .equalsIgnoreCase(p.getEmpresa().trim())) {
-                    response.sendError(403, "La postulación no pertenece a tu empresa.");
-                    return;
-                }
-
-                pertenece = true;
-                String estadoActual = p.getEstado();
-
-                if ("NO_SELECCIONADO".equalsIgnoreCase(estadoActual)) {
-                    response.sendError(409, "Esta postulación ya fue rechazada.");
-                    return;
-                }
-
-                if ("SELECCIONADO".equalsIgnoreCase(estadoActual)) {
-                    if (!"NO_SELECCIONADO".equalsIgnoreCase(estado)) {
-                        response.sendError(409, "No puedes seleccionar nuevamente al postulante.");
-                        return;
-                    }
-
-                    String entrevistas = BackendCliente.consultarEntrevistas(idEmpresa);
-
-                    if (entrevistas == null || !entrevistas.trim().startsWith("[")) {
-                        response.sendError(502, "No se pudo verificar si existen entrevistas.");
-                        return;
-                    }
-
-                    Matcher matcher = Pattern.compile("\\{[^{}]*\\}").matcher(entrevistas);
-
-                    while (matcher.find()) {
-                        String objeto = matcher.group();
-
-                        Matcher postulacionEntrevista = Pattern.compile(
-                                "\"idPostulacion\"\\s*:\\s*\"?" + id + "\"?(?=\\s*[,}])").matcher(objeto);
-
-                        if (postulacionEntrevista.find()) {
-                            response.sendError(409,
-                                    "No puedes rechazar al postulante porque ya tiene una entrevista registrada.");
-                            return;
-                        }
-                    }
-                }
-            }
-
-            if (!pertenece) {
+            OfertaPractica of = ofertaDAO.obtenerPorId(p.getIdOferta());
+            if (of == null || of.getIdEmpresa() != idEmpresa) {
                 response.sendError(403, "La postulación no pertenece a tu empresa.");
                 return;
             }
+
+            String estadoActual = p.getEstado();
+
+            if ("NO_SELECCIONADO".equalsIgnoreCase(estadoActual)) {
+                response.sendError(409, "Esta postulación ya fue rechazada.");
+                return;
+            }
+
+            if ("SELECCIONADO".equalsIgnoreCase(estadoActual)) {
+                if (!"NO_SELECCIONADO".equalsIgnoreCase(estado)) {
+                    response.sendError(409, "No puedes seleccionar nuevamente al postulante.");
+                    return;
+                }
+
+                List<Entrevista> entrevistas = entrevistaDAO.listarPorPostulacion(id);
+                if (entrevistas != null && !entrevistas.isEmpty()) {
+                    response.sendError(409, "No puedes rechazar al postulante porque ya tiene una entrevista registrada.");
+                    return;
+                }
+            }
+
             String motivoRechazo = request.getParameter("motivoRechazo");
 
             if ("NO_SELECCIONADO".equalsIgnoreCase(estado)) {
@@ -392,8 +379,7 @@ public class OfertaEmpresaServlet extends HttpServlet {
                 }
             }
 
-            boolean actualizado = BackendCliente.actualizarEstadoPostulacion(
-                    id, estado, motivoRechazo);
+            boolean actualizado = postulacionDAO.evaluar(id, estado, motivoRechazo);
 
             if (actualizado) {
                 response.sendRedirect(request.getContextPath()
@@ -418,8 +404,9 @@ public class OfertaEmpresaServlet extends HttpServlet {
 
             int vacantes = 1;
             try {
-                if (vacantesStr != null)
+                if (vacantesStr != null) {
                     vacantes = Integer.parseInt(vacantesStr);
+                }
             } catch (NumberFormatException ignored) {
             }
 
@@ -430,20 +417,29 @@ public class OfertaEmpresaServlet extends HttpServlet {
                 return;
             }
 
-            String error = BackendCliente.publicarOferta(
-                    idEmpresa, titulo.trim(), descripcion, requisitos, carrera.trim(),
-                    modalidad, vacantes, fechaLimite.trim(), ubicacion, remuneracion);
+            OfertaPractica nuevaOferta = new OfertaPractica();
+            nuevaOferta.setIdEmpresa(idEmpresa);
+            nuevaOferta.setTitulo(titulo.trim());
+            nuevaOferta.setDescripcion(descripcion != null ? descripcion.trim() : "");
+            nuevaOferta.setRequisitos(requisitos != null ? requisitos.trim() : "");
+            nuevaOferta.setCarrera(carrera.trim());
+            nuevaOferta.setModalidad(modalidad != null ? modalidad.trim() : "PRESENCIAL");
+            nuevaOferta.setVacantes(vacantes > 0 ? vacantes : 1);
+            nuevaOferta.setFechaLimite(fechaLimite.trim());
+            nuevaOferta.setUbicacion(ubicacion != null ? ubicacion.trim() : "");
+            nuevaOferta.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
+            nuevaOferta.setEstado("ACTIVA");
 
-            if (error == null) {
+            int idGenerado = ofertaDAO.crear(nuevaOferta);
+
+            if (idGenerado > 0) {
                 response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=publicada");
                 return;
             } else {
                 response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode(error, StandardCharsets.UTF_8));
+                        URLEncoder.encode("No se pudo publicar la oferta.", StandardCharsets.UTF_8));
                 return;
             }
         }
-
-        response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp");
     }
 }

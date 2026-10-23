@@ -1,6 +1,6 @@
 <%! private String entrevistaCampo(String objeto, String campo) { java.util.regex.Matcher m=java.util.regex.Pattern
     .compile(java.util.regex.Pattern.quote("\"" + campo + "\"")
-            + " \\s*:\\s*(?:\"([^\"]*)\"|([0-9]+))") .matcher(objeto); return m.find() ? (m.group(1) !=null ?
+           + "\\s*:\\s*(?:\"([^\"]*)\"|([0-9]+))") .matcher(objeto); return m.find() ? (m.group(1) !=null ?
     m.group(1) : m.group(2)) : "" ; } private java.util.List<String> entrevistasJson(String json) {
     java.util.List<String> lista = new java.util.ArrayList<>();
             if (json == null) return lista;
@@ -825,111 +825,111 @@
                                                                                                                                                                     <i
                                                                                                                                                                         class="bi bi-trash me-1"></i>Eliminar
                                                                                                                                                                 </button>
-                                                                                                                                                                </form>
-                                                                                                                                                                <% }
+                                                                                                                                                            </form>
+                                                                                                                                                            <% }
+                                                                                                                                                                %>
+                                                                                                                                                                <% if
+                                                                                                                                                                    ("SELECCIONADO".equalsIgnoreCase(post.getEstado()))
+                                                                                                                                                                    {
+                                                                                                                                                                    boolean
+                                                                                                                                                                    tieneEntrevista=false;
+                                                                                                                                                                    for
+                                                                                                                                                                    (String
+                                                                                                                                                                    item
+                                                                                                                                                                    :
+                                                                                                                                                                    entrevistasEstudiante)
+                                                                                                                                                                    {
+                                                                                                                                                                    if
+                                                                                                                                                                    (!String.valueOf(post.getId()).equals(entrevistaCampo(item, "idPostulacion"
+                                                                                                                                                                    )))
+                                                                                                                                                                    continue;
+                                                                                                                                                                    tieneEntrevista=true;
+                                                                                                                                                                    String
+                                                                                                                                                                    fechaEnt=entrevistaCampo(item, "fecha"
+                                                                                                                                                                    );
+                                                                                                                                                                    String
+                                                                                                                                                                    horaEnt=entrevistaCampo(item, "hora"
+                                                                                                                                                                    );
+                                                                                                                                                                    String
+                                                                                                                                                                    modalidadEnt=entrevistaCampo(item, "modalidad"
+                                                                                                                                                                    );
+                                                                                                                                                                    String
+                                                                                                                                                                    lugarEnt=entrevistaCampo(item, "enlaceLugar"
+                                                                                                                                                                    );
+                                                                                                                                                                    String
+                                                                                                                                                                    estadoEnt=entrevistaCampo(item, "estado"
+                                                                                                                                                                    );
                                                                                                                                                                     %>
-                                                                                                                                                                    <% if
-                                                                                                                                                                        ("SELECCIONADO".equalsIgnoreCase(post.getEstado()))
-                                                                                                                                                                        {
-                                                                                                                                                                        boolean
-                                                                                                                                                                        tieneEntrevista=false;
-                                                                                                                                                                        for
-                                                                                                                                                                        (String
-                                                                                                                                                                        item
-                                                                                                                                                                        :
-                                                                                                                                                                        entrevistasEstudiante)
-                                                                                                                                                                        {
-                                                                                                                                                                        if
-                                                                                                                                                                        (!String.valueOf(post.getId()).equals(entrevistaCampo(item, "idPostulacion"
-                                                                                                                                                                        )))
-                                                                                                                                                                        continue;
-                                                                                                                                                                        tieneEntrevista=true;
-                                                                                                                                                                        String
-                                                                                                                                                                        fechaEnt=entrevistaCampo(item, "fecha"
-                                                                                                                                                                        );
-                                                                                                                                                                        String
-                                                                                                                                                                        horaEnt=entrevistaCampo(item, "hora"
-                                                                                                                                                                        );
-                                                                                                                                                                        String
-                                                                                                                                                                        modalidadEnt=entrevistaCampo(item, "modalidad"
-                                                                                                                                                                        );
-                                                                                                                                                                        String
-                                                                                                                                                                        lugarEnt=entrevistaCampo(item, "enlaceLugar"
-                                                                                                                                                                        );
-                                                                                                                                                                        String
-                                                                                                                                                                        estadoEnt=entrevistaCampo(item, "estado"
-                                                                                                                                                                        );
-                                                                                                                                                                        %>
+                                                                                                                                                                    <div
+                                                                                                                                                                        class="border rounded-3 p-3 mt-2 bg-primary-subtle w-100">
                                                                                                                                                                         <div
-                                                                                                                                                                            class="border rounded-3 p-3 mt-2 bg-primary-subtle w-100">
-                                                                                                                                                                            <div
-                                                                                                                                                                                class="fw-bold small mb-2">
-                                                                                                                                                                                <i
-                                                                                                                                                                                    class="bi bi-calendar-check me-1"></i>
-                                                                                                                                                                                Entrevista
-                                                                                                                                                                                <%= escaparHtml(estadoEnt)
-                                                                                                                                                                                    %>
-                                                                                                                                                                            </div>
-                                                                                                                                                                            <div
-                                                                                                                                                                                class="small">
-                                                                                                                                                                                Fecha:
-                                                                                                                                                                                <%= escaparHtml(fechaEnt)
-                                                                                                                                                                                    %>
-                                                                                                                                                                                    ·
-                                                                                                                                                                                    Hora:
-                                                                                                                                                                                    <%= escaparHtml(horaEnt)
-                                                                                                                                                                                        %>
-                                                                                                                                                                            </div>
-                                                                                                                                                                            <div
-                                                                                                                                                                                class="small">
-                                                                                                                                                                                Modalidad:
-                                                                                                                                                                                <%= escaparHtml(modalidadEnt)
-                                                                                                                                                                                    %>
-                                                                                                                                                                            </div>
-                                                                                                                                                                            <% if
-                                                                                                                                                                                ("VIRTUAL".equalsIgnoreCase(modalidadEnt)
-                                                                                                                                                                                &&
-                                                                                                                                                                                lugarEnt.startsWith("https://"))
-                                                                                                                                                                                {
+                                                                                                                                                                            class="fw-bold small mb-2">
+                                                                                                                                                                            <i
+                                                                                                                                                                                class="bi bi-calendar-check me-1"></i>
+                                                                                                                                                                            Entrevista
+                                                                                                                                                                            <%= escaparHtml(estadoEnt)
                                                                                                                                                                                 %>
-                                                                                                                                                                                <a class="btn btn-sm btn-primary rounded-pill mt-2"
-                                                                                                                                                                                    href="<%= escaparHtml(lugarEnt) %>"
-                                                                                                                                                                                    target="_blank"
-                                                                                                                                                                                    rel="noopener noreferrer"><i
-                                                                                                                                                                                        class="bi bi-camera-video me-1"></i>Entrar
-                                                                                                                                                                                    a
-                                                                                                                                                                                    la
-                                                                                                                                                                                    entrevista</a>
-                                                                                                                                                                                <% } else
-                                                                                                                                                                                    {
-                                                                                                                                                                                    %>
-                                                                                                                                                                                    <div
-                                                                                                                                                                                        class="small">
-                                                                                                                                                                                        Lugar:
-                                                                                                                                                                                        <%= escaparHtml(lugarEnt)
-                                                                                                                                                                                            %>
-                                                                                                                                                                                    </div>
-                                                                                                                                                                                    <% }
-                                                                                                                                                                                        %>
                                                                                                                                                                         </div>
-                                                                                                                                                                        <% } if
-                                                                                                                                                                            (!tieneEntrevista)
+                                                                                                                                                                        <div
+                                                                                                                                                                            class="small">
+                                                                                                                                                                            Fecha:
+                                                                                                                                                                            <%= escaparHtml(fechaEnt)
+                                                                                                                                                                                %>
+                                                                                                                                                                                ·
+                                                                                                                                                                                Hora:
+                                                                                                                                                                                <%= escaparHtml(horaEnt)
+                                                                                                                                                                                    %>
+                                                                                                                                                                        </div>
+                                                                                                                                                                        <div
+                                                                                                                                                                            class="small">
+                                                                                                                                                                            Modalidad:
+                                                                                                                                                                            <%= escaparHtml(modalidadEnt)
+                                                                                                                                                                                %>
+                                                                                                                                                                        </div>
+                                                                                                                                                                        <% if
+                                                                                                                                                                            ("VIRTUAL".equalsIgnoreCase(modalidadEnt)
+                                                                                                                                                                            &&
+                                                                                                                                                                            lugarEnt.startsWith("https://"))
                                                                                                                                                                             {
                                                                                                                                                                             %>
-                                                                                                                                                                            <div
-                                                                                                                                                                                class="small text-primary mt-2">
-                                                                                                                                                                                Seleccionado.
-                                                                                                                                                                                La
-                                                                                                                                                                                empresa
-                                                                                                                                                                                aún
-                                                                                                                                                                                no
-                                                                                                                                                                                ha
-                                                                                                                                                                                programado
+                                                                                                                                                                            <a class="btn btn-sm btn-primary rounded-pill mt-2"
+                                                                                                                                                                                href="<%= escaparHtml(lugarEnt) %>"
+                                                                                                                                                                                target="_blank"
+                                                                                                                                                                                rel="noopener noreferrer"><i
+                                                                                                                                                                                    class="bi bi-camera-video me-1"></i>Entrar
+                                                                                                                                                                                a
                                                                                                                                                                                 la
-                                                                                                                                                                                entrevista.
-                                                                                                                                                                            </div>
-                                                                                                                                                                            <% } }
+                                                                                                                                                                                entrevista</a>
+                                                                                                                                                                            <% } else
+                                                                                                                                                                                {
                                                                                                                                                                                 %>
+                                                                                                                                                                                <div
+                                                                                                                                                                                    class="small">
+                                                                                                                                                                                    Lugar:
+                                                                                                                                                                                    <%= escaparHtml(lugarEnt)
+                                                                                                                                                                                        %>
+                                                                                                                                                                                </div>
+                                                                                                                                                                                <% }
+                                                                                                                                                                                    %>
+                                                                                                                                                                    </div>
+                                                                                                                                                                    <% } if
+                                                                                                                                                                        (!tieneEntrevista)
+                                                                                                                                                                        {
+                                                                                                                                                                        %>
+                                                                                                                                                                        <div
+                                                                                                                                                                            class="small text-primary mt-2">
+                                                                                                                                                                            Seleccionado.
+                                                                                                                                                                            La
+                                                                                                                                                                            empresa
+                                                                                                                                                                            aún
+                                                                                                                                                                            no
+                                                                                                                                                                            ha
+                                                                                                                                                                            programado
+                                                                                                                                                                            la
+                                                                                                                                                                            entrevista.
+                                                                                                                                                                        </div>
+                                                                                                                                                                        <% } }
+                                                                                                                                                                            %>
 
                                                                                                                                     </div>
                                                                                                                                 </div>

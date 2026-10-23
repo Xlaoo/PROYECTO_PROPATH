@@ -1,3 +1,11 @@
 /PROPATH/nbproject/private/
 /PROPATH/build/
 /PROPATH/dist/
+/storage/
+/PROPATH/storage/
+*.pdf
+*.sql
+*.zip
+.vscode/
+*.class
+

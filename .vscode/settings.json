@@ -1,6 +1,6 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
-    "java.import.maven.enabled": true,
+    "java.import.maven.enabled": false,
     "java.project.sourcePaths": [
         "PROPATH/src/java"
     ],
@@ -13,7 +13,8 @@
     ],
     "java.project.outputPath": "PROPATH/build/web/WEB-INF/classes",
     "java.project.referencedLibraries": [
-        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/*.jar"
+        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/*.jar",
+        "PROPATH/web/WEB-INF/lib/*.jar"
     ],
     "java.compile.nullAnalysis.mode": "disabled"
 }

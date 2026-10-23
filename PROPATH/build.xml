@@ -2,4 +2,31 @@
 <project name="PROPATH" default="default" basedir=".">
     <description>Builds, tests, and runs the project PROPATH.</description>
     <import file="nbproject/build-impl.xml"/>
+    <target name="probar-conexion" depends="compile">
+        <java classname="com.propath.conexion.PruebaConexionBD" failonerror="true" fork="true">
+            <classpath>
+                <pathelement path="${build.classes.dir}"/>
+                <pathelement path="${file.reference.mysql-connector-j-8.3.0.jar}"/>
+                <pathelement path="${file.reference.jbcrypt-0.4.jar}"/>
+            </classpath>
+        </java>
+    </target>
+    <target name="probar-crud" depends="compile">
+        <java classname="com.propath.conexion.PruebaCrudJDBC" failonerror="true" fork="true">
+            <classpath>
+                <pathelement path="${build.classes.dir}"/>
+                <pathelement path="${file.reference.mysql-connector-j-8.3.0.jar}"/>
+                <pathelement path="${file.reference.jbcrypt-0.4.jar}"/>
+            </classpath>
+        </java>
+    </target>
+    <target name="crear-admin" depends="compile">
+        <java classname="com.propath.util.CrearAdmin" failonerror="true" fork="true">
+            <classpath>
+                <pathelement path="${build.classes.dir}"/>
+                <pathelement path="${file.reference.mysql-connector-j-8.3.0.jar}"/>
+                <pathelement path="${file.reference.jbcrypt-0.4.jar}"/>
+            </classpath>
+        </java>
+    </target>
 </project>

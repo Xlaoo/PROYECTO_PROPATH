@@ -9,13 +9,13 @@ public class DocumentoEstudiante implements Serializable {
     private int idEstudiante;
     private String tipoDocumento;
     private String nombreArchivo;
+    private String archivoRuta;
     private long tamanioBytes;
     private String contentType;
     private String fechaSubida;
 
     public DocumentoEstudiante() {
     }
-
     public DocumentoEstudiante(int id, int idEstudiante, String tipoDocumento, String nombreArchivo, long tamanioBytes, String contentType, String fechaSubida) {
         this.id = id;
         this.idEstudiante = idEstudiante;
@@ -56,6 +56,22 @@ public class DocumentoEstudiante implements Serializable {
 
     public void setNombreArchivo(String nombreArchivo) {
         this.nombreArchivo = nombreArchivo;
+    }
+
+    public String getArchivoRuta() {
+        return archivoRuta;
+    }
+
+    public void setArchivoRuta(String archivoRuta) {
+        this.archivoRuta = archivoRuta;
+    }
+
+    public String getRutaArchivo() {
+        return archivoRuta;
+    }
+
+    public void setRutaArchivo(String rutaArchivo) {
+        this.archivoRuta = rutaArchivo;
     }
 
     public long getTamanioBytes() {

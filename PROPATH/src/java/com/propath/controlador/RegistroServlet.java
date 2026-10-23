@@ -1,6 +1,10 @@
 package com.propath.controlador;
 
-import com.propath.servicio.BackendCliente;
+import com.propath.dao.EmpresaDAO;
+import com.propath.dao.EstudianteDAO;
+import com.propath.dao.UsuarioDAO;
+import com.propath.modelo.Empresa;
+import com.propath.modelo.Estudiante;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -64,21 +68,51 @@ public class RegistroServlet extends HttpServlet {
                 return;
             }
 
-            String error = BackendCliente.registrarEmpresa(
-                    nombre.trim(),
-                    apellido.trim(),
-                    razonSocial.trim(),
-                    ruc.trim(),
-                    correo.trim(),
-                    contrasena,
-                    telefono != null ? telefono.trim() : "",
-                    direccion != null ? direccion.trim() : "",
-                    descripcion != null ? descripcion.trim() : "");
+            UsuarioDAO usuarioDAO = new UsuarioDAO();
+            EmpresaDAO empresaDAO = new EmpresaDAO();
 
-            if (error == null) {
+            if (usuarioDAO.obtenerPorCorreo(correo.trim()) != null) {
+                request.setAttribute("error", "El correo electrónico ya se encuentra registrado.");
+                request.setAttribute("nombre", nombre);
+                request.setAttribute("apellido", apellido);
+                request.setAttribute("razonSocial", razonSocial);
+                request.setAttribute("ruc", ruc);
+                request.setAttribute("correo", correo);
+                request.setAttribute("telefono", telefono);
+                request.setAttribute("direccion", direccion);
+                request.setAttribute("descripcion", descripcion);
+                request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
+                return;
+            }
+
+            if (empresaDAO.obtenerPorRuc(ruc.trim()) != null) {
+                request.setAttribute("error", "El RUC ya se encuentra registrado por otra empresa.");
+                request.setAttribute("nombre", nombre);
+                request.setAttribute("apellido", apellido);
+                request.setAttribute("razonSocial", razonSocial);
+                request.setAttribute("ruc", ruc);
+                request.setAttribute("correo", correo);
+                request.setAttribute("telefono", telefono);
+                request.setAttribute("direccion", direccion);
+                request.setAttribute("descripcion", descripcion);
+                request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
+                return;
+            }
+
+            Empresa emp = new Empresa();
+            emp.setRazonSocial(razonSocial.trim());
+            emp.setRuc(ruc.trim());
+            emp.setTelefono(telefono != null ? telefono.trim() : "");
+            emp.setDireccion(direccion != null ? direccion.trim() : "");
+            emp.setDescripcion(descripcion != null ? descripcion.trim() : "");
+            emp.setEstado("PENDIENTE");
+
+            int idGenerado = empresaDAO.registrarConUsuario(emp, correo.trim(), contrasena, nombre.trim(), apellido.trim());
+
+            if (idGenerado > 0) {
                 response.sendRedirect(request.getContextPath() + "/login.jsp?registro=exito");
             } else {
-                request.setAttribute("error", error);
+                request.setAttribute("error", "Ocurrió un error al registrar la empresa. Por favor intenta nuevamente.");
                 request.setAttribute("nombre", nombre);
                 request.setAttribute("apellido", apellido);
                 request.setAttribute("razonSocial", razonSocial);
@@ -128,13 +162,37 @@ public class RegistroServlet extends HttpServlet {
                 return;
             }
 
-            String error = BackendCliente.registrarEstudiante(nombre.trim(), apellidos.trim(), correo.trim(),
-                    contrasena, universidad.trim(), carrera.trim(), ciclo, telefono != null ? telefono.trim() : "");
+            UsuarioDAO usuarioDAO = new UsuarioDAO();
+            EstudianteDAO estudianteDAO = new EstudianteDAO();
 
-            if (error == null) {
+            if (usuarioDAO.obtenerPorCorreo(correo.trim()) != null) {
+                request.setAttribute("error", "El correo electrónico ya se encuentra registrado.");
+                request.setAttribute("nombre", nombre);
+                request.setAttribute("apellidos", apellidos);
+                request.setAttribute("correo", correo);
+                request.setAttribute("universidad", universidad);
+                request.setAttribute("carrera", carrera);
+                request.setAttribute("ciclo", ciclo);
+                request.setAttribute("telefono", telefono);
+                request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
+                return;
+            }
+
+            Estudiante est = new Estudiante();
+            est.setNombre(nombre.trim());
+            est.setApellido(apellidos.trim());
+            est.setUniversidad(universidad.trim());
+            est.setCarrera(carrera.trim());
+            est.setCiclo(ciclo);
+            est.setTelefono(telefono != null ? telefono.trim() : "");
+            est.setCv("");
+
+            int idGenerado = estudianteDAO.registrarConUsuario(est, correo.trim(), contrasena);
+
+            if (idGenerado > 0) {
                 response.sendRedirect(request.getContextPath() + "/login.jsp?registro=exito");
             } else {
-                request.setAttribute("error", error);
+                request.setAttribute("error", "Ocurrió un error al registrar el estudiante. Por favor intenta nuevamente.");
                 request.setAttribute("nombre", nombre);
                 request.setAttribute("apellidos", apellidos);
                 request.setAttribute("correo", correo);

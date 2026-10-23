@@ -6,6 +6,7 @@ public class OfertaPractica implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
+    private int idEmpresa;
     private String titulo;
     private String empresa;
     private String carrera;
@@ -38,6 +39,14 @@ private String remuneracion;
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int getIdEmpresa() {
+        return idEmpresa;
+    }
+
+    public void setIdEmpresa(int idEmpresa) {
+        this.idEmpresa = idEmpresa;
     }
 
     public String getTitulo() {

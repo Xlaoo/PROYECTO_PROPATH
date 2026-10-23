@@ -1,8 +1,8 @@
 package com.propath.controlador;
 
+import com.propath.dao.DocumentoEstudianteDAO;
 import com.propath.modelo.DocumentoEstudiante;
 import com.propath.modelo.Usuario;
-import com.propath.servicio.BackendCliente;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -53,6 +53,21 @@ public class EstudianteDocumentoServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {
                 }
             }
+        } else if ("EMPRESA".equalsIgnoreCase(usuario.getRol())) {
+            String idPostParam = request.getParameter("idPostulacion");
+            if (idPostParam != null && usuario.getIdEmpresa() != null) {
+                try {
+                    int idPost = Integer.parseInt(idPostParam.trim());
+                    com.propath.modelo.Postulacion post = new com.propath.dao.PostulacionDAO().obtenerPorId(idPost);
+                    if (post != null) {
+                        com.propath.modelo.OfertaPractica of = new com.propath.dao.OfertaPracticaDAO().obtenerPorId(post.getIdOferta());
+                        if (of != null && of.getIdEmpresa() == usuario.getIdEmpresa().intValue()) {
+                            idEstudiante = post.getIdEstudiante();
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
         }
 
         if (idEstudiante <= 0) {
@@ -60,17 +75,18 @@ public class EstudianteDocumentoServlet extends HttpServlet {
             return;
         }
 
+        DocumentoEstudianteDAO docDAO = new DocumentoEstudianteDAO();
         String accion = request.getParameter("accion");
         if ("ver".equalsIgnoreCase(accion) || "descargar".equalsIgnoreCase(accion)) {
             boolean inline = "ver".equalsIgnoreCase(accion);
 
-            DocumentoEstudiante doc = BackendCliente.obtenerCvEstudiante(idEstudiante);
+            DocumentoEstudiante doc = docDAO.obtenerCvEstudiante(idEstudiante);
             if (doc == null) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Currículum Vitae no encontrado.");
                 return;
             }
 
-            byte[] pdfBytes = BackendCliente.descargarCvEstudiante(idEstudiante, inline);
+            byte[] pdfBytes = docDAO.descargarCv(idEstudiante);
             if (pdfBytes == null || pdfBytes.length == 0) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "No se pudo recuperar el archivo PDF.");
                 return;
@@ -125,6 +141,7 @@ public class EstudianteDocumentoServlet extends HttpServlet {
         }
 
         String accion = request.getParameter("accion");
+        DocumentoEstudianteDAO docDAO = new DocumentoEstudianteDAO();
 
         if ("subir".equalsIgnoreCase(accion) || "reemplazar".equalsIgnoreCase(accion)) {
             Part filePart = null;
@@ -169,7 +186,7 @@ public class EstudianteDocumentoServlet extends HttpServlet {
             }
 
             String nombreLimpio = Paths.get(submittedFileName).getFileName().toString();
-            String error = BackendCliente.guardarCvEstudiante(idEstudiante, nombreLimpio, fileBytes);
+            String error = docDAO.guardarCv(idEstudiante, nombreLimpio, fileBytes);
 
             if (error == null) {
                 String mensajeExito = "reemplazar".equalsIgnoreCase(accion) ? "cv_reemplazado" : "cv_guardado";
@@ -180,7 +197,7 @@ public class EstudianteDocumentoServlet extends HttpServlet {
             }
             return;
         } else if ("eliminar".equalsIgnoreCase(accion)) {
-            boolean ok = BackendCliente.eliminarCvEstudiante(idEstudiante);
+            boolean ok = docDAO.eliminarCv(idEstudiante);
             if (ok) {
                 response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?exito=cv_eliminado");
             } else {
