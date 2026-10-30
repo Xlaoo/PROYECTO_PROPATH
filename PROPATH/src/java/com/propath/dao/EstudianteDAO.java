@@ -285,6 +285,71 @@ public class EstudianteDAO {
         }
     }
 
+    public boolean actualizarConEstado(Estudiante estudiante, String nuevoEstado) {
+        if (estudiante == null || estudiante.getId() <= 0) {
+            return false;
+        }
+
+        String sqlEst = "UPDATE estudiantes SET nombres = ?, apellidos = ?, universidad = ?, carrera = ?, ciclo = ?, telefono = ? WHERE id_estudiante = ?";
+        String sqlUser = "UPDATE usuarios SET nombre = ?, apellidos = ?, estado = ? WHERE id_usuario = ?";
+
+        Connection conn = null;
+        try {
+            conn = ConexionBD.getConexion();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlEst)) {
+                ps.setString(1, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
+                ps.setString(2, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
+                ps.setString(3, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
+                ps.setString(4, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
+                ps.setInt(5, estudiante.getCiclo());
+                ps.setString(6, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
+                ps.setInt(7, estudiante.getId());
+                ps.executeUpdate();
+            }
+
+            if (estudiante.getIdUsuario() > 0) {
+                try (PreparedStatement psUser = conn.prepareStatement(sqlUser)) {
+                    psUser.setString(1, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
+                    psUser.setString(2, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
+                    psUser.setString(3, nuevoEstado != null && !nuevoEstado.trim().isEmpty() ? nuevoEstado.trim().toUpperCase() : "ACTIVO");
+                    psUser.setInt(4, estudiante.getIdUsuario());
+                    psUser.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    public int contarPostulaciones(int idEstudiante) {
+        String sql = "SELECT COUNT(*) FROM postulaciones WHERE id_estudiante = ?";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idEstudiante);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     public boolean darDeBaja(int idEstudiante) {
         if (idEstudiante <= 0) {
             return false;
@@ -338,6 +403,11 @@ public class EstudianteDAO {
         try {
             conn = ConexionBD.getConexion();
             conn.setAutoCommit(false);
+
+            try (PreparedStatement psDoc = conn.prepareStatement("DELETE FROM documentos_estudiante WHERE id_estudiante = ?")) {
+                psDoc.setInt(1, idEstudiante);
+                psDoc.executeUpdate();
+            }
 
             try (PreparedStatement ps = conn.prepareStatement("DELETE FROM estudiantes WHERE id_estudiante = ?")) {
                 ps.setInt(1, idEstudiante);

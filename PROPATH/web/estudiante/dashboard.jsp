@@ -48,6 +48,11 @@
                                                         int idEstudiante = usuario.getIdEstudiante() != null ?
                                                         usuario.getIdEstudiante()
                                                         : (miEstudiante != null ? miEstudiante.getId() : 0);
+
+                                                        boolean estActivo = "ACTIVO".equalsIgnoreCase(usuario.getEstado())
+                                                                && (miEstudiante == null || "ACTIVO".equalsIgnoreCase(miEstudiante.getEstado()) || "Activo".equalsIgnoreCase(miEstudiante.getEstado()));
+                                                        boolean esActivo = estActivo;
+
                                                         DocumentoEstudiante miCv = null;
                                                         if (idEstudiante > 0) {
                                                         miCv = BackendCliente.obtenerCvEstudiante(idEstudiante);
@@ -58,17 +63,9 @@
                                                             List<Postulacion> todasPostulaciones =
                                                                 BackendCliente.listarPostulaciones();
 
-                                                                List<Postulacion> misPostulaciones = new ArrayList<>();
-                                                                        for (Postulacion p : todasPostulaciones) {
-                                                                        if (p.getEstudiante() != null &&
-                                                                        usuario.getNombre() != null &&
-                                                                        (p.getEstudiante().toLowerCase().contains(usuario.getNombre().toLowerCase())
-                                                                        ||
-                                                                        usuario.getNombre().toLowerCase().contains(p.getEstudiante().toLowerCase())))
-                                                                        {
-                                                                        misPostulaciones.add(p);
-                                                                        }
-                                                                        }
+                                                                List<Postulacion> misPostulaciones = (idEstudiante > 0)
+                                                                        ? BackendCliente.listarPostulacionesPorEstudiante(idEstudiante)
+                                                                        : new ArrayList<>();
 
                                                                         String entrevistasEstudianteJson = "[]";
                                                                         try { if (idEstudiante > 0)
@@ -408,24 +405,13 @@
                                                                                                                                 :
                                                                                                                                 todasOfertas)
                                                                                                                                 {
-                                                                                                                                boolean
-                                                                                                                                yaPostulado=false;
-                                                                                                                                for
-                                                                                                                                (Postulacion
-                                                                                                                                p
-                                                                                                                                :
-                                                                                                                                misPostulaciones)
-                                                                                                                                {
-                                                                                                                                if
-                                                                                                                                (p.getOferta()
-                                                                                                                                !=null
-                                                                                                                                &&
-                                                                                                                                p.getOferta().equalsIgnoreCase(ofr.getTitulo()))
-                                                                                                                                {
-                                                                                                                                yaPostulado=true;
-                                                                                                                                break;
-                                                                                                                                }
-                                                                                                                                }
+                                                                                                                                boolean yaPostulado = false;
+for (Postulacion p : misPostulaciones) {
+    if (p.getIdOferta() == ofr.getId()) {
+        yaPostulado = true;
+        break;
+    }
+}
                                                                                                                                 %>
                                                                                                                                 <div
                                                                                                                                     class="p-3 border rounded-3 bg-light bg-opacity-50">
@@ -477,7 +463,27 @@
                                                                                                                                                     <%= ofr.getFechaPublicacion()
                                                                                                                                                         %>
                                                                                                                                         </span>
-                                                                                                                                        <% if
+<div class="d-flex align-items-center gap-2">
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+            title="Ver detalle de la convocatoria"
+            data-id="<%= ofr.getId() %>"
+            data-titulo="<%= ofr.getTitulo() != null ? escaparHtml(ofr.getTitulo()) : "" %>"
+            data-carrera="<%= ofr.getCarrera() != null ? escaparHtml(ofr.getCarrera()) : "" %>"
+            data-empresa="<%= ofr.getEmpresa() != null ? escaparHtml(ofr.getEmpresa()) : "" %>"
+            data-modalidad="<%= ofr.getModalidad() != null ? escaparHtml(ofr.getModalidad()) : "" %>"
+            data-vacantes="<%= ofr.getVacantes() %>"
+            data-publicacion="<%= ofr.getFechaPublicacion() != null ? ofr.getFechaPublicacion() : "" %>"
+            data-fecha="<%= ofr.getFechaLimite() != null ? ofr.getFechaLimite().trim() : "" %>"
+            data-ubicacion="<%= ofr.getUbicacion() != null ? escaparHtml(ofr.getUbicacion()) : "" %>"
+            data-descripcion="<%= escaparHtml(ofr.getDescripcion()) %>"
+            data-estado="<%= ofr.getEstado() != null ? ofr.getEstado() : "" %>"
+            data-requisitos="<%= ofr.getRequisitos() != null ? escaparHtml(ofr.getRequisitos()) : "" %>"
+            data-remuneracion="<%= ofr.getRemuneracion() != null ? escaparHtml(ofr.getRemuneracion()) : "" %>"
+            onclick="verDetalleOfertaEstudiante(this)">
+        <i class="bi bi-eye me-1"></i>Ver detalle
+    </button>
+<% if
                                                                                                                                             (yaPostulado)
                                                                                                                                             {
                                                                                                                                             %>
@@ -488,7 +494,11 @@
                                                                                                                                                 Ya
                                                                                                                                                 postulado
                                                                                                                                             </span>
-                                                                                                                                            <% } else
+                                                                                                                                            <% } else if (!estActivo) { %>
+    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill py-2 px-3" title="Tu cuenta se encuentra inactiva">
+        <i class="bi bi-slash-circle me-1"></i>Cuenta inactiva
+    </span>
+<% } else
                                                                                                                                                 if
                                                                                                                                                 (!"ACTIVA".equalsIgnoreCase(ofr.getEstado()))
                                                                                                                                                 {
@@ -518,6 +528,7 @@
                                                                                                                                                     <% }
                                                                                                                                                         %>
                                                                                                                                     </div>
+</div>
                                                                                                                                 </div>
                                                                                                                                 <% }
                                                                                                                                     %>
@@ -745,6 +756,16 @@
                                                                                                                                             <%= post.getFechaPostulacion()
                                                                                                                                                 %>
                                                                                                                                         </span>
+<div class="d-flex align-items-center gap-2">
+    <button type="button" class="btn btn-sm btn-outline-info rounded-pill"
+            data-id="<%= post.getId() %>"
+            data-oferta="<%= post.getOferta() != null ? post.getOferta().replace("\"", "&quot;") : "" %>"
+            data-empresa="<%= post.getEmpresa() != null ? post.getEmpresa().replace("\"", "&quot;") : "" %>"
+            data-fecha="<%= post.getFechaPostulacion() %>"
+            data-estado="<%= post.getEstado() %>"
+            onclick="verDetallePostulacionEstudiante(this)">
+        <i class="bi bi-eye me-1"></i>Ver detalle
+    </button>
 
                                                                                                                                         <% if
                                                                                                                                             ("POSTULADO".equalsIgnoreCase(post.getEstado()))
@@ -870,6 +891,19 @@
                                                                                                                                                                             <%= escaparHtml(estadoEnt)
                                                                                                                                                                                 %>
                                                                                                                                                                         </div>
+<div class="d-flex justify-content-end mb-2">
+    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2" style="font-size: 0.78rem;"
+            data-empresa="<%= escaparHtml(post.getEmpresa()) %>"
+            data-oferta="<%= escaparHtml(post.getOferta()) %>"
+            data-fecha="<%= escaparHtml(fechaEnt) %>"
+            data-hora="<%= escaparHtml(horaEnt) %>"
+            data-modalidad="<%= escaparHtml(modalidadEnt) %>"
+            data-lugar="<%= escaparHtml(lugarEnt) %>"
+            data-estado="<%= escaparHtml(estadoEnt) %>"
+            onclick="verDetalleEntrevistaEstudiante(this)">
+        <i class="bi bi-eye me-1"></i>Ver detalle completo
+    </button>
+</div>
                                                                                                                                                                         <div
                                                                                                                                                                             class="small">
                                                                                                                                                                             Fecha:
@@ -942,7 +976,8 @@
                                                                                                         </div>
                                                                                                     </div>
                                                                                 </div>
-                                                                                <div class="modal fade"
+                                                                                </div>
+<div class="modal fade"
                                                                                     id="modalPostular" tabindex="-1">
                                                                                     <div
                                                                                         class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -1150,7 +1185,217 @@
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div class="modal fade"
+                                                                                
+        <!-- Modal Detalle Postulacion Estudiante -->
+        <div class="modal fade" id="modalDetallePostulacionEstudiante" tabindex="-1" aria-labelledby="modalDetallePostulacionEstudianteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content modal-content-propath">
+                    <div class="modal-header modal-header-propath">
+                        <h2 class="modal-title h5" id="modalDetallePostulacionEstudianteLabel">
+                            <i class="bi bi-file-earmark-check me-2 text-primary"></i> Mi Postulación Detallada
+                        </h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body modal-body-propath">
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <div class="detail-label">Oferta de Práctica</div>
+                                <div class="detail-value fs-5 fw-bold text-dark" id="estPostOferta">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Empresa</div>
+                                <div class="detail-value fw-semibold text-primary" id="estPostEmpresa">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Fecha de Postulación</div>
+                                <div class="detail-value" id="estPostFecha">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Estado de la Postulación</div>
+                                <span id="estPostEstado" class="badge-status badge-activo">—</span>
+                            </div>
+                        </div>
+
+                        <div class="border-top pt-3">
+                            <h3 class="h6 fw-bold text-dark mb-3">
+                                <i class="bi bi-card-checklist me-1 text-primary"></i>
+                                Respuestas Registradas (12 Preguntas)
+                            </h3>
+                            <div id="estPostRespuestas" class="d-flex flex-column gap-2" style="max-height: 400px; overflow-y: auto;">
+                                <div class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    <span>Cargando tus respuestas...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Detalle Entrevista Estudiante -->
+        <div class="modal fade" id="modalDetalleEntrevistaEstudiante" tabindex="-1" aria-labelledby="modalDetalleEntrevistaEstudianteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content modal-content-propath">
+                    <div class="modal-header modal-header-propath">
+                        <h2 class="modal-title h5" id="modalDetalleEntrevistaEstudianteLabel">
+                            <i class="bi bi-calendar-check me-2 text-primary"></i> Detalle de mi Entrevista
+                        </h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body modal-body-propath">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="detail-label">Empresa Convocante</div>
+                                <div class="detail-value fs-5 fw-bold text-dark" id="estEntEmpresa">—</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="detail-label">Oferta de Práctica</div>
+                                <div class="detail-value fw-semibold text-primary" id="estEntOferta">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Fecha Programada</div>
+                                <div class="detail-value" id="estEntFecha">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Hora</div>
+                                <div class="detail-value" id="estEntHora">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Modalidad</div>
+                                <div class="detail-value" id="estEntModalidad">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Estado de la Convocatoria</div>
+                                <span id="estEntEstado" class="badge-status badge-activo">—</span>
+                            </div>
+                            <div class="col-12">
+                                <div class="detail-label" id="estEntLugarLabel">Lugar o Enlace</div>
+                                <div class="detail-value" id="estEntLugar">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            async function verDetallePostulacionEstudiante(btn) {
+                const id = btn.getAttribute('data-id');
+                const oferta = btn.getAttribute('data-oferta') || '—';
+                const empresa = btn.getAttribute('data-empresa') || '—';
+                const fecha = btn.getAttribute('data-fecha') || '—';
+                const estado = btn.getAttribute('data-estado') || '—';
+
+                document.getElementById('estPostOferta').textContent = oferta;
+                document.getElementById('estPostEmpresa').textContent = empresa;
+                document.getElementById('estPostFecha').textContent = fecha;
+
+                const badge = document.getElementById('estPostEstado');
+                badge.textContent = estado;
+                const estNorm = estado.toUpperCase();
+                badge.className = 'badge-status ' + (estNorm.includes('SELECCIONADO') && !estNorm.includes('NO') ? 'badge-seleccionado' : (estNorm.includes('NO') ? 'badge-bloqueado' : 'badge-postulado'));
+
+                const contenedor = document.getElementById('estPostRespuestas');
+                contenedor.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2" role="status"></div><span>Cargando tus respuestas...</span></div>';
+
+                const modalEl = document.getElementById('modalDetallePostulacionEstudiante');
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+
+                try {
+                    const res = await fetch('${pageContext.request.contextPath}/estudiante/postular?idPostulacion=' + encodeURIComponent(id), {
+                        credentials: 'same-origin',
+                        cache: 'no-store'
+                    });
+                    const respuestas = await res.json();
+                    contenedor.innerHTML = '';
+
+                    const preguntasBase = [
+                        "¿Por qué te interesa esta oportunidad?",
+                        "¿Qué conocimientos puedes aportar?",
+                        "¿Qué herramientas o tecnologías manejas?",
+                        "¿Has desarrollado proyectos relacionados?",
+                        "¿Qué esperas aprender?",
+                        "¿Cuál es tu disponibilidad horaria?",
+                        "¿Cuáles son tus principales fortalezas?",
+                        "¿Cómo organizas tus responsabilidades?",
+                        "¿Cómo reaccionas ante un problema inesperado?",
+                        "¿Cómo trabajas en equipo?",
+                        "¿Qué aspecto profesional deseas mejorar?",
+                        "¿Cuáles son tus objetivos profesionales?"
+                    ];
+
+                    if (!Array.isArray(respuestas) || respuestas.length === 0) {
+                        contenedor.innerHTML = '<div class="alert alert-light border text-muted small py-3 text-center">No hay respuestas registradas para esta postulación.</div>';
+                        return;
+                    }
+
+                    respuestas.sort((a, b) => Number(a.numeroPregunta) - Number(b.numeroPregunta));
+
+                    respuestas.forEach((r) => {
+                        const num = Number(r.numeroPregunta);
+                        const textoPregunta = r.pregunta || (preguntasBase[num - 1] || ("Pregunta #" + num));
+                        const textoRespuesta = r.respuesta || "Sin respuesta registrada.";
+
+                        const card = document.createElement('div');
+                        card.className = 'border rounded-3 p-3 bg-light bg-opacity-50';
+                        card.innerHTML = '<div class="fw-semibold text-dark small mb-1">' + num + '. ' + textoPregunta + '</div>'
+                                       + '<div class="small text-secondary ps-3 border-start border-2 border-primary">' + textoRespuesta + '</div>';
+                        contenedor.appendChild(card);
+                    });
+                } catch (err) {
+                    contenedor.innerHTML = '<div class="alert alert-danger small py-2">Error al cargar las respuestas: ' + err.message + '</div>';
+                }
+            }
+
+            function verDetalleEntrevistaEstudiante(btn) {
+                const d = btn.dataset;
+                document.getElementById('estEntEmpresa').textContent = d.empresa || '—';
+                document.getElementById('estEntOferta').textContent = d.oferta || '—';
+                document.getElementById('estEntFecha').textContent = d.fecha || '—';
+                document.getElementById('estEntHora').textContent = d.hora ? d.hora.substring(0, 5) : '—';
+                document.getElementById('estEntModalidad').textContent = d.modalidad || '—';
+
+                const badge = document.getElementById('estEntEstado');
+                badge.textContent = d.estado || 'PROGRAMADA';
+                const estNorm = (d.estado || '').toUpperCase();
+                badge.className = 'badge-status ' + (estNorm === 'REALIZADA' ? 'badge-seleccionado' : (estNorm === 'CANCELADA' ? 'badge-bloqueado' : 'badge-activo'));
+
+                const lugarEl = document.getElementById('estEntLugar');
+                const lugarLabel = document.getElementById('estEntLugarLabel');
+                const lugarVal = (d.lugar || '').trim();
+                if (d.modalidad === 'VIRTUAL') {
+                    lugarLabel.textContent = 'Enlace de Reunión';
+                    if (lugarVal.startsWith('http://') || lugarVal.startsWith('https://')) {
+                        lugarEl.innerHTML = '<a href="' + lugarVal + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-camera-video me-1"></i>Entrar a la reunión virtual</a>';
+                    } else {
+                        lugarEl.textContent = lugarVal || 'Enlace no registrado';
+                    }
+                } else {
+                    lugarLabel.textContent = 'Dirección o Sede';
+                    lugarEl.textContent = lugarVal || 'Dirección no registrada';
+                }
+
+                const modalEl = document.getElementById('modalDetalleEntrevistaEstudiante');
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+            }
+
+            window.verDetallePostulacionEstudiante = verDetallePostulacionEstudiante;
+            window.verDetalleEntrevistaEstudiante = verDetalleEntrevistaEstudiante;
+        </script>
+
+
+<div class="modal fade"
                                                                                     id="modalSubirCv" tabindex="-1"
                                                                                     aria-labelledby="modalSubirCvLabel"
                                                                                     aria-hidden="true">
@@ -1572,7 +1817,88 @@
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
-                                                                                <script>
+                                                                                
+<!-- MODAL DETALLE OFERTA ESTUDIANTE (VER DETALLE) -->
+<div class="modal fade" id="modalDetalleOfertaEstudiante" tabindex="-1" aria-labelledby="modalDetalleOfertaEstudianteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content modal-content-propath">
+            <div class="modal-header modal-header-propath">
+                <h5 class="modal-title" id="modalDetalleOfertaEstudianteLabel">
+                    <i class="bi bi-briefcase me-2 text-primary"></i>Detalle de la Convocatoria
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body modal-body-propath">
+                <div class="card border-0 bg-light p-3 mb-3 rounded-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="badge bg-primary-subtle text-primary mb-1" id="detEstOfrCarrera">—</span>
+                            <h4 class="h5 fw-bold text-dark mb-1" id="detEstOfrTitulo">—</h4>
+                            <div class="small text-muted">
+                                <i class="bi bi-building me-1"></i><span id="detEstOfrEmpresa">—</span>
+                            </div>
+                        </div>
+                        <span class="badge-status badge-activo" id="detEstOfrEstado">ACTIVA</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-laptop me-1"></i>Modalidad</span>
+                            <strong class="text-dark small" id="detEstOfrModalidad">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-people me-1"></i>Vacantes</span>
+                            <strong class="text-dark small" id="detEstOfrVacantes">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-cash-stack me-1"></i>Subvención Económica</span>
+                            <strong class="text-dark small" id="detEstOfrRemuneracion">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-geo-alt me-1"></i>Ubicación / Distrito</span>
+                            <strong class="text-dark small" id="detEstOfrUbicacion">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-calendar-check me-1"></i>Publicado</span>
+                            <strong class="text-dark small" id="detEstOfrPublicacion">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-calendar-x me-1"></i>Fecha Límite</span>
+                            <strong class="text-danger small" id="detEstOfrFechaLimite">—</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="fw-bold text-dark small mb-1"><i class="bi bi-text-paragraph me-1 text-primary"></i>Descripción del Puesto</h6>
+                    <div class="p-3 border rounded bg-white text-secondary small" id="detEstOfrDescripcion" style="white-space: pre-wrap;">—</div>
+                </div>
+
+                <div>
+                    <h6 class="fw-bold text-dark small mb-1"><i class="bi bi-card-checklist me-1 text-primary"></i>Requisitos y Competencias</h6>
+                    <div class="p-3 border rounded bg-white text-secondary small" id="detEstOfrRequisitos" style="white-space: pre-wrap;">—</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
                                                                                     function validarArchivoPdf(input) {
                                                                                         if (!input || !input.files || input.files.length === 0) {
                                                                                             mostrarModalMensaje(
@@ -1804,16 +2130,80 @@
                                                                                             document.getElementById("btnConfirmarPostular").disabled = true;
                                                                                         });
                                                                                     function mostrarMotivoRechazo(boton) {
-                                                                                        document.getElementById("textoMotivoRechazo").textContent =
-                                                                                            boton.getAttribute("data-motivo") || "No se registró un motivo.";
-                                                                                    }
-                                                                                    window.confirmarEliminarCv = confirmarEliminarCv;
-                                                                                    window.validarArchivoPdf = validarArchivoPdf;
-                                                                                </script>
-                                                                                <script type="module"
-                                                                                    src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
-                                                                                <script type="module"
-                                                                                    src="${pageContext.request.contextPath}/js/script.js"></script>
-                                                                            </body>
+    document.getElementById("textoMotivoRechazo").textContent =
+        boton.getAttribute("data-motivo") || "No se registró un motivo.";
+}
+
+function verDetalleOfertaEstudiante(btn) {
+    if (!btn) return;
+    const setText = function(id, val, fallback) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val && val.trim()) ? val.trim() : (fallback || '—');
+    };
+
+    const titulo = btn.getAttribute('data-titulo') || (btn.dataset && btn.dataset.titulo) || '';
+    const empresa = btn.getAttribute('data-empresa') || (btn.dataset && btn.dataset.empresa) || '';
+    const carrera = btn.getAttribute('data-carrera') || (btn.dataset && btn.dataset.carrera) || '';
+    const modalidad = btn.getAttribute('data-modalidad') || (btn.dataset && btn.dataset.modalidad) || '';
+    const vacantes = btn.getAttribute('data-vacantes') || (btn.dataset && btn.dataset.vacantes) || '1';
+    const remuneracion = btn.getAttribute('data-remuneracion') || (btn.dataset && btn.dataset.remuneracion) || '';
+    const ubicacion = btn.getAttribute('data-ubicacion') || (btn.dataset && btn.dataset.ubicacion) || '';
+    const publicacion = btn.getAttribute('data-publicacion') || (btn.dataset && btn.dataset.publicacion) || '';
+    const fecha = btn.getAttribute('data-fecha') || (btn.dataset && btn.dataset.fecha) || '';
+    const estado = btn.getAttribute('data-estado') || (btn.dataset && btn.dataset.estado) || 'ACTIVA';
+    const descripcion = btn.getAttribute('data-descripcion') || (btn.dataset && btn.dataset.descripcion) || '';
+    const requisitos = btn.getAttribute('data-requisitos') || (btn.dataset && btn.dataset.requisitos) || '';
+
+    setText('detEstOfrTitulo', titulo, '—');
+    setText('detEstOfrCarrera', carrera, '—');
+    setText('detEstOfrEmpresa', empresa, '—');
+    setText('detEstOfrModalidad', modalidad, '—');
+    setText('detEstOfrVacantes', vacantes ? (vacantes + ' vacante(s)') : '1 vacante(s)', '1 vacante(s)');
+
+    let rem = remuneracion.trim();
+    if (rem && !rem.toUpperCase().startsWith('S/')) rem = 'S/ ' + rem;
+    setText('detEstOfrRemuneracion', rem, 'A convenir');
+    setText('detEstOfrUbicacion', ubicacion, 'No especificada');
+    setText('detEstOfrPublicacion', publicacion, '—');
+    setText('detEstOfrFechaLimite', fecha, 'Sin fecha límite');
+    setText('detEstOfrDescripcion', descripcion, 'Sin descripción detallada.');
+    setText('detEstOfrRequisitos', requisitos, 'Sin requisitos específicos.');
+
+    const badge = document.getElementById('detEstOfrEstado');
+    if (badge) {
+        const est = (estado || 'ACTIVA').trim().toUpperCase();
+        badge.textContent = est;
+        badge.className = 'badge-status ' + (est === 'ACTIVA' ? 'badge-activo' : 'badge-bloqueado');
+    }
+
+    const modalEl = document.getElementById('modalDetalleOfertaEstudiante');
+    if (!modalEl) return;
+
+    if (window.BootstrapModalCompat) {
+        window.BootstrapModalCompat.getOrCreateInstance(modalEl).show();
+    } else if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } else {
+        modalEl.style.display = 'block';
+        modalEl.removeAttribute('aria-hidden');
+        modalEl.setAttribute('aria-modal', 'true');
+        modalEl.classList.add('show');
+        document.body.classList.add('modal-open');
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+    }
+}
+
+window.verDetalleOfertaEstudiante = verDetalleOfertaEstudiante;
+window.confirmarEliminarCv = confirmarEliminarCv;
+window.validarArchivoPdf = validarArchivoPdf;
+</script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="${pageContext.request.contextPath}/js/script.js"></script>
+</body>
 
                                                                             </html>

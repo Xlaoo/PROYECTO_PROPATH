@@ -9,3 +9,8 @@
 .vscode/
 *.class
 
+
+# Credenciales de conexion JDBC local
+PROPATH/src/java/db.properties
+PROPATH/migrar-propath.ps1
+PROPATH/verificar-mysql.ps1

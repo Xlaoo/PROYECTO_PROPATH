@@ -20,12 +20,7 @@ public final class ConexionBD {
         try {
             Class.forName(driver);
         } catch (ClassNotFoundException e) {
-            try {
-                Class.forName("org.mariadb.jdbc.Driver");
-                driver = "org.mariadb.jdbc.Driver";
-            } catch (ClassNotFoundException ex) {
-                throw new RuntimeException("Driver JDBC no encontrado", ex);
-            }
+            throw new RuntimeException("Driver JDBC MySQL no encontrado: " + driver, e);
         }
     }
 
@@ -67,12 +62,9 @@ public final class ConexionBD {
         }
     }
 
-public static Connection getConexion() throws SQLException {
-    Connection conn = DriverManager.getConnection(url, user, password);
-    System.out.println("PROPATH JDBC - Base de datos: " + conn.getCatalog());
-    System.out.println("PROPATH JDBC - Servidor: " + conn.getMetaData().getURL());
-    return conn;
-}
+    public static Connection getConexion() throws SQLException {
+        return DriverManager.getConnection(url, user, password);
+    }
 
     public static void cerrar(Connection conexion) {
         if (conexion != null) {

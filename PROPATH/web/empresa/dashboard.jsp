@@ -1,4 +1,4 @@
-<%! private String entrevistaCampo(String objeto, String campo) { java.util.regex.Matcher
+﻿<%! private String entrevistaCampo(String objeto, String campo) { java.util.regex.Matcher
     m=java.util.regex.Pattern.compile( java.util.regex.Pattern.quote("\"" + campo + "\"")
         + "\\s*:\\s*(?:\"([^\"]*)\"|([0-9]+))").matcher(objeto); return m.find() ? (m.group(1) !=null ? m.group(1) :
     m.group(2)) : "" ; } private java.util.List<String> entrevistasJson(String json) {
@@ -177,20 +177,28 @@
                                                                                         </nav>
 
                                                                                         <div class="container py-4">
-                                                                                            <% if (exito !=null &&
-                                                                                                !exito.isEmpty()) { %>
-                                                                                                <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4"
-                                                                                                    role="alert">
-                                                                                                    <i
-                                                                                                        class="bi bi-check-circle-fill me-2"></i>
-                                                                                                    Operación completada
-                                                                                                    exitosamente.
-                                                                                                    <button
-                                                                                                        type="button"
-                                                                                                        class="btn-close"
-                                                                                                        data-bs-dismiss="alert"></button>
-                                                                                                </div>
-                                                                                                <% } %>
+                                                                                            <% if (exito != null && !exito.isEmpty()) { 
+    String msgExito = "Operación completada exitosamente.";
+    if ("cerrada_por_postulaciones".equalsIgnoreCase(exito)) {
+        msgExito = "La oferta tiene postulaciones registradas, por lo que se ha procedido a cerrarla (estado CERRADA) en lugar de eliminarla para preservar los registros de los candidatos.";
+    } else if ("publicada".equalsIgnoreCase(exito)) {
+        msgExito = "Oferta de práctica publicada exitosamente con estado ACTIVA.";
+    } else if ("actualizada".equalsIgnoreCase(exito)) {
+        msgExito = "Oferta de práctica actualizada exitosamente.";
+    } else if ("eliminada".equalsIgnoreCase(exito)) {
+        msgExito = "Oferta de práctica eliminada exitosamente.";
+    } else if ("perfil_actualizado".equalsIgnoreCase(exito)) {
+        msgExito = "Perfil de la empresa actualizado exitosamente.";
+    } else if ("estado_actualizado".equalsIgnoreCase(exito)) {
+        msgExito = "Estado de evaluación de la postulación actualizado exitosamente.";
+    }
+%>
+    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <%= msgExito %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<% } %>
 
                                                                                                     <% if (error !=null
                                                                                                         &&
@@ -581,10 +589,7 @@
                                                                                                                                                             <% }
                                                                                                                                                                 %>
                                                                                                                                                     </div>
-                                                                                                                                                    <form
-                                                                                                                                                        action="${pageContext.request.contextPath}/empresa/oferta"
-                                                                                                                                                        method="POST"
-                                                                                                                                                        class="row g-3">
+                                                                                                                                                    <form action="${pageContext.request.contextPath}/empresa/oferta" method="POST" onsubmit="const b = this.querySelector('button[type=submit]'); if (b && b.dataset.submitted) return false; if (b) { b.dataset.submitted='true'; b.disabled=true; b.innerHTML='<span class=\'spinner-border spinner-border-sm me-1\'></span>Publicando...'; } return true;" class="row g-3">
                                                                                                                                                         <input
                                                                                                                                                             type="hidden"
                                                                                                                                                             name="accion"
@@ -907,100 +912,43 @@
                                                                                                                                                                                             %>
                                                                                                                                                                                     </span>
 
-                                                                                                                                                                                    <button
-                                                                                                                                                                                        type="button"
-                                                                                                                                                                                        class="btn btn-sm btn-outline-primary py-0 px-2 rounded-2"
-                                                                                                                                                                                        <%=!puedeOperar
-                                                                                                                                                                                        ? "disabled"
-                                                                                                                                                                                        : ""
-                                                                                                                                                                                        %>
-                                                                                                                                                                                        title="
-                                                                                                                                                                                        <%= puedeOperar
-                                                                                                                                                                                            ? "Editar oferta"
-                                                                                                                                                                                            : "Empresa no aprobada"
-                                                                                                                                                                                            %>
-                                                                                                                                                                                            "
-                                                                                                                                                                                            data-id="
-                                                                                                                                                                                            <%= o.getId()
-                                                                                                                                                                                                %>
-                                                                                                                                                                                                "
-                                                                                                                                                                                                data-titulo="
-                                                                                                                                                                                                <%= o.getTitulo()
-                                                                                                                                                                                                    %>
-                                                                                                                                                                                                    "
-                                                                                                                                                                                                    data-carrera="
-                                                                                                                                                                                                    <%= o.getCarrera()
-                                                                                                                                                                                                        %>
-                                                                                                                                                                                                        "
-                                                                                                                                                                                                        data-modalidad="
-                                                                                                                                                                                                        <%= o.getModalidad()
-                                                                                                                                                                                                            %>
-                                                                                                                                                                                                            "
-                                                                                                                                                                                                            data-vacantes="
-                                                                                                                                                                                                            <%= o.getVacantes()
-                                                                                                                                                                                                                %>
-                                                                                                                                                                                                                "
-                                                                                                                                                                                                                data-fecha="
-                                                                                                                                                                                                                <%= o.getFechaLimite()
-                                                                                                                                                                                                                    !=null
-                                                                                                                                                                                                                    ?
-                                                                                                                                                                                                                    o.getFechaLimite()
-                                                                                                                                                                                                                    : ""
-                                                                                                                                                                                                                    %>
-                                                                                                                                                                                                                    "
-                                                                                                                                                                                                                    data-ubicacion="
-                                                                                                                                                                                                                    <%= o.getUbicacion()
-                                                                                                                                                                                                                        !=null
-                                                                                                                                                                                                                        ?
-                                                                                                                                                                                                                        o.getUbicacion()
-                                                                                                                                                                                                                        : ""
-                                                                                                                                                                                                                        %>
-                                                                                                                                                                                                                        "
-                                                                                                                                                                                                                        data-descripcion="
-                                                                                                                                                                                                                        <%= escaparHtml(o.getDescripcion())
-                                                                                                                                                                                                                            %>
-                                                                                                                                                                                                                            "
-                                                                                                                                                                                                                            data-estado="
-                                                                                                                                                                                                                            <%= o.getEstado()
-                                                                                                                                                                                                                                %>
-                                                                                                                                                                                                                                "
-
-                                                                                                                                                                                                                                data-requisitos="
-                                                                                                                                                                                                                                <%= o.getRequisitos()
-                                                                                                                                                                                                                                    !=null
-                                                                                                                                                                                                                                    ?
-                                                                                                                                                                                                                                    o.getRequisitos().replace("&", "&amp;"
-                                                                                                                                                                                                                                    ).replace("\"", "&quot;"
-                                                                                                                                                                                                                                    ).replace("<", "&lt;"
-                                                                                                                                                                                                                                    )
-                                                                                                                                                                                                                                    : ""
-                                                                                                                                                                                                                                    %>
-                                                                                                                                                                                                                                    "
-                                                                                                                                                                                                                                    data-remuneracion="
-                                                                                                                                                                                                                                    <%= o.getRemuneracion()
-                                                                                                                                                                                                                                        !=null
-                                                                                                                                                                                                                                        ?
-                                                                                                                                                                                                                                        o.getRemuneracion().replace("&", "&amp;"
-                                                                                                                                                                                                                                        ).replace("\"", "&quot;"
-                                                                                                                                                                                                                                        ).replace("<", "&lt;"
-                                                                                                                                                                                                                                        )
-                                                                                                                                                                                                                                        : ""
-                                                                                                                                                                                                                                        %>
-                                                                                                                                                                                                                                        "
-
-                                                                                                                                                                                                                                        <%= !puedeOperar
-                                                                                                                                                                                                                                            ? "disabled style='opacity: 0.4; cursor: not-allowed;'"
-                                                                                                                                                                                                                                            : ""
-                                                                                                                                                                                                                                            %>
-                                                                                                                                                                                                                                            onclick="
-                                                                                                                                                                                                                                            <%= puedeOperar
-                                                                                                                                                                                                                                                ? "abrirModalEditarOferta(this)"
-                                                                                                                                                                                                                                                : ""
-                                                                                                                                                                                                                                                %>
-                                                                                                                                                                                                                                                ">
-                                                                                                                                                                                                                                                <i
-                                                                                                                                                                                                                                                    class="bi bi-pencil-square"></i>
-                                                                                                                                                                                    </button>
+                                                                                                                                                                                    <button type="button"
+        class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-2"
+        title="Ver detalle de la oferta"
+        data-id="<%= o.getId() %>"
+        data-titulo="<%= o.getTitulo() != null ? o.getTitulo().replace("\"", "&quot;") : "" %>"
+        data-carrera="<%= o.getCarrera() != null ? o.getCarrera() : "" %>"
+        data-empresa="<%= o.getEmpresa() != null ? escaparHtml(o.getEmpresa()) : (miEmpresa != null ? escaparHtml(miEmpresa.getRazonSocial()) : "Mi Empresa") %>"
+        data-modalidad="<%= o.getModalidad() != null ? o.getModalidad() : "" %>"
+        data-vacantes="<%= o.getVacantes() %>"
+        data-publicacion="<%= o.getFechaPublicacion() != null ? o.getFechaPublicacion() : "" %>"
+        data-fecha="<%= o.getFechaLimite() != null ? o.getFechaLimite().trim() : "" %>"
+        data-ubicacion="<%= o.getUbicacion() != null ? o.getUbicacion().replace("\"", "&quot;") : "" %>"
+        data-descripcion="<%= escaparHtml(o.getDescripcion()) %>"
+        data-estado="<%= o.getEstado() != null ? o.getEstado() : "" %>"
+        data-requisitos="<%= o.getRequisitos() != null ? escaparHtml(o.getRequisitos()) : "" %>"
+        data-remuneracion="<%= o.getRemuneracion() != null ? o.getRemuneracion().replace("\"", "&quot;") : "" %>"
+        onclick="verDetalleOfertaEmpresa(this)">
+    <i class="bi bi-eye"></i>
+</button>
+<button type="button"
+        class="btn btn-sm btn-outline-primary py-0 px-2 rounded-2"
+        <%= !puedeOperar ? "disabled style='opacity: 0.4; cursor: not-allowed;'" : "" %>
+        title="<%= puedeOperar ? "Editar oferta" : "Empresa no aprobada" %>"
+        data-id="<%= o.getId() %>"
+        data-titulo="<%= o.getTitulo() != null ? o.getTitulo().replace("\"", "&quot;") : "" %>"
+        data-carrera="<%= o.getCarrera() != null ? o.getCarrera() : "" %>"
+        data-modalidad="<%= o.getModalidad() != null ? o.getModalidad() : "" %>"
+        data-vacantes="<%= o.getVacantes() %>"
+        data-fecha="<%= o.getFechaLimite() != null ? o.getFechaLimite().trim() : "" %>"
+        data-ubicacion="<%= o.getUbicacion() != null ? o.getUbicacion().replace("\"", "&quot;") : "" %>"
+        data-descripcion="<%= escaparHtml(o.getDescripcion()) %>"
+        data-estado="<%= o.getEstado() != null ? o.getEstado() : "" %>"
+        data-requisitos="<%= o.getRequisitos() != null ? escaparHtml(o.getRequisitos()) : "" %>"
+        data-remuneracion="<%= o.getRemuneracion() != null ? o.getRemuneracion().replace("\"", "&quot;") : "" %>"
+        onclick="<%= puedeOperar ? "abrirModalEditarOferta(this)" : "" %>">
+    <i class="bi bi-pencil-square"></i>
+</button>
                                                                                                                                                                                     <form
                                                                                                                                                                                         action="${pageContext.request.contextPath}/empresa/oferta"
                                                                                                                                                                                         method="POST"
@@ -1122,6 +1070,7 @@
                                                                                                                                                                         </div>
                                                                                                                                                                         <div
                                                                                                                                                                             class="d-flex gap-2 align-items-center pt-2 border-top">
+<% if ("POSTULADO".equalsIgnoreCase(p.getEstado())) { %>
                                                                                                                                                                            <button type="button"
         class="btn btn-sm btn-outline-primary rounded-pill"
         data-id-postulacion="<%= p.getId() %>"
@@ -1136,6 +1085,7 @@
     <i class="bi bi-eye me-1"></i>
     Evaluar
 </button> 
+<% } %>
                                                                                                                                                                             
                                                                                                                                                                         </div>
 
@@ -1244,7 +1194,18 @@
                                                                                                                                                                                                     </div>
                                                                                                                                                                                                     <div
                                                                                                                                                                                                         class="d-flex flex-wrap gap-2">
-                                                                                                                                                                                                        <button
+                                                                                                                                                                                                        <button type="button" class="btn btn-sm btn-outline-info rounded-pill"
+    data-id="<%= escaparHtml(eid) %>"
+    data-estudiante="<%= escaparHtml(p.getEstudiante() != null ? p.getEstudiante() : "") %>"
+    data-oferta="<%= escaparHtml(p.getOferta() != null ? p.getOferta() : "") %>"
+    data-fecha="<%= escaparHtml(ef) %>"
+    data-hora="<%= escaparHtml(eh) %>"
+    data-modalidad="<%= escaparHtml(em) %>"
+    data-lugar="<%= escaparHtml(el) %>"
+    data-estado="<%= escaparHtml(ee) %>"
+    data-observaciones="<%= escaparHtml(eo) %>"
+    onclick="verDetalleEntrevistaEmpresa(this)"><i class="bi bi-eye me-1"></i>Ver entrevista</button>
+<button
                                                                                                                                                                                                             type="button"
                                                                                                                                                                                                             class="btn btn-sm btn-outline-primary rounded-pill"
                                                                                                                                                                                                             data-bs-toggle="modal"
@@ -1315,40 +1276,37 @@
                                                                                                         </h5>
                                                                                                     </div>
 
-                                                                                                    <div
-                                                                                                        class="modal-body">
-                                                                                                        <h6 id="evaluacionEstudiante"
-                                                                                                            class="fw-bold">
-                                                                                                        </h6>
-                                                                                                        <p id="evaluacionOferta"
-                                                                                                            class="text-muted">
-                                                                                                        </p>
+                                                                                                    <div class="modal-body">
+    <div class="card border-0 bg-light p-3 mb-3 rounded-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <h5 class="fw-bold mb-1 text-dark" id="evaluacionEstudiante">Cargando postulante...</h5>
+                <div class="text-secondary small d-flex flex-wrap gap-3 mt-1">
+                    <span><i class="bi bi-envelope me-1 text-primary"></i><span id="evaluacionCorreo">—</span></span>
+                    <span><i class="bi bi-bank me-1 text-primary"></i><span id="evaluacionUniversidad">—</span></span>
+                    <span><i class="bi bi-mortarboard me-1 text-primary"></i><span id="evaluacionCarrera">—</span></span>
+                    <span><i class="bi bi-bookmark me-1 text-primary"></i>Ciclo <span id="evaluacionCiclo">—</span></span>
+                    <span><i class="bi bi-telephone me-1 text-primary"></i><span id="evaluacionTelefono">—</span></span>
+                </div>
+            </div>
+            <span class="badge bg-primary" id="evaluacionEstado">POSTULADO</span>
+        </div>
+        <div class="pt-2 border-top small text-muted d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-briefcase me-1 text-secondary"></i>Oferta: <strong id="evaluacionOferta">—</strong></span>
+            <span><i class="bi bi-calendar-event me-1 text-secondary"></i>Fecha: <span id="evaluacionFecha">—</span></span>
+        </div>
+    </div>
 
-                                                                                                        <h6
-                                                                                                            class="fw-bold">
-                                                                                                            Currículum
-                                                                                                            vitae
-                                                                                                        </h6>
-                                                                                                        <div id="evaluacionCV"
-                                                                                                            class="mb-4">
-                                                                                                            Pendiente de
-                                                                                                            conectar el
-                                                                                                            CV.
-                                                                                                        </div>
+    <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Currículum Vitae</h6>
+    <div id="evaluacionCV" class="mb-4 p-2 border rounded bg-white">
+        <span class="text-muted small">Cargando CV...</span>
+    </div>
 
-                                                                                                        <h6
-                                                                                                            class="fw-bold">
-                                                                                                            Preguntas y
-                                                                                                            respuestas
-                                                                                                        </h6>
-                                                                                                        <div id="evaluacionRespuestas"
-                                                                                                            class="mb-3">
-                                                                                                            Pendiente de
-                                                                                                            conectar las
-                                                                                                            12
-                                                                                                            respuestas.
-                                                                                                        </div>
-                                                                                                    </div>
+    <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-patch-question me-2 text-info"></i>Cuestionario de Postulación (12 Preguntas y Respuestas)</h6>
+    <div id="evaluacionRespuestas" class="mb-3">
+        <span class="text-muted small">Cargando respuestas...</span>
+    </div>
+</div>
 
                                                                                                     <div
                                                                                                         class="modal-footer">
@@ -2009,48 +1967,110 @@
 
                                                                                         <script>
                                                                                             function abrirModalEditarOferta(btn) {
-                                                                                                document.getElementById('editOfertaId').value =
-                                                                                                    btn.getAttribute('data-id') || '';
+    document.getElementById('editOfertaId').value = (btn.getAttribute('data-id') || '').trim();
+    document.getElementById('editOfertaTitulo').value = (btn.getAttribute('data-titulo') || '').trim();
 
-                                                                                                document.getElementById('editOfertaTitulo').value =
-                                                                                                    btn.getAttribute('data-titulo') || '';
+    const carVal = (btn.getAttribute('data-carrera') || '').trim();
+    const selCarrera = document.getElementById('editOfertaCarrera');
+    if (selCarrera) selCarrera.value = carVal;
 
-                                                                                                document.getElementById('editOfertaCarrera').value =
-                                                                                                    btn.getAttribute('data-carrera') || '';
+    const modVal = (btn.getAttribute('data-modalidad') || 'PRESENCIAL').trim();
+    const selModalidad = document.getElementById('editOfertaModalidad');
+    if (selModalidad) selModalidad.value = modVal;
 
-                                                                                                document.getElementById('editOfertaModalidad').value =
-                                                                                                    btn.getAttribute('data-modalidad') || 'PRESENCIAL';
+    document.getElementById('editOfertaVacantes').value = (btn.getAttribute('data-vacantes') || '1').trim();
 
-                                                                                                document.getElementById('editOfertaVacantes').value =
-                                                                                                    btn.getAttribute('data-vacantes') || '1';
+    let fecVal = (btn.getAttribute('data-fecha') || '').trim();
+    if (fecVal.length > 10) fecVal = fecVal.substring(0, 10);
+    document.getElementById('editOfertaFecha').value = fecVal;
 
-                                                                                                document.getElementById('editOfertaFecha').value =
-                                                                                                    btn.getAttribute('data-fecha') || '';
+    document.getElementById('editOfertaUbicacion').value = (btn.getAttribute('data-ubicacion') || '').trim();
+    document.getElementById('editOfertaDescripcion').value = (btn.getAttribute('data-descripcion') || '').trim();
 
-                                                                                                document.getElementById('editOfertaUbicacion').value =
-                                                                                                    btn.getAttribute('data-ubicacion') || '';
+    const estVal = (btn.getAttribute('data-estado') || 'ACTIVA').trim();
+    const selEstado = document.getElementById('editOfertaEstado');
+    if (selEstado) selEstado.value = estVal;
 
-                                                                                                document.getElementById('editOfertaDescripcion').value =
-                                                                                                    btn.getAttribute('data-descripcion') || '';
+    document.getElementById('editOfertaRequisitos').value = (btn.getAttribute('data-requisitos') || '').trim();
 
-                                                                                                document.getElementById('editOfertaEstado').value =
-                                                                                                    btn.getAttribute('data-estado') || 'PENDIENTE';
-                                                                                                document.getElementById('editOfertaRequisitos').value =
-                                                                                                    btn.getAttribute('data-requisitos') || '';
+    const remGuardada = (btn.getAttribute('data-remuneracion') || '').trim();
+    document.getElementById('editOfertaRemuneracion').value = remGuardada.replace(/^S\/\s*/, '').trim();
 
-                                                                                                const remuneracionGuardada =
-                                                                                                    btn.getAttribute('data-remuneracion') || '';
+    const modalEl = document.getElementById('modalEditarOferta');
+    if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
 
-                                                                                                document.getElementById('editOfertaRemuneracion').value =
-                                                                                                    remuneracionGuardada.replace(/^S\/\s*/, '').trim();
 
-                                                                                                const modalEl = document.getElementById('modalEditarOferta');
+function verDetalleOfertaEmpresa(btn) {
+    const d = btn.dataset;
+    document.getElementById('detOfrTitulo').textContent = d.titulo || '—';
+    document.getElementById('detOfrCarrera').textContent = d.carrera || '—';
+    document.getElementById('detOfrEmpresa').textContent = d.empresa || '—';
+    document.getElementById('detOfrModalidad').textContent = d.modalidad || '—';
+    document.getElementById('detOfrVacantes').textContent = (d.vacantes || '1') + ' vacante(s)';
 
-                                                                                                if (window.bootstrap && window.bootstrap.Modal) {
-                                                                                                    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                                                                                                }
-                                                                                            }
-                                                                                            function abrirModalRechazo() {
+    let rem = (d.remuneracion || '').trim();
+    if (rem && !rem.toUpperCase().startsWith('S/')) rem = 'S/ ' + rem;
+    document.getElementById('detOfrRemuneracion').textContent = rem || 'A convenir';
+    document.getElementById('detOfrUbicacion').textContent = d.ubicacion || 'No especificada';
+    document.getElementById('detOfrPublicacion').textContent = d.publicacion || '—';
+    document.getElementById('detOfrFechaLimite').textContent = d.fecha || 'Sin fecha límite';
+    document.getElementById('detOfrDescripcion').textContent = d.descripcion || 'Sin descripción detallada.';
+    document.getElementById('detOfrRequisitos').textContent = d.requisitos || 'Sin requisitos específicos.';
+
+    const badge = document.getElementById('detOfrEstado');
+    const est = (d.estado || 'ACTIVA').toUpperCase();
+    badge.textContent = est;
+    badge.className = 'badge-status ' + (est === 'ACTIVA' ? 'badge-activo' : 'badge-bloqueado');
+
+    const modalEl = document.getElementById('modalDetalleOfertaEmpresa');
+    if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } else if (window.BootstrapModalCompat) {
+        window.BootstrapModalCompat.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function verDetalleEntrevistaEmpresa(btn) {
+    const d = btn.dataset;
+    document.getElementById('detEntEstudiante').textContent = d.estudiante || '—';
+    document.getElementById('detEntOferta').textContent = d.oferta || '—';
+    document.getElementById('detEntFecha').textContent = d.fecha || '—';
+    document.getElementById('detEntHora').textContent = d.hora ? d.hora.substring(0, 5) : '—';
+    document.getElementById('detEntModalidad').textContent = d.modalidad || '—';
+
+    const badge = document.getElementById('detEntEstado');
+    badge.textContent = d.estado || 'PROGRAMADA';
+    const estNorm = (d.estado || '').toUpperCase();
+    badge.className = 'badge-status ' + (estNorm === 'REALIZADA' ? 'badge-seleccionado' : (estNorm === 'CANCELADA' ? 'badge-bloqueado' : 'badge-activo'));
+
+    const lugarEl = document.getElementById('detEntLugar');
+    const lugarLabel = document.getElementById('detEntLugarLabel');
+    const lugarVal = (d.lugar || '').trim();
+    if (d.modalidad === 'VIRTUAL') {
+        lugarLabel.textContent = 'Enlace de Reunión';
+        if (lugarVal.startsWith('http://') || lugarVal.startsWith('https://')) {
+            lugarEl.innerHTML = '<a href="' + lugarVal + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-camera-video me-1"></i>Abrir enlace de reunión</a>';
+        } else {
+            lugarEl.textContent = lugarVal || 'Enlace no registrado';
+        }
+    } else {
+        lugarLabel.textContent = 'Dirección o Sede';
+        lugarEl.textContent = lugarVal || 'Dirección no registrada';
+    }
+
+    document.getElementById('detEntObservaciones').textContent = d.observaciones || 'Sin observaciones.';
+
+    const modalEl = document.getElementById('modalDetalleEntrevistaEmpresa');
+    if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } else if (window.BootstrapModalCompat) {
+        window.BootstrapModalCompat.getOrCreateInstance(modalEl).show();
+    }
+}
+function abrirModalRechazo() {
                                                                                                 document.getElementById("rechazoIdPostulacion").value =
                                                                                                     document.getElementById("evaluacionIdPostulacion").value;
 
@@ -2154,7 +2174,7 @@
                                                                                                 document.getElementById("entrevistaId").value = d.id;
                                                                                                 document.getElementById("entrevistaPostulacion").value = d.postulacion;
                                                                                                 document.getElementById("entrevistaFecha").value = d.fecha;
-                                                                                                document.getElementById("entrevistaHora").value = d.hora.substring(0, 5);
+                                                                                                const h = (d.hora || "").trim(); document.getElementById("entrevistaHora").value = h.length >= 5 ? h.substring(0, 5) : h;
                                                                                                 document.getElementById("entrevistaModalidad").value = d.modalidad;
                                                                                                 cambiarModalidadEntrevista();
                                                                                                 document.getElementById("entrevistaLugar").value = d.lugar;
@@ -2180,12 +2200,159 @@
 
 
                                                                                             window.abrirModalEditarOferta = abrirModalEditarOferta;
+window.verDetalleOfertaEmpresa = verDetalleOfertaEmpresa;
+window.abrirEvaluacion = abrirEvaluacion;
+window.verDetalleEntrevistaEmpresa = verDetalleEntrevistaEmpresa;
 
                                                                                         </script>
-                                                                                        <script type="module"
+                                                                                        
+                                                                                    
+<!-- MODAL DETALLE OFERTA EMPRESA (VER) -->
+<div class="modal fade" id="modalDetalleOfertaEmpresa" tabindex="-1" aria-labelledby="modalDetalleOfertaEmpresaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content modal-content-propath">
+            <div class="modal-header modal-header-propath">
+                <h5 class="modal-title" id="modalDetalleOfertaEmpresaLabel">
+                    <i class="bi bi-briefcase me-2 text-primary"></i>Detalle de la Convocatoria
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body modal-body-propath">
+                <div class="card border-0 bg-light p-3 mb-3 rounded-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="badge bg-primary-subtle text-primary mb-1" id="detOfrCarrera">—</span>
+                            <h4 class="h5 fw-bold text-dark mb-1" id="detOfrTitulo">—</h4>
+                            <div class="small text-muted">
+                                <i class="bi bi-building me-1"></i><span id="detOfrEmpresa">—</span>
+                            </div>
+                        </div>
+                        <span class="badge-status badge-activo" id="detOfrEstado">ACTIVA</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-laptop me-1"></i>Modalidad</span>
+                            <strong class="text-dark small" id="detOfrModalidad">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-people me-1"></i>Vacantes</span>
+                            <strong class="text-dark small" id="detOfrVacantes">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-cash-stack me-1"></i>Subvención Económica</span>
+                            <strong class="text-dark small" id="detOfrRemuneracion">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-geo-alt me-1"></i>Ubicación / Distrito</span>
+                            <strong class="text-dark small" id="detOfrUbicacion">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-calendar-check me-1"></i>Publicado</span>
+                            <strong class="text-dark small" id="detOfrPublicacion">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-calendar-x me-1"></i>Fecha Límite</span>
+                            <strong class="text-danger small" id="detOfrFechaLimite">—</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="fw-bold text-dark small mb-1"><i class="bi bi-text-paragraph me-1 text-primary"></i>Descripción del Puesto</h6>
+                    <div class="p-3 border rounded bg-white text-secondary small" id="detOfrDescripcion" style="white-space: pre-wrap;">—</div>
+                </div>
+
+                <div>
+                    <h6 class="fw-bold text-dark small mb-1"><i class="bi bi-card-checklist me-1 text-primary"></i>Requisitos y Competencias</h6>
+                    <div class="p-3 border rounded bg-white text-secondary small" id="detOfrRequisitos" style="white-space: pre-wrap;">—</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETALLE ENTREVISTA EMPRESA -->
+<div class="modal fade" id="modalDetalleEntrevistaEmpresa" tabindex="-1" aria-labelledby="modalDetalleEntrevistaEmpresaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-propath">
+            <div class="modal-header modal-header-propath">
+                <h5 class="modal-title" id="modalDetalleEntrevistaEmpresaLabel">
+                    <i class="bi bi-calendar2-check me-2 text-primary"></i>Detalle de la Entrevista
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body modal-body-propath">
+                <div class="card border-0 bg-light p-3 mb-3 rounded-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="text-muted small d-block">Postulante Convocado</span>
+                            <h5 class="fw-bold mb-1 text-dark" id="detEntEstudiante">—</h5>
+                            <span class="small text-muted"><i class="bi bi-briefcase me-1"></i>Oferta: <strong id="detEntOferta">—</strong></span>
+                        </div>
+                        <span class="badge-status badge-activo" id="detEntEstado">PROGRAMADA</span>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-calendar3 me-1"></i>Fecha</span>
+                            <strong class="text-dark small" id="detEntFecha">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-clock me-1"></i>Hora</span>
+                            <strong class="text-dark small" id="detEntHora">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block"><i class="bi bi-laptop me-1"></i>Modalidad</span>
+                            <strong class="text-dark small" id="detEntModalidad">—</strong>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block" id="detEntLugarLabel">Lugar o Enlace</span>
+                            <div class="small mt-1" id="detEntLugar">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="text-muted small d-block mb-1"><i class="bi bi-chat-left-text me-1"></i>Observaciones</span>
+                    <div class="p-2 border rounded bg-white text-secondary small" id="detEntObservaciones">—</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="module"
                                                                                             src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
                                                                                         <script type="module"
                                                                                             src="${pageContext.request.contextPath}/js/script.js"></script>
-                                                                                    </body>
+</body>
 
                                                                                     </html>

@@ -1,4 +1,4 @@
-<%@page contentType="text/html" pageEncoding="UTF-8" %>
+﻿<%@page contentType="text/html" pageEncoding="UTF-8" %>
     <%@page import="java.util.List" %>
         <%@page import="com.propath.modelo.Empresa" %>
             <%@page import="com.propath.servicio.BackendCliente" %>
@@ -182,6 +182,7 @@
                                                                 <td class="text-center">
                                                                     <div
                                                                         class="action-btn-group justify-content-center">
+                                                                        <% if (cuentaActiva) { %>
                                                                         <button type="button"
                                                                             class="btn-action btn-action-view"
                                                                             title="Ver detalle" data-bs-toggle="tooltip"
@@ -199,33 +200,30 @@
                                                                             <i class="bi bi-eye"></i>
                                                                         </button>
 
-                                                                        <%
-    boolean cuentaInactiva = "INACTIVO".equalsIgnoreCase(emp.getEstadoCuenta());
-    String claseActivar = cuentaInactiva
-            ? "btn-action-success"
-            : "btn-action-secondary";
-
-    String claseEliminar = cuentaInactiva
-            ? "btn-action-danger"
-            : "btn-action-secondary";
-%>
-
 <button type="button"
-        class="btn-action <%= claseActivar %>"
-        title="<%= cuentaInactiva ? "Activar empresa" : "Empresa ya activa" %>"
+        class="btn-action btn-action-edit"
+        title="Editar empresa"
+        data-bs-toggle="tooltip"
         data-id="<%= emp.getId() %>"
         data-razon="<%= emp.getRazonSocial() %>"
-        <%= cuentaInactiva ? "" : "disabled" %>
-        onclick="confirmarActivarEmpresa(this.dataset.id, this.dataset.razon)">
-    <i class="bi bi-check-lg"></i>
+        data-ruc="<%= emp.getRuc() %>"
+        data-correo="<%= emp.getCorreo() %>"
+        data-telefono="<%= emp.getTelefono() != null ? emp.getTelefono() : "" %>"
+        data-direccion="<%= emp.getDireccion() != null ? emp.getDireccion() : "" %>"
+        data-descripcion="<%= emp.getDescripcion() != null ? emp.getDescripcion() : "" %>"
+        data-estado="<%= emp.getEstado() %>"
+        data-estado-cuenta="<%= emp.getEstadoCuenta() %>"
+        onclick="abrirModalEditarEmpresa(this)">
+    <i class="bi bi-pencil-square"></i>
 </button>
 
+<% } %>
 <button type="button"
-        class="btn-action <%= claseEliminar %>"
-        title="<%= cuentaInactiva ? "Eliminar empresa inactiva" : "No se puede eliminar una empresa activa" %>"
+        class="btn-action btn-action-danger"
+        title="Eliminar empresa"
+        data-bs-toggle="tooltip"
         data-id="<%= emp.getId() %>"
         data-razon="<%= emp.getRazonSocial() %>"
-        <%= cuentaInactiva ? "" : "disabled" %>
         onclick="confirmarEliminarEmpresa(this.dataset.id, this.dataset.razon)">
     <i class="bi bi-trash"></i>
 </button>
@@ -307,7 +305,69 @@
                             </div>
                         </div>
 
-                        <div class="modal fade" id="modalNuevaEmpresa" tabindex="-1"
+                                                <div class="modal fade" id="modalEditarEmpresa" tabindex="-1"
+                            aria-labelledby="modalEditarEmpresaLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content modal-content-propath">
+                                    <div class="modal-header modal-header-propath">
+                                        <h2 class="modal-title h5" id="modalEditarEmpresaLabel">
+                                            <i class="bi bi-pencil-square me-2 text-primary"></i> Editar Datos de Empresa
+                                        </h2>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Cerrar"></button>
+                                    </div>
+                                    <form id="formEditarEmpresa" onsubmit="event.preventDefault(); ejecutarGuardarEditarEmpresa();">
+                                        <div class="modal-body modal-body-propath">
+                                            <input type="hidden" id="editEmpresaId" name="id">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Razón Social *</label>
+                                                    <input type="text" class="form-control" id="editEmpresaRazon" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">RUC (11 dígitos) *</label>
+                                                    <input type="text" class="form-control" id="editEmpresaRuc" maxlength="11" pattern="\d{11}" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Correo de Contacto</label>
+                                                    <input type="email" class="form-control bg-light" id="editEmpresaCorreo" readonly disabled>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Teléfono</label>
+                                                    <input type="text" class="form-control" id="editEmpresaTelefono" placeholder="Ej. 01 2345678">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-semibold">Dirección</label>
+                                                    <input type="text" class="form-control" id="editEmpresaDireccion" placeholder="Dirección de la sede">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-semibold">Descripción</label>
+                                                    <textarea class="form-control" id="editEmpresaDescripcion" rows="3" placeholder="Descripción institucional..."></textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Estado de Cuenta (Informativo)</label>
+                                                    <input type="text" class="form-control bg-light fw-semibold text-secondary" id="editEmpresaEstadoCuenta" readonly>
+                                                    <div class="form-text">Informativo (no editable aquí).</div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Estado de Empresa (Informativo)</label>
+                                                    <input type="text" class="form-control bg-light fw-semibold text-secondary" id="editEmpresaEstadoEmpresa" readonly>
+                                                    <div class="form-text">Informativo (no editable aquí).</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer bg-light border-0">
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarEditarEmpresa">
+                                                <i class="bi bi-check2 me-1"></i> Guardar Cambios
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+<div class="modal fade" id="modalNuevaEmpresa" tabindex="-1"
                             aria-labelledby="modalNuevaEmpresaLabel" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered modal-lg">
                                 <div class="modal-content modal-content-propath">
@@ -515,6 +575,87 @@
                                 }, 200);
                             }
 
+                            function abrirModalEditarEmpresa(btn) {
+                                document.getElementById('editEmpresaId').value = btn.getAttribute('data-id') || '';
+                                document.getElementById('editEmpresaRazon').value = (btn.getAttribute('data-razon') || '').trim();
+                                document.getElementById('editEmpresaRuc').value = (btn.getAttribute('data-ruc') || '').trim();
+                                document.getElementById('editEmpresaCorreo').value = (btn.getAttribute('data-correo') || '').trim();
+                                document.getElementById('editEmpresaTelefono').value = (btn.getAttribute('data-telefono') || '').trim();
+                                document.getElementById('editEmpresaDireccion').value = (btn.getAttribute('data-direccion') || '').trim();
+                                document.getElementById('editEmpresaDescripcion').value = (btn.getAttribute('data-descripcion') || '').trim();
+
+                                const estCta = (btn.getAttribute('data-estado-cuenta') || 'ACTIVO').trim().toUpperCase();
+                                document.getElementById('editEmpresaEstadoCuenta').value = (estCta === 'ACTIVO') ? 'ACTIVO' : 'INACTIVO';
+
+                                const estEmp = (btn.getAttribute('data-estado') || 'APROBADA').trim().toUpperCase();
+                                if (estEmp === 'PENDIENTE') {
+                                    document.getElementById('editEmpresaEstadoEmpresa').value = 'PENDIENTE';
+                                } else if (estEmp === 'RECHAZADA' || estEmp === 'BLOQUEADA') {
+                                    document.getElementById('editEmpresaEstadoEmpresa').value = 'RECHAZADA';
+                                } else {
+                                    document.getElementById('editEmpresaEstadoEmpresa').value = 'APROBADA';
+                                }
+
+                                const modalEl = document.getElementById('modalEditarEmpresa');
+                                const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                                if (ModalClass) {
+                                    const inst = ModalClass.getOrCreateInstance(modalEl);
+                                    if (inst) inst.show();
+                                }
+                            }
+
+                            async function ejecutarGuardarEditarEmpresa() {
+                                const btn = document.getElementById('btnGuardarEditarEmpresa');
+                                btn.disabled = true;
+
+                                const ruc = document.getElementById('editEmpresaRuc').value.trim();
+                                if (!/^\d{11}$/.test(ruc)) {
+                                    mostrarModalMensaje('Dato Inválido', 'El RUC debe contener exactamente 11 dígitos numéricos.', 'warning');
+                                    btn.disabled = false;
+                                    return;
+                                }
+
+                                const body = new URLSearchParams({
+                                    accion: 'actualizarEmpresa',
+                                    id: document.getElementById('editEmpresaId').value,
+                                    razonSocial: document.getElementById('editEmpresaRazon').value,
+                                    ruc: ruc,
+                                    telefono: document.getElementById('editEmpresaTelefono').value,
+                                    direccion: document.getElementById('editEmpresaDireccion').value,
+                                    descripcion: document.getElementById('editEmpresaDescripcion').value,
+                                    estadoCuenta: document.getElementById('editEmpresaEstadoCuenta').value,
+                                    estadoEmpresa: document.getElementById('editEmpresaEstadoEmpresa').value
+                                });
+
+                                try {
+                                    const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                        body: body.toString()
+                                    });
+
+                                    const data = await res.json();
+                                    const modalEl = document.getElementById('modalEditarEmpresa');
+                                    const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                                    if (ModalClass) {
+                                        const modalInst = ModalClass.getInstance(modalEl);
+                                        if (modalInst) modalInst.hide();
+                                    }
+
+                                    if (data.exito) {
+                                        mostrarModalMensaje('Empresa Actualizada', data.mensaje || 'Empresa actualizada con éxito.', 'success', () => window.location.reload());
+                                    } else {
+                                        mostrarModalMensaje('Error al Actualizar', data.mensaje || 'No se pudo actualizar la empresa.', 'danger');
+                                        btn.disabled = false;
+                                    }
+                                } catch (err) {
+                                    mostrarModalMensaje('Error de Conexión', 'No se pudo conectar con el servidor: ' + err.message, 'danger');
+                                    btn.disabled = false;
+                                }
+                            }
+
+                            window.abrirModalEditarEmpresa = abrirModalEditarEmpresa;
+                            window.ejecutarGuardarEditarEmpresa = ejecutarGuardarEditarEmpresa;
                             window.confirmarActivarEmpresa = confirmarActivarEmpresa;
                             window.confirmarEliminarEmpresa = confirmarEliminarEmpresa;
                             window.confirmarAprobarEmpresaModal = confirmarAprobarEmpresaModal;

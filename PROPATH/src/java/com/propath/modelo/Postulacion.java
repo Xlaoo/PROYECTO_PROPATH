@@ -70,6 +70,14 @@ public class Postulacion implements Serializable {
         this.oferta = oferta;
     }
 
+    public String getTituloOferta() {
+        return oferta;
+    }
+
+    public void setTituloOferta(String tituloOferta) {
+        this.oferta = tituloOferta;
+    }
+
     public String getEmpresa() {
         return empresa;
     }

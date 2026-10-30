@@ -26,27 +26,14 @@ public class UsuarioDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 
                 if (rs.next()) {
-    String hash = rs.getString("contrasena");
-
-    System.out.println("PROPATH LOGIN - Usuario encontrado: SI");
-    System.out.println("PROPATH LOGIN - ID: " + rs.getInt("id_usuario"));
-    System.out.println("PROPATH LOGIN - Hash presente: " + (hash != null));
-    System.out.println("PROPATH LOGIN - Hash BCrypt formato esperado: "
-            + (hash != null && hash.matches("\\$2[aby]\\$\\d{2}\\$.{53}")));
-
-    boolean passwordValida =
-            SeguridadUtil.verificarPassword(contrasenaPlana, hash);
-
-    System.out.println("PROPATH LOGIN - BCrypt coincide: " + passwordValida);
-
-    if (passwordValida) {
-        Usuario usuario = mapearUsuario(rs);
-        cargarDatosRol(conn, usuario);
-        return usuario;
-    }
-} else {
-    System.out.println("PROPATH LOGIN - Usuario encontrado: NO");
-}
+                    String hash = rs.getString("contrasena");
+                    boolean passwordValida = SeguridadUtil.verificarPassword(contrasenaPlana, hash);
+                    if (passwordValida) {
+                        Usuario usuario = mapearUsuario(rs);
+                        cargarDatosRol(conn, usuario);
+                        return usuario;
+                    }
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();

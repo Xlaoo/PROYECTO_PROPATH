@@ -1,4 +1,4 @@
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.Estudiante"%>
 <%@page import="com.propath.servicio.BackendCliente"%>
@@ -151,6 +151,7 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="action-btn-group justify-content-center">
+                                                <% if (esActivo) { %>
                                                 <button type="button" 
                                                         class="btn-action btn-action-view" 
                                                         title="Ver detalle"
@@ -175,26 +176,24 @@
 </svg>
                                                 </button>
 
-                                                <% if (esActivo) { %>
-                                                    <button type="button" 
-                                                            class="btn-action btn-action-success opacity-50" 
-                                                            title="Estudiante ya se encuentra activo" 
-                                                            disabled 
-                                                            style="cursor: not-allowed;">
-                                                        <i class="bi bi-check-lg"></i>
-                                                    </button>
-                                                <% } else { %>
-                                                    <button type="button" 
-                                                            class="btn-action btn-action-success" 
-                                                            title="Activar estudiante"
-                                                            data-bs-toggle="tooltip"
-                                                            data-id="<%= est.getId() %>"
-                                                            data-nombre="<%= est.getNombreCompleto() %>"
-                                                            onclick="abrirModalActivarEstudiante(this.dataset.id, this.dataset.nombre)">
-                                                        <i class="bi bi-check-lg"></i>
-                                                    </button>
-                                                <% } %>
+                                                <button type="button" 
+                                                        class="btn-action btn-action-edit" 
+                                                        title="Editar estudiante"
+                                                        data-bs-toggle="tooltip"
+                                                        data-id="<%= est.getId() %>"
+                                                        data-nombres="<%= est.getNombre() != null ? est.getNombre() : "" %>"
+                                                        data-apellidos="<%= est.getApellido() != null ? est.getApellido() : "" %>"
+                                                        data-correo="<%= est.getCorreo() %>"
+                                                        data-universidad="<%= est.getUniversidad() != null ? est.getUniversidad() : "" %>"
+                                                        data-carrera="<%= est.getCarrera() != null ? est.getCarrera() : "" %>"
+                                                        data-ciclo="<%= est.getCiclo() %>"
+                                                        data-telefono="<%= est.getTelefono() != null ? est.getTelefono() : "" %>"
+                                                        data-estado="<%= est.getEstado() %>"
+                                                        onclick="abrirModalEditarEstudiante(this)">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
 
+                                                <% } %>
                                                 <button type="button" 
                                                         class="btn-action btn-action-danger" 
                                                         title="Eliminar estudiante"
@@ -270,26 +269,65 @@
             </div>
         </div>
 
-        <div class="modal fade" id="modalActivarEstudiante" tabindex="-1" aria-labelledby="modalActivarEstudianteLabel" aria-hidden="true">
+        <div class="modal fade" id="modalEditarEstudiante" tabindex="-1" aria-labelledby="modalEditarEstudianteLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content modal-content-propath">
                     <div class="modal-header modal-header-propath">
-                        <h2 class="modal-title h5" id="modalActivarEstudianteLabel">
-                            <i class="bi bi-person-check-fill me-2 text-success"></i> Activar estudiante
+                        <h2 class="modal-title h5" id="modalEditarEstudianteLabel">
+                            <i class="bi bi-pencil-square me-2 text-primary"></i> Editar Estudiante
                         </h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body modal-body-propath py-4">
-                        <p class="fs-6 text-dark mb-1">¿Deseas activar la cuenta de este estudiante?</p>
-                        <div class="fw-bold text-primary" id="activarEstudianteNombre">—</div>
-                        <input type="hidden" id="activarEstudianteId">
-                    </div>
-                    <div class="modal-footer bg-light border-0">
-                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-success rounded-pill px-4" id="btnConfirmarActivarEstudiante" onclick="ejecutarActivarEstudiante()">
-                            <i class="bi bi-check-lg me-1"></i> Sí, activar
-                        </button>
-                    </div>
+                    <form id="formEditarEstudiante" onsubmit="event.preventDefault(); ejecutarGuardarEditarEstudiante();">
+                        <div class="modal-body modal-body-propath">
+                            <input type="hidden" id="editEstudianteId" name="id">
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Nombres *</label>
+                                    <input type="text" class="form-control" id="editEstudianteNombre" name="nombre" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Apellidos *</label>
+                                    <input type="text" class="form-control" id="editEstudianteApellidos" name="apellido" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold text-secondary">Correo Electrónico</label>
+                                    <input type="email" class="form-control bg-light" id="editEstudianteCorreo" readonly disabled>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Universidad *</label>
+                                    <input type="text" class="form-control" id="editEstudianteUniversidad" name="universidad" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Carrera *</label>
+                                    <input type="text" class="form-control" id="editEstudianteCarrera" name="carrera" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Ciclo Actual *</label>
+                                    <select class="form-select" id="editEstudianteCiclo" name="ciclo" required>
+                                        <% for (int c = 1; c <= 12; c++) { %>
+                                            <option value="<%= c %>">Ciclo <%= c %></option>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Teléfono</label>
+                                    <input type="tel" class="form-control" id="editEstudianteTelefono" name="telefono" placeholder="Ej. 987654321">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold text-secondary">Estado de Cuenta (Informativo)</label>
+                                    <input type="text" class="form-control bg-light fw-semibold text-secondary" id="editEstudianteEstado" name="estado" readonly>
+                                    <div class="form-text">El estado de cuenta es informativo y no puede modificarse desde este formulario.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light border-0">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarEditarEstudiante">
+                                <i class="bi bi-check2 me-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -333,10 +371,19 @@ badge.className = 'badge-status ' +
                 }
             }
 
-            function abrirModalActivarEstudiante(id, nombre) {
-                document.getElementById('activarEstudianteId').value = id;
-                document.getElementById('activarEstudianteNombre').textContent = nombre || 'Estudiante #' + id;
-                const modalEl = document.getElementById('modalActivarEstudiante');
+            function abrirModalEditarEstudiante(btn) {
+                document.getElementById('editEstudianteId').value = btn.getAttribute('data-id') || '';
+                document.getElementById('editEstudianteNombre').value = (btn.getAttribute('data-nombres') || '').trim();
+                document.getElementById('editEstudianteApellidos').value = (btn.getAttribute('data-apellidos') || '').trim();
+                document.getElementById('editEstudianteCorreo').value = (btn.getAttribute('data-correo') || '').trim();
+                document.getElementById('editEstudianteUniversidad').value = (btn.getAttribute('data-universidad') || '').trim();
+                document.getElementById('editEstudianteCarrera').value = (btn.getAttribute('data-carrera') || '').trim();
+                document.getElementById('editEstudianteCiclo').value = btn.getAttribute('data-ciclo') || '1';
+                document.getElementById('editEstudianteTelefono').value = (btn.getAttribute('data-telefono') || '').trim();
+                const est = (btn.getAttribute('data-estado') || 'ACTIVO').trim().toUpperCase();
+                document.getElementById('editEstudianteEstado').value = (est === 'ACTIVO' || est === 'ACTIVA') ? 'ACTIVO' : 'INACTIVO';
+
+                const modalEl = document.getElementById('modalEditarEstudiante');
                 const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
                 if (ModalClass) {
                     const inst = ModalClass.getOrCreateInstance(modalEl);
@@ -344,15 +391,20 @@ badge.className = 'badge-status ' +
                 }
             }
 
-            async function ejecutarActivarEstudiante() {
-                const id = document.getElementById('activarEstudianteId').value;
-                const btn = document.getElementById('btnConfirmarActivarEstudiante');
+            async function ejecutarGuardarEditarEstudiante() {
+                const btn = document.getElementById('btnGuardarEditarEstudiante');
                 btn.disabled = true;
 
                 const body = new URLSearchParams({
-                    accion: 'cambiarEstadoEstudiante',
-                    id: id,
-                    estado: 'Activo'
+                    accion: 'actualizarEstudiante',
+                    id: document.getElementById('editEstudianteId').value,
+                    nombre: document.getElementById('editEstudianteNombre').value,
+                    apellido: document.getElementById('editEstudianteApellidos').value,
+                    universidad: document.getElementById('editEstudianteUniversidad').value,
+                    carrera: document.getElementById('editEstudianteCarrera').value,
+                    ciclo: document.getElementById('editEstudianteCiclo').value,
+                    telefono: document.getElementById('editEstudianteTelefono').value,
+                    estado: document.getElementById('editEstudianteEstado').value
                 });
 
                 try {
@@ -363,7 +415,7 @@ badge.className = 'badge-status ' +
                     });
 
                     const data = await res.json();
-                    const modalEl = document.getElementById('modalActivarEstudiante');
+                    const modalEl = document.getElementById('modalEditarEstudiante');
                     const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
                     if (ModalClass) {
                         const modalInst = ModalClass.getInstance(modalEl);
@@ -371,9 +423,9 @@ badge.className = 'badge-status ' +
                     }
 
                     if (data.exito) {
-                        mostrarModalMensaje('Estudiante Activado', 'La cuenta ha sido activada correctamente en MariaDB.', 'success', () => window.location.reload());
+                        mostrarModalMensaje('Estudiante Actualizado', data.mensaje || 'Estudiante actualizado con éxito.', 'success', () => window.location.reload());
                     } else {
-                        mostrarModalMensaje('Error de Activación', data.mensaje || 'No se pudo activar la cuenta del estudiante.', 'danger');
+                        mostrarModalMensaje('Error al Actualizar', data.mensaje || 'No se pudo actualizar el estudiante.', 'danger');
                         btn.disabled = false;
                     }
                 } catch (err) {
@@ -414,8 +466,8 @@ badge.className = 'badge-status ' +
             }
 
             window.mostrarFichaEstudianteAdmin = mostrarFichaEstudianteAdmin;
-            window.abrirModalActivarEstudiante = abrirModalActivarEstudiante;
-            window.ejecutarActivarEstudiante = ejecutarActivarEstudiante;
+            window.abrirModalEditarEstudiante = abrirModalEditarEstudiante;
+            window.ejecutarGuardarEditarEstudiante = ejecutarGuardarEditarEstudiante;
             window.eliminarEstudiante = eliminarEstudiante;
         </script>
         <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>

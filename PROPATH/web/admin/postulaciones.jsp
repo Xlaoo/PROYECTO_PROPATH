@@ -1,4 +1,4 @@
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.Postulacion"%>
 <%@page import="com.propath.servicio.BackendCliente"%>
@@ -92,12 +92,13 @@
                                         <th>Empresa</th>
                                         <th>Fecha de Postulación</th>
                                         <th>Estado Actual</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <% if (listaPostulaciones == null || listaPostulaciones.isEmpty()) { %>
                                     <tr>
-                                        <td colspan="5" class="text-center py-4 text-muted">
+                                        <td colspan="6" class="text-center py-4 text-muted">
                                             <i class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
                                             <span>No hay registros disponibles</span>
                                         </td>
@@ -152,6 +153,21 @@
                                                 <%= pos.getEstado() %>
                                             </span>
                                         </td>
+                                        <td class="text-center">
+                                            <button type="button" 
+                                                    class="btn-action btn-action-view" 
+                                                    title="Ver postulación completa"
+                                                    data-bs-toggle="tooltip"
+                                                    data-id="<%= pos.getId() %>"
+                                                    data-estudiante="<%= pos.getEstudiante() %>"
+                                                    data-oferta="<%= pos.getOferta() %>"
+                                                    data-empresa="<%= pos.getEmpresa() %>"
+                                                    data-fecha="<%= pos.getFechaPostulacion() %>"
+                                                    data-estado="<%= pos.getEstado() %>"
+                                                    onclick="verDetallePostulacionAdmin(this)">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
                                     </tr>
                                     <%  }
                                        } %>
@@ -160,7 +176,140 @@
                         </div>
                     </div>
                 </div>
-            </main>
+                    <!-- Modal Detalle Postulación Admin -->
+        <div class="modal fade" id="modalDetallePostulacionAdmin" tabindex="-1" aria-labelledby="modalPostulacionAdminTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content modal-content-propath">
+                    <div class="modal-header modal-header-propath">
+                        <h2 class="modal-title h5" id="modalPostulacionAdminTitle">
+                            <i class="bi bi-file-earmark-person-fill me-2 text-primary"></i>
+                            <span>Expediente Completo de Postulación</span>
+                        </h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body modal-body-propath">
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <div class="detail-label">Estudiante Postulante</div>
+                                <div class="detail-value fs-5 fw-bold text-dark" id="adminPostulacionEstudiante">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Oferta de Prácticas</div>
+                                <div class="detail-value fw-semibold text-primary" id="adminPostulacionOferta">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Empresa Convocante</div>
+                                <div class="detail-value" id="adminPostulacionEmpresa">—</div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="detail-label">Fecha de Envío</div>
+                                <div class="detail-value" id="adminPostulacionFecha">—</div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="detail-label">Estado Actual</div>
+                                <span id="adminPostulacionEstado" class="badge-status badge-activo">—</span>
+                            </div>
+                        </div>
+
+                        <div class="border-top pt-3">
+                            <h3 class="h6 fw-bold text-dark mb-3">
+                                <i class="bi bi-ui-checks me-1 text-primary"></i>
+                                Respuestas al Cuestionario de Postulación (12 Preguntas)
+                            </h3>
+                            <div id="adminPostulacionRespuestas" class="d-flex flex-column gap-2" style="max-height: 400px; overflow-y: auto;">
+                                <div class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    <span>Cargando respuestas del postulante...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            async function verDetallePostulacionAdmin(btn) {
+                const id = btn.getAttribute('data-id');
+                const estudiante = btn.getAttribute('data-estudiante') || '—';
+                const oferta = btn.getAttribute('data-oferta') || '—';
+                const empresa = btn.getAttribute('data-empresa') || '—';
+                const fecha = btn.getAttribute('data-fecha') || '—';
+                const estado = btn.getAttribute('data-estado') || '—';
+
+                document.getElementById('adminPostulacionEstudiante').textContent = estudiante;
+                document.getElementById('adminPostulacionOferta').textContent = oferta;
+                document.getElementById('adminPostulacionEmpresa').textContent = empresa;
+                document.getElementById('adminPostulacionFecha').textContent = fecha;
+
+                const badge = document.getElementById('adminPostulacionEstado');
+                badge.textContent = estado;
+                const estNorm = estado.toUpperCase();
+                badge.className = 'badge-status ' + (estNorm.includes('SELECCIONADO') && !estNorm.includes('NO') ? 'badge-seleccionado' : (estNorm.includes('REVISIÓN') || estNorm.includes('REVISION') ? 'badge-en-revision' : (estNorm.includes('NO') ? 'badge-bloqueado' : 'badge-postulado')));
+
+                const contenedor = document.getElementById('adminPostulacionRespuestas');
+                contenedor.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2" role="status"></div><span>Cargando respuestas del postulante...</span></div>';
+
+                const modalEl = document.getElementById('modalDetallePostulacionAdmin');
+                const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                if (ModalClass) {
+                    const inst = ModalClass.getOrCreateInstance(modalEl);
+                    if (inst) inst.show();
+                }
+
+                try {
+                    const res = await fetch('${pageContext.request.contextPath}/admin/accion?accion=obtenerPostulacion&id=' + encodeURIComponent(id), {
+                        credentials: 'same-origin',
+                        cache: 'no-store'
+                    });
+                    const data = await res.json();
+                    contenedor.innerHTML = '';
+
+                    const preguntasBase = [
+                        "¿Por qué te interesa esta oportunidad?",
+                        "¿Qué conocimientos puedes aportar?",
+                        "¿Qué herramientas o tecnologías manejas?",
+                        "¿Has desarrollado proyectos relacionados?",
+                        "¿Qué esperas aprender?",
+                        "¿Cuál es tu disponibilidad horaria?",
+                        "¿Cuáles son tus principales fortalezas?",
+                        "¿Cómo organizas tus responsabilidades?",
+                        "¿Cómo reaccionas ante un problema inesperado?",
+                        "¿Cómo trabajas en equipo?",
+                        "¿Qué aspecto profesional deseas mejorar?",
+                        "¿Cuáles son tus objetivos profesionales?"
+                    ];
+
+                    const respuestas = (data && Array.isArray(data.respuestas)) ? data.respuestas : [];
+                    if (respuestas.length === 0) {
+                        contenedor.innerHTML = '<div class="alert alert-light border text-muted small py-3 text-center">No se encontraron respuestas registradas para esta postulación.</div>';
+                        return;
+                    }
+
+                    respuestas.sort((a, b) => Number(a.numeroPregunta) - Number(b.numeroPregunta));
+
+                    respuestas.forEach((r) => {
+                        const num = Number(r.numeroPregunta);
+                        const textoPregunta = r.pregunta || (preguntasBase[num - 1] || ("Pregunta #" + num));
+                        const textoRespuesta = r.respuesta || "Sin respuesta registrada.";
+
+                        const card = document.createElement('div');
+                        card.className = 'border rounded-3 p-3 bg-light bg-opacity-50';
+                        card.innerHTML = '<div class="fw-semibold text-dark small mb-1">' + num + '. ' + textoPregunta + '</div>'
+                                       + '<div class="small text-secondary ps-3 border-start border-2 border-primary">' + textoRespuesta + '</div>';
+                        contenedor.appendChild(card);
+                    });
+                } catch (err) {
+                    contenedor.innerHTML = '<div class="alert alert-danger small py-2">Error al cargar las respuestas: ' + err.message + '</div>';
+                }
+            }
+
+            window.verDetallePostulacionAdmin = verDetallePostulacionAdmin;
+        </script>
+</main>
         </div>
 
         

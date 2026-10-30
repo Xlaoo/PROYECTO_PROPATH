@@ -232,6 +232,22 @@ public class OfertaPracticaDAO {
         }
     }
 
+    public int contarPostulaciones(int idOferta) {
+        String sql = "SELECT COUNT(*) FROM postulaciones WHERE id_oferta = ?";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idOferta);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     private OfertaPractica mapearOferta(ResultSet rs) throws SQLException {
         OfertaPractica o = new OfertaPractica();
         o.setId(rs.getInt("id_oferta"));

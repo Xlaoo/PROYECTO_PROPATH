@@ -2,6 +2,8 @@ package com.propath.controlador;
 
 import com.propath.dao.DocumentoEstudianteDAO;
 import com.propath.dao.EmpresaDAO;
+import com.propath.dao.EstudianteDAO;
+import com.propath.modelo.Estudiante;
 import com.propath.dao.EntrevistaDAO;
 import com.propath.dao.OfertaPracticaDAO;
 import com.propath.dao.PostulacionDAO;
@@ -56,25 +58,36 @@ public class OfertaEmpresaServlet extends HttpServlet {
             return;
         }
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
-        if (!"EMPRESA".equalsIgnoreCase(usuario.getRol()) || usuario.getIdEmpresa() == null
-                || usuario.getIdEmpresa() <= 0) {
+        if (!"EMPRESA".equalsIgnoreCase(usuario.getRol())) {
             response.sendError(403);
             return;
         }
-        Empresa empresa = empresaDAO.obtenerPorId(usuario.getIdEmpresa());
+        Integer idEmpresa = usuario.getIdEmpresa();
+        if (idEmpresa == null || idEmpresa <= 0) {
+            Empresa emp = empresaDAO.obtenerPorUsuarioId(usuario.getId());
+            if (emp != null) {
+                idEmpresa = emp.getId();
+                usuario.setIdEmpresa(idEmpresa);
+            }
+        }
+        if (idEmpresa == null || idEmpresa <= 0) {
+            response.sendError(403, "Empresa no identificada");
+            return;
+        }
+        Empresa empresa = empresaDAO.obtenerPorId(idEmpresa);
         if (empresa == null || !"APROBADA".equalsIgnoreCase(empresa.getEstado())
                 || !"ACTIVO".equalsIgnoreCase(empresa.getEstadoCuenta())) {
-            response.sendError(403);
+            response.sendError(403, "Empresa no aprobada o cuenta inactiva");
             return;
         }
         int idPostulacion;
         try {
             idPostulacion = Integer.parseInt(request.getParameter("idPostulacion"));
         } catch (Exception e) {
-            response.sendError(400);
+            response.sendError(400, "ID de postulación inválido");
             return;
         }
-        int idEstudiante = idEstudiantePostulacion(idPostulacion, usuario.getIdEmpresa());
+        int idEstudiante = idEstudiantePostulacion(idPostulacion, idEmpresa);
         if (idEstudiante <= 0) {
             response.sendError(403, "Postulación no autorizada o estudiante no identificado");
             return;
@@ -103,24 +116,40 @@ public class OfertaEmpresaServlet extends HttpServlet {
             response.sendError(400);
             return;
         }
+        Postulacion post = postulacionDAO.obtenerPorId(idPostulacion);
+        EstudianteDAO estDAO = new EstudianteDAO();
+        Estudiante est = estDAO.obtenerPorId(idEstudiante);
         List<RespuestaPostulacion> lista = postulacionDAO.obtenerRespuestas(idPostulacion);
-        StringBuilder jsonRespuestas = new StringBuilder("[");
+        DocumentoEstudiante docCv = documentoDAO.obtenerCvPorEstudiante(idEstudiante);
+        boolean cvDisponible = (docCv != null && docCv.getRutaArchivo() != null && !docCv.getRutaArchivo().trim().isEmpty());
+
+        StringBuilder sb = new StringBuilder("{");
+        sb.append("\"cvDisponible\":").append(cvDisponible).append(",");
+        sb.append("\"idPostulacion\":").append(idPostulacion).append(",");
+        sb.append("\"idEstudiante\":").append(idEstudiante).append(",");
+        sb.append("\"estudiante\":\"").append(est != null && est.getNombreCompleto() != null ? est.getNombreCompleto().replace("\"", "\\\"") : (post != null && post.getEstudiante() != null ? post.getEstudiante().replace("\"", "\\\"") : "")).append("\",");
+        sb.append("\"correo\":\"").append(est != null && est.getCorreo() != null ? est.getCorreo().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"universidad\":\"").append(est != null && est.getUniversidad() != null ? est.getUniversidad().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"carrera\":\"").append(est != null && est.getCarrera() != null ? est.getCarrera().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"ciclo\":").append(est != null ? est.getCiclo() : 0).append(",");
+        sb.append("\"telefono\":\"").append(est != null && est.getTelefono() != null ? est.getTelefono().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"oferta\":\"").append(post != null && post.getOferta() != null ? post.getOferta().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"fecha\":\"").append(post != null && post.getFechaPostulacion() != null ? post.getFechaPostulacion() : "").append("\",");
+        sb.append("\"estado\":\"").append(post != null && post.getEstado() != null ? post.getEstado() : "").append("\",");
+        sb.append("\"motivoRechazo\":\"").append(post != null && post.getMotivoRechazo() != null ? post.getMotivoRechazo().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"respuestas\":[");
         for (int i = 0; i < lista.size(); i++) {
-            if (i > 0) {
-                jsonRespuestas.append(",");
-            }
+            if (i > 0) sb.append(",");
             RespuestaPostulacion r = lista.get(i);
             String preg = r.getPregunta() != null ? r.getPregunta().replace("\"", "\\\"") : "";
             String resp = r.getRespuesta() != null ? r.getRespuesta().replace("\"", "\\\"") : "";
-            jsonRespuestas.append("{\"numeroPregunta\":").append(r.getNumeroPregunta())
-                    .append(",\"pregunta\":\"").append(preg).append("\"")
-                    .append(",\"respuesta\":\"").append(resp).append("\"}");
+            sb.append("{\"numeroPregunta\":").append(r.getNumeroPregunta())
+              .append(",\"pregunta\":\"").append(preg).append("\"")
+              .append(",\"respuesta\":\"").append(resp).append("\"}");
         }
-        jsonRespuestas.append("]");
-        boolean cvDisponible = documentoDAO.obtenerCvPorEstudiante(idEstudiante) != null;
+        sb.append("]}");
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"cvDisponible\":" + cvDisponible
-                + ",\"respuestas\":" + jsonRespuestas.toString() + "}");
+        response.getWriter().write(sb.toString());
     }
 
     @Override
@@ -256,8 +285,14 @@ public class OfertaEmpresaServlet extends HttpServlet {
                     response.sendError(403, "No estás autorizado para eliminar esta oferta.");
                     return;
                 }
-                ofertaDAO.eliminar(id);
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=eliminada");
+                int cantPost = ofertaDAO.contarPostulaciones(id);
+                if (cantPost > 0) {
+                    ofertaDAO.actualizarEstado(id, "CERRADA");
+                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=cerrada_por_postulaciones");
+                } else {
+                    ofertaDAO.eliminar(id);
+                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=eliminada");
+                }
                 return;
             }
         } else if ("actualizarPerfilEmpresa".equalsIgnoreCase(accion)) {

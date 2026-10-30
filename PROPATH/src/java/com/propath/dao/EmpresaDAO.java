@@ -374,6 +374,67 @@ public class EmpresaDAO {
         }
     }
 
+    public boolean actualizarConEstadoCuenta(Empresa emp, String estadoEmpresa, String estadoCuenta) {
+        if (emp == null || emp.getId() <= 0) {
+            return false;
+        }
+
+        String sqlEmp = "UPDATE empresas SET razon_social = ?, ruc = ?, telefono = ?, direccion = ?, descripcion = ?, estado = ? WHERE id_empresa = ?";
+        String sqlUsr = "UPDATE usuarios u INNER JOIN empresas e ON u.id_usuario = e.id_usuario SET u.estado = ? WHERE e.id_empresa = ?";
+
+        Connection conn = null;
+        try {
+            conn = ConexionBD.getConexion();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement psEmp = conn.prepareStatement(sqlEmp)) {
+                psEmp.setString(1, emp.getRazonSocial() != null ? emp.getRazonSocial().trim() : "");
+                psEmp.setString(2, emp.getRuc() != null ? emp.getRuc().trim() : "");
+                psEmp.setString(3, emp.getTelefono() != null ? emp.getTelefono().trim() : "");
+                psEmp.setString(4, emp.getDireccion() != null ? emp.getDireccion().trim() : "");
+                psEmp.setString(5, emp.getDescripcion() != null ? emp.getDescripcion().trim() : "");
+                psEmp.setString(6, estadoEmpresa != null && !estadoEmpresa.trim().isEmpty() ? estadoEmpresa.trim().toUpperCase() : "APROBADA");
+                psEmp.setInt(7, emp.getId());
+                psEmp.executeUpdate();
+            }
+
+            try (PreparedStatement psUsr = conn.prepareStatement(sqlUsr)) {
+                psUsr.setString(1, estadoCuenta != null && !estadoCuenta.trim().isEmpty() ? estadoCuenta.trim().toUpperCase() : "ACTIVO");
+                psUsr.setInt(2, emp.getId());
+                psUsr.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    public int contarOfertas(int idEmpresa) {
+        String sql = "SELECT COUNT(*) FROM ofertas_practicas WHERE id_empresa = ?";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idEmpresa);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     private Empresa mapearEmpresa(ResultSet rs) throws SQLException {
         Empresa e = new Empresa();
         e.setId(rs.getInt("id_empresa"));

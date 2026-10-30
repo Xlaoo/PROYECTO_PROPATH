@@ -1,4 +1,4 @@
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.OfertaPractica"%>
 <%@page import="com.propath.servicio.BackendCliente"%>
@@ -143,7 +143,7 @@
                                             <div class="action-btn-group justify-content-center">
                                                 <button type="button" 
                                                         class="btn-action btn-action-view" 
-                                                        title="Ver detalle"
+                                                        title="Ver detalle completo"
                                                         data-bs-toggle="tooltip"
                                                         data-titulo="<%= ofr.getTitulo() %>"
                                                         data-empresa="<%= ofr.getEmpresa() %>"
@@ -151,39 +151,14 @@
                                                         data-modalidad="<%= ofr.getModalidad() %>"
                                                         data-vacantes="<%= ofr.getVacantes() %>"
                                                         data-fecha="<%= ofr.getFechaPublicacion() %>"
+                                                        data-fecha-limite="<%= ofr.getFechaLimite() != null ? ofr.getFechaLimite() : "" %>"
+                                                        data-ubicacion="<%= ofr.getUbicacion() != null ? ofr.getUbicacion() : "" %>"
+                                                        data-remuneracion="<%= ofr.getRemuneracion() != null ? ofr.getRemuneracion() : "" %>"
+                                                        data-descripcion="<%= ofr.getDescripcion() != null ? ofr.getDescripcion().replace("\"", "&quot;") : "" %>"
+                                                        data-requisitos="<%= ofr.getRequisitos() != null ? ofr.getRequisitos().replace("\"", "&quot;") : "" %>"
                                                         data-estado="<%= ofr.getEstado() %>"
                                                         onclick="verDetalleOfertaBtn(this)">
                                                     <i class="bi bi-eye"></i>
-                                                </button>
-
-                                                <button type="button" 
-                                                        class="btn-action btn-action-success" 
-                                                        title="Aprobar oferta"
-                                                        data-bs-toggle="tooltip"
-                                                        data-id="<%= ofr.getId() %>"
-                                                        data-estado="Activa"
-                                                        onclick="cambiarEstadoOfertaBtn(this)">
-                                                    <i class="bi bi-check-lg"></i>
-                                                </button>
-
-                                                <button type="button" 
-                                                        class="btn-action btn-action-danger" 
-                                                        title="Rechazar oferta"
-                                                        data-bs-toggle="tooltip"
-                                                        data-id="<%= ofr.getId() %>"
-                                                        data-estado="Rechazada"
-                                                        onclick="cambiarEstadoOfertaBtn(this)">
-                                                    <i class="bi bi-x-lg"></i>
-                                                </button>
-
-                                                <button type="button" 
-                                                        class="btn-action btn-action-warning" 
-                                                        title="Desactivar oferta"
-                                                        data-bs-toggle="tooltip"
-                                                        data-id="<%= ofr.getId() %>"
-                                                        data-estado="Desactivada"
-                                                        onclick="cambiarEstadoOfertaBtn(this)">
-                                                    <i class="bi bi-pause-fill"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -213,7 +188,7 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <div class="detail-label">Puesto de Prácticas</div>
-                                <div class="detail-value fs-5" id="modalOfertaPuesto">—</div>
+                                <div class="detail-value fs-5 fw-bold text-dark" id="modalOfertaPuesto">—</div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="detail-label">Empresa Solicitante</div>
@@ -236,8 +211,28 @@
                                 <div class="detail-value" id="modalOfertaFecha">—</div>
                             </div>
                             <div class="col-sm-6">
+                                <div class="detail-label">Fecha Límite de Postulación</div>
+                                <div class="detail-value text-danger fw-semibold" id="modalOfertaFechaLimite">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Ubicación / Sede</div>
+                                <div class="detail-value" id="modalOfertaUbicacion">—</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="detail-label">Subvención Económica</div>
+                                <div class="detail-value text-success fw-bold" id="modalOfertaRemuneracion">—</div>
+                            </div>
+                            <div class="col-12">
                                 <div class="detail-label">Estado de Publicación</div>
                                 <span id="modalOfertaEstado" class="badge-status badge-activo">—</span>
+                            </div>
+                            <div class="col-12 pt-2 border-top">
+                                <div class="detail-label">Descripción de las Prácticas</div>
+                                <div class="detail-value small bg-light p-3 rounded text-secondary" id="modalOfertaDescripcion" style="white-space: pre-wrap;">—</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="detail-label">Requisitos Solicitados</div>
+                                <div class="detail-value small bg-light p-3 rounded text-secondary" id="modalOfertaRequisitos" style="white-space: pre-wrap;">—</div>
                             </div>
                         </div>
                     </div>

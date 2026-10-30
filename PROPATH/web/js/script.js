@@ -12,6 +12,8 @@ class BootstrapModalCompat {
 
     show() {
         if (!this.element) return;
+        if (this.element.classList.contains('show')) return;
+
         document.body.classList.add('modal-open');
         let backdrop = document.querySelector('.modal-backdrop');
         if (!backdrop) {
@@ -78,6 +80,13 @@ document.addEventListener('click', function (e) {
             const inst = BootstrapModalCompat.getOrCreateInstance(modal);
             inst.hide();
         }
+        return;
+    }
+
+    if (e.target.classList && e.target.classList.contains('modal') && e.target.getAttribute('data-bs-backdrop') !== 'static') {
+        const inst = BootstrapModalCompat.getOrCreateInstance(e.target);
+        inst.hide();
+        return;
     }
 
     const toggleBtn = e.target.closest('[data-bs-toggle="modal"], [data-bs-toggle="dialog"]');
@@ -100,17 +109,15 @@ document.addEventListener('click', function (e) {
             const targetEl = document.querySelector(targetSel);
             if (targetEl) {
                 targetEl.classList.toggle('show');
-                const isExpanded = targetEl.classList.contains('show');
-                collapseBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
             }
         }
     }
 });
 
 document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' || e.key === 'Esc') {
         const openModal = document.querySelector('.modal.show');
-        if (openModal) {
+        if (openModal && openModal.getAttribute('data-bs-backdrop') !== 'static') {
             const inst = BootstrapModalCompat.getOrCreateInstance(openModal);
             inst.hide();
         }
@@ -372,31 +379,58 @@ function verDetalleEmpresa(razonSocial, ruc, correo, telefono, direccion, descri
 }
 
 function verDetalleOfertaBtn(btn) {
-    verDetalleOferta(
-        btn.getAttribute('data-titulo'),
-        btn.getAttribute('data-empresa'),
-        btn.getAttribute('data-carrera'),
-        btn.getAttribute('data-modalidad'),
-        btn.getAttribute('data-vacantes'),
-        btn.getAttribute('data-fecha'),
-        btn.getAttribute('data-estado')
-    );
+    const puesto = (btn.getAttribute('data-titulo') || '—').trim();
+    const empresa = (btn.getAttribute('data-empresa') || '—').trim();
+    const carrera = (btn.getAttribute('data-carrera') || '—').trim();
+    const modalidad = (btn.getAttribute('data-modalidad') || '—').trim();
+    const vacantes = (btn.getAttribute('data-vacantes') || '1').trim();
+    const fecha = (btn.getAttribute('data-fecha') || '—').trim();
+    const estado = (btn.getAttribute('data-estado') || 'ACTIVA').trim();
+    const fechaLimite = (btn.getAttribute('data-fecha-limite') || '—').trim();
+    const ubicacion = (btn.getAttribute('data-ubicacion') || 'No especificada').trim();
+    const remuneracion = (btn.getAttribute('data-remuneracion') || 'No especificada').trim();
+    const descripcion = (btn.getAttribute('data-descripcion') || 'Sin descripción').trim();
+    const requisitos = (btn.getAttribute('data-requisitos') || 'Sin requisitos específicos').trim();
+
+    verDetalleOferta(puesto, empresa, carrera, modalidad, vacantes, fecha, estado, fechaLimite, ubicacion, remuneracion, descripcion, requisitos);
 }
 
-function verDetalleOferta(puesto, empresa, carrera, modalidad, vacantes, fecha, estado) {
-    document.getElementById('modalOfertaPuesto').textContent = puesto;
-    document.getElementById('modalOfertaEmpresa').textContent = empresa;
-    document.getElementById('modalOfertaCarrera').textContent = carrera;
-    document.getElementById('modalOfertaModalidad').textContent = modalidad;
-    document.getElementById('modalOfertaVacantes').textContent = vacantes + (vacantes > 1 ? ' vacantes' : ' vacante');
-    document.getElementById('modalOfertaFecha').textContent = fecha;
+function verDetalleOferta(puesto, empresa, carrera, modalidad, vacantes, fecha, estado, fechaLimite, ubicacion, remuneracion, descripcion, requisitos) {
+    const elPuesto = document.getElementById('modalOfertaPuesto');
+    if (elPuesto) elPuesto.textContent = puesto;
+    const elEmp = document.getElementById('modalOfertaEmpresa');
+    if (elEmp) elEmp.textContent = empresa;
+    const elCar = document.getElementById('modalOfertaCarrera');
+    if (elCar) elCar.textContent = carrera;
+    const elMod = document.getElementById('modalOfertaModalidad');
+    if (elMod) elMod.textContent = modalidad;
+    const elVac = document.getElementById('modalOfertaVacantes');
+    if (elVac) elVac.textContent = vacantes + (parseInt(vacantes) > 1 ? ' vacantes' : ' vacante');
+    const elFec = document.getElementById('modalOfertaFecha');
+    if (elFec) elFec.textContent = fecha;
+    const elFecLim = document.getElementById('modalOfertaFechaLimite');
+    if (elFecLim) elFecLim.textContent = fechaLimite || '—';
+    const elUbi = document.getElementById('modalOfertaUbicacion');
+    if (elUbi) elUbi.textContent = ubicacion || '—';
+    const elRem = document.getElementById('modalOfertaRemuneracion');
+    if (elRem) elRem.textContent = remuneracion ? (remuneracion.startsWith('S/') ? remuneracion : 'S/ ' + remuneracion) : 'No especificada';
+    const elDesc = document.getElementById('modalOfertaDescripcion');
+    if (elDesc) elDesc.textContent = descripcion || '—';
+    const elReq = document.getElementById('modalOfertaRequisitos');
+    if (elReq) elReq.textContent = requisitos || '—';
 
     const badge = document.getElementById('modalOfertaEstado');
-    badge.textContent = estado;
-    badge.className = 'badge-status ' + (estado === 'Activa' ? 'badge-activo' : (estado === 'Pendiente' ? 'badge-pendiente' : 'badge-bloqueado'));
+    if (badge) {
+        badge.textContent = estado;
+        const estNorm = estado.toUpperCase();
+        badge.className = 'badge-status ' + (estNorm === 'ACTIVA' || estNorm === 'ACTIVO' ? 'badge-activo' : (estNorm === 'PENDIENTE' ? 'badge-pendiente' : 'badge-bloqueado'));
+    }
 
-    const modal = BootstrapModalCompat.getOrCreateInstance(document.getElementById('modalDetalleOferta'));
-    modal.show();
+    const modalEl = document.getElementById('modalDetalleOferta');
+    if (modalEl) {
+        const modal = BootstrapModalCompat.getOrCreateInstance(modalEl);
+        modal.show();
+    }
 }
 
 function cambiarEstadoOfertaBtn(btn) {

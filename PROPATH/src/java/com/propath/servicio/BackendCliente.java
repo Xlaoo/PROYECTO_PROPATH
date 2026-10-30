@@ -126,6 +126,10 @@ public class BackendCliente {
         return new PostulacionDAO().listarTodas();
     }
 
+    public static List<Postulacion> listarPostulacionesPorEstudiante(int idEstudiante) {
+        return new PostulacionDAO().listarPorEstudiante(idEstudiante);
+    }
+
     public static List<Usuario> listarUsuarios() {
         return new UsuarioDAO().listarTodos();
     }
