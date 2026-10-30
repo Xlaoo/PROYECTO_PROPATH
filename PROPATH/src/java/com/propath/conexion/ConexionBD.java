@@ -29,7 +29,7 @@ public final class ConexionBD {
 
     private static void cargarConfiguracion() {
         Properties props = new Properties();
-        try (InputStream is = ConexionBD.class.getClassLoader().getResourceAsStream("db.properties")) {
+        try (InputStream is = ConexionBD.class.getClassLoader().getResourceAsStream("com/propath/conexion/db.properties")) {
             if (is != null) {
                 props.load(is);
                 if (props.getProperty("db.driver") != null) {

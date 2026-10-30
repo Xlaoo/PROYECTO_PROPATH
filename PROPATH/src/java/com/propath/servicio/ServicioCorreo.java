@@ -31,7 +31,7 @@ public final class ServicioCorreo {
 
     public static synchronized void cargarConfiguracion() {
         Properties props = new Properties();
-        try (InputStream is = ServicioCorreo.class.getClassLoader().getResourceAsStream("mail.properties")) {
+        try (InputStream is = ServicioCorreo.class.getClassLoader().getResourceAsStream("com/propath/servicio/mail.properties")) {
             if (is != null) {
                 props.load(is);
                 if (props.getProperty("mail.smtp.host") != null) {
