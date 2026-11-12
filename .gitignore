@@ -14,3 +14,5 @@
 PROPATH/src/java/db.properties
 PROPATH/migrar-propath.ps1
 PROPATH/verificar-mysql.ps1
+PROPATH/src/java/com/propath/servicio/mail.properties
+PROPATH/src/java/com/propath/conexion/db.properties

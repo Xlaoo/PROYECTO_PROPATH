@@ -20,9 +20,9 @@ import java.nio.charset.StandardCharsets;
 public class EntrevistaServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private final EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
-    private final PostulacionDAO postulacionDAO = new PostulacionDAO();
-    private final OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
+    private final transient EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
+    private final transient PostulacionDAO postulacionDAO = new PostulacionDAO();
+    private final transient OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
 
     private void volver(HttpServletRequest req, HttpServletResponse res,
             String tipo, String mensaje) throws IOException {

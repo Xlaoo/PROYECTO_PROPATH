@@ -28,11 +28,11 @@ import java.util.List;
 public class PostularServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private final PostulacionDAO postulacionDAO = new PostulacionDAO();
-    private final EstudianteDAO estudianteDAO = new EstudianteDAO();
-    private final OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
-    private final DocumentoEstudianteDAO documentoDAO = new DocumentoEstudianteDAO();
-    private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+    private final transient PostulacionDAO postulacionDAO = new PostulacionDAO();
+    private final transient EstudianteDAO estudianteDAO = new EstudianteDAO();
+    private final transient OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
+    private final transient DocumentoEstudianteDAO documentoDAO = new DocumentoEstudianteDAO();
+    private final transient UsuarioDAO usuarioDAO = new UsuarioDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -249,6 +249,8 @@ public class PostularServlet extends HttpServlet {
             String apellidos = request.getParameter("apellidos");
             String correo = request.getParameter("correo");
             String contrasena = request.getParameter("contrasena");
+            String contrasenaActual = request.getParameter("contrasenaActual");
+            String confirmarContrasena = request.getParameter("confirmarContrasena");
             String universidad = request.getParameter("universidad");
             String carrera = request.getParameter("carrera");
             String cicloStr = request.getParameter("ciclo");
@@ -273,10 +275,38 @@ public class PostularServlet extends HttpServlet {
             usuario.setNombre(nombre != null ? nombre.trim() : usuario.getNombre());
             usuario.setApellidos(apellidos.trim());
             usuario.setCorreo(correoFinal);
+            boolean contrasenaCambiada = false;
             if (contrasena != null && !contrasena.trim().isEmpty()) {
-                usuario.setContrasena(com.propath.conexion.SeguridadUtil.encriptar(contrasena.trim()));
+                if (contrasenaActual == null || !com.propath.conexion.SeguridadUtil.verificarPassword(contrasenaActual.trim(), usuario.getContrasena())) {
+                    response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
+                            URLEncoder.encode("La contraseña actual es incorrecta.", StandardCharsets.UTF_8));
+                    return;
+                }
+                if (contrasena.trim().length() < 8) {
+                    response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
+                            URLEncoder.encode("La nueva contraseña debe tener al menos 8 caracteres.", StandardCharsets.UTF_8));
+                    return;
+                }
+                if (!contrasena.trim().equals(confirmarContrasena != null ? confirmarContrasena.trim() : "")) {
+                    response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
+                            URLEncoder.encode("La nueva contraseña y su confirmación no coinciden.", StandardCharsets.UTF_8));
+                    return;
+                }
+                usuarioDAO.actualizarContrasena(usuario.getId(), contrasena.trim());
+                usuario.setContrasena(com.propath.conexion.SeguridadUtil.encriptarPassword(contrasena.trim()));
+                contrasenaCambiada = true;
             }
             usuarioDAO.actualizar(usuario);
+
+            if (contrasenaCambiada) {
+                com.propath.servicio.DesafioSeguridadServicio.invalidarTodoPorCorreo(usuario.getCorreo());
+                if (com.propath.servicio.ServicioCorreo.isConfigurado()) {
+                    try {
+                        com.propath.servicio.ServicioCorreo.enviarConfirmacionCambioPassword(usuario.getCorreo(), usuario.getNombre());
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
 
             Estudiante estudiante = estudianteDAO.obtenerPorId(idEstudiante);
             if (estudiante != null) {

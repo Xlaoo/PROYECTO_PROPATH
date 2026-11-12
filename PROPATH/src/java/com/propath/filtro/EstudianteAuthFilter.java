@@ -1,8 +1,8 @@
 package com.propath.filtro;
 
+import com.propath.modelo.Usuario;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -10,15 +10,10 @@ import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
 import java.io.IOException;
 
 @WebFilter(filterName = "EstudianteAuthFilter", urlPatterns = { "/estudiante/*" })
 public class EstudianteAuthFilter implements Filter {
-
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-    }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -27,34 +22,36 @@ public class EstudianteAuthFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
+        // Cabeceras estrictas anti-caché
         httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         httpResponse.setHeader("Pragma", "no-cache");
         httpResponse.setDateHeader("Expires", 0);
 
         HttpSession session = httpRequest.getSession(false);
-        boolean autenticado = false;
+        boolean autorizado = false;
 
         if (session != null) {
-            Object objeto = session.getAttribute("usuarioLogueado");
+            boolean es2FaPendiente = session.getAttribute("AUTH_2FA_PENDIENTE_USUARIO") != null;
 
-            if (objeto instanceof com.propath.modelo.Usuario) {
-                com.propath.modelo.Usuario usuario = (com.propath.modelo.Usuario) objeto;
+            if (!es2FaPendiente) {
+                Object obj = session.getAttribute("usuarioLogueado");
+                if (obj instanceof Usuario) {
+                    Usuario usuario = (Usuario) obj;
+                    String rol = usuario.getRol();
+                    String estado = usuario.getEstado();
 
-                String rol = usuario.getRol();
-
-                autenticado = "ESTUDIANTE".equalsIgnoreCase(rol)
-                        || "ADMIN".equalsIgnoreCase(rol);
+                    if (("ESTUDIANTE".equalsIgnoreCase(rol) || "ADMIN".equalsIgnoreCase(rol))
+                            && "ACTIVO".equalsIgnoreCase(estado)) {
+                        autorizado = true;
+                    }
+                }
             }
         }
 
-        if (autenticado) {
+        if (autorizado) {
             chain.doFilter(request, response);
         } else {
             httpResponse.sendRedirect(httpRequest.getContextPath() + "/login.jsp?error=no_autorizado");
         }
-    }
-
-    @Override
-    public void destroy() {
     }
 }

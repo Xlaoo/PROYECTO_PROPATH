@@ -31,12 +31,12 @@ import java.util.List;
 public class OfertaEmpresaServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private final OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
-    private final EmpresaDAO empresaDAO = new EmpresaDAO();
-    private final PostulacionDAO postulacionDAO = new PostulacionDAO();
-    private final EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
-    private final DocumentoEstudianteDAO documentoDAO = new DocumentoEstudianteDAO();
-    private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+    private final transient OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
+    private final transient EmpresaDAO empresaDAO = new EmpresaDAO();
+    private final transient PostulacionDAO postulacionDAO = new PostulacionDAO();
+    private final transient EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
+    private final transient DocumentoEstudianteDAO documentoDAO = new DocumentoEstudianteDAO();
+    private final transient UsuarioDAO usuarioDAO = new UsuarioDAO();
 
     private int idEstudiantePostulacion(int idPostulacion, int idEmpresa) {
         Postulacion p = postulacionDAO.obtenerPorId(idPostulacion);
@@ -300,6 +300,8 @@ public class OfertaEmpresaServlet extends HttpServlet {
             String repApellidos = request.getParameter("representanteApellidos");
             String correo = request.getParameter("correo");
             String contrasena = request.getParameter("contrasena");
+            String contrasenaActual = request.getParameter("contrasenaActual");
+            String confirmarContrasena = request.getParameter("confirmarContrasena");
             String razonSocial = request.getParameter("razonSocial");
             String rucParam = request.getParameter("ruc");
             String telefono = request.getParameter("telefono");
@@ -337,10 +339,38 @@ public class OfertaEmpresaServlet extends HttpServlet {
             usuario.setApellidos(repApellidosFinal);
             usuario.setCorreo(correoFinal);
             usuario.setRazonSocial(razonFinal);
+            boolean contrasenaCambiada = false;
             if (contrasena != null && !contrasena.trim().isEmpty()) {
-                usuario.setContrasena(com.propath.conexion.SeguridadUtil.encriptar(contrasena.trim()));
+                if (contrasenaActual == null || !com.propath.conexion.SeguridadUtil.verificarPassword(contrasenaActual.trim(), usuario.getContrasena())) {
+                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
+                            URLEncoder.encode("La contraseña actual es incorrecta.", StandardCharsets.UTF_8));
+                    return;
+                }
+                if (contrasena.trim().length() < 8) {
+                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
+                            URLEncoder.encode("La nueva contraseña debe tener al menos 8 caracteres.", StandardCharsets.UTF_8));
+                    return;
+                }
+                if (!contrasena.trim().equals(confirmarContrasena != null ? confirmarContrasena.trim() : "")) {
+                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
+                            URLEncoder.encode("La nueva contraseña y su confirmación no coinciden.", StandardCharsets.UTF_8));
+                    return;
+                }
+                usuarioDAO.actualizarContrasena(usuario.getId(), contrasena.trim());
+                usuario.setContrasena(com.propath.conexion.SeguridadUtil.encriptarPassword(contrasena.trim()));
+                contrasenaCambiada = true;
             }
             usuarioDAO.actualizar(usuario);
+
+            if (contrasenaCambiada) {
+                com.propath.servicio.DesafioSeguridadServicio.invalidarTodoPorCorreo(usuario.getCorreo());
+                if (com.propath.servicio.ServicioCorreo.isConfigurado()) {
+                    try {
+                        com.propath.servicio.ServicioCorreo.enviarConfirmacionCambioPassword(usuario.getCorreo(), repNombreFinal);
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
 
             session.setAttribute("usuarioLogueado", usuario);
             session.setAttribute("nombreUsuario", razonFinal);

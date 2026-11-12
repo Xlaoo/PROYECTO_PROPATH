@@ -1,0 +1,14 @@
+# ==============================================================================
+# PROPATH - Configuración de Servicio de Correo SMTP
+# ==============================================================================
+# Copie este archivo como 'mail.properties' y configure sus credenciales SMTP.
+# NUNCA suba contraseñas reales al repositorio de control de versiones.
+# ==============================================================================
+mail.smtp.host=smtp.gmail.com
+mail.smtp.port=587
+mail.smtp.user=tu_correo@gmail.com
+mail.smtp.password=tu_contrasena_de_aplicacion
+mail.smtp.from=tu_correo@gmail.com
+mail.smtp.starttls.enable=true
+mail.smtp.auth=true
+app.url=http://localhost:8080/PROPATH

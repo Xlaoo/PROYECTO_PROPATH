@@ -5,13 +5,16 @@ import com.propath.dao.EstudianteDAO;
 import com.propath.dao.UsuarioDAO;
 import com.propath.modelo.Empresa;
 import com.propath.modelo.Estudiante;
+import com.propath.servicio.ServicioCorreo;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.util.Locale;
 
 @WebServlet(name = "RegistroServlet", urlPatterns = { "/RegistroServlet", "/registro" })
 public class RegistroServlet extends HttpServlet {
@@ -20,6 +23,10 @@ public class RegistroServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
         String tipo = request.getParameter("tipo");
         if ("empresa".equalsIgnoreCase(tipo)) {
             request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
@@ -33,8 +40,12 @@ public class RegistroServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
 
         String tipo = request.getParameter("tipo");
+        HttpSession session = request.getSession(true);
 
         if ("empresa".equalsIgnoreCase(tipo)) {
             String nombre = request.getParameter("nombre");
@@ -47,6 +58,10 @@ public class RegistroServlet extends HttpServlet {
             String direccion = request.getParameter("direccion");
             String descripcion = request.getParameter("descripcion");
 
+            if (correo != null) {
+                correo = correo.trim().toLowerCase(Locale.ROOT);
+            }
+
             if (nombre == null || nombre.trim().isEmpty() ||
                     apellido == null || apellido.trim().isEmpty() ||
                     razonSocial == null || razonSocial.trim().isEmpty() ||
@@ -56,14 +71,16 @@ public class RegistroServlet extends HttpServlet {
 
                 request.setAttribute("error",
                         "Por favor completa todos los campos obligatorios. El RUC debe tener 11 dígitos y la contraseña al menos 6 caracteres.");
-                request.setAttribute("nombre", nombre);
-                request.setAttribute("apellido", apellido);
-                request.setAttribute("razonSocial", razonSocial);
-                request.setAttribute("ruc", ruc);
-                request.setAttribute("correo", correo);
-                request.setAttribute("telefono", telefono);
-                request.setAttribute("direccion", direccion);
-                request.setAttribute("descripcion", descripcion);
+                preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
+                request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
+                return;
+            }
+
+            // Validación de verificación previa de correo electrónico
+            String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_REGISTRO");
+            if (correoVerificado == null || !correoVerificado.equalsIgnoreCase(correo)) {
+                request.setAttribute("error", "Debes verificar tu correo electrónico antes de registrarte. Haz clic en 'Verificar Correo'.");
+                preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
                 request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
                 return;
             }
@@ -71,30 +88,16 @@ public class RegistroServlet extends HttpServlet {
             UsuarioDAO usuarioDAO = new UsuarioDAO();
             EmpresaDAO empresaDAO = new EmpresaDAO();
 
-            if (usuarioDAO.obtenerPorCorreo(correo.trim()) != null) {
+            if (usuarioDAO.obtenerPorCorreo(correo) != null) {
                 request.setAttribute("error", "El correo electrónico ya se encuentra registrado.");
-                request.setAttribute("nombre", nombre);
-                request.setAttribute("apellido", apellido);
-                request.setAttribute("razonSocial", razonSocial);
-                request.setAttribute("ruc", ruc);
-                request.setAttribute("correo", correo);
-                request.setAttribute("telefono", telefono);
-                request.setAttribute("direccion", direccion);
-                request.setAttribute("descripcion", descripcion);
+                preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
                 request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
                 return;
             }
 
             if (empresaDAO.obtenerPorRuc(ruc.trim()) != null) {
                 request.setAttribute("error", "El RUC ya se encuentra registrado por otra empresa.");
-                request.setAttribute("nombre", nombre);
-                request.setAttribute("apellido", apellido);
-                request.setAttribute("razonSocial", razonSocial);
-                request.setAttribute("ruc", ruc);
-                request.setAttribute("correo", correo);
-                request.setAttribute("telefono", telefono);
-                request.setAttribute("direccion", direccion);
-                request.setAttribute("descripcion", descripcion);
+                preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
                 request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
                 return;
             }
@@ -107,20 +110,23 @@ public class RegistroServlet extends HttpServlet {
             emp.setDescripcion(descripcion != null ? descripcion.trim() : "");
             emp.setEstado("PENDIENTE");
 
-            int idGenerado = empresaDAO.registrarConUsuario(emp, correo.trim(), contrasena, nombre.trim(), apellido.trim());
+            int idGenerado = empresaDAO.registrarConUsuario(emp, correo, contrasena, nombre.trim(), apellido.trim());
 
             if (idGenerado > 0) {
+                session.removeAttribute("CORREO_VERIFICADO_REGISTRO");
+                session.removeAttribute("TOKEN_VERIFICADO_REGISTRO");
+
+                if (ServicioCorreo.isConfigurado()) {
+                    try {
+                        ServicioCorreo.enviarBienvenidaRegistro(correo, razonSocial.trim(), "EMPRESA");
+                    } catch (Exception e) {
+                        getServletContext().log("Fallo al enviar correo de bienvenida de empresa", e);
+                    }
+                }
                 response.sendRedirect(request.getContextPath() + "/login.jsp?registro=exito");
             } else {
-                request.setAttribute("error", "Ocurrió un error al registrar la empresa. Por favor intenta nuevamente.");
-                request.setAttribute("nombre", nombre);
-                request.setAttribute("apellido", apellido);
-                request.setAttribute("razonSocial", razonSocial);
-                request.setAttribute("ruc", ruc);
-                request.setAttribute("correo", correo);
-                request.setAttribute("telefono", telefono);
-                request.setAttribute("direccion", direccion);
-                request.setAttribute("descripcion", descripcion);
+                request.setAttribute("error", "Ocurrió un error al registrar la empresa. Por favor verifica los datos o intenta nuevamente.");
+                preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
                 request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
             }
 
@@ -133,6 +139,10 @@ public class RegistroServlet extends HttpServlet {
             String carrera = request.getParameter("carrera");
             String cicloStr = request.getParameter("ciclo");
             String telefono = request.getParameter("telefono");
+
+            if (correo != null) {
+                correo = correo.trim().toLowerCase(Locale.ROOT);
+            }
 
             int ciclo = 1;
             try {
@@ -151,13 +161,16 @@ public class RegistroServlet extends HttpServlet {
 
                 request.setAttribute("error",
                         "Por favor completa todos los campos obligatorios. La contraseña debe tener al menos 6 caracteres.");
-                request.setAttribute("nombre", nombre);
-                request.setAttribute("apellidos", apellidos);
-                request.setAttribute("correo", correo);
-                request.setAttribute("universidad", universidad);
-                request.setAttribute("carrera", carrera);
-                request.setAttribute("ciclo", ciclo);
-                request.setAttribute("telefono", telefono);
+                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+                request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
+                return;
+            }
+
+            // Validación de verificación previa de correo electrónico
+            String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_REGISTRO");
+            if (correoVerificado == null || !correoVerificado.equalsIgnoreCase(correo)) {
+                request.setAttribute("error", "Debes verificar tu correo electrónico antes de registrarte. Haz clic en 'Verificar Correo'.");
+                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
                 request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
                 return;
             }
@@ -165,15 +178,9 @@ public class RegistroServlet extends HttpServlet {
             UsuarioDAO usuarioDAO = new UsuarioDAO();
             EstudianteDAO estudianteDAO = new EstudianteDAO();
 
-            if (usuarioDAO.obtenerPorCorreo(correo.trim()) != null) {
+            if (usuarioDAO.obtenerPorCorreo(correo) != null) {
                 request.setAttribute("error", "El correo electrónico ya se encuentra registrado.");
-                request.setAttribute("nombre", nombre);
-                request.setAttribute("apellidos", apellidos);
-                request.setAttribute("correo", correo);
-                request.setAttribute("universidad", universidad);
-                request.setAttribute("carrera", carrera);
-                request.setAttribute("ciclo", ciclo);
-                request.setAttribute("telefono", telefono);
+                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
                 request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
                 return;
             }
@@ -187,21 +194,51 @@ public class RegistroServlet extends HttpServlet {
             est.setTelefono(telefono != null ? telefono.trim() : "");
             est.setCv("");
 
-            int idGenerado = estudianteDAO.registrarConUsuario(est, correo.trim(), contrasena);
+            int idGenerado = estudianteDAO.registrarConUsuario(est, correo, contrasena);
 
             if (idGenerado > 0) {
+                session.removeAttribute("CORREO_VERIFICADO_REGISTRO");
+                session.removeAttribute("TOKEN_VERIFICADO_REGISTRO");
+
+                if (ServicioCorreo.isConfigurado()) {
+                    try {
+                        String nombreCompleto = nombre.trim() + " " + apellidos.trim();
+                        ServicioCorreo.enviarBienvenidaRegistro(correo, nombreCompleto, "ESTUDIANTE");
+                    } catch (Exception e) {
+                        getServletContext().log("Fallo al enviar correo de bienvenida de estudiante", e);
+                    }
+                }
                 response.sendRedirect(request.getContextPath() + "/login.jsp?registro=exito");
             } else {
-                request.setAttribute("error", "Ocurrió un error al registrar el estudiante. Por favor intenta nuevamente.");
-                request.setAttribute("nombre", nombre);
-                request.setAttribute("apellidos", apellidos);
-                request.setAttribute("correo", correo);
-                request.setAttribute("universidad", universidad);
-                request.setAttribute("carrera", carrera);
-                request.setAttribute("ciclo", ciclo);
-                request.setAttribute("telefono", telefono);
+                request.setAttribute("error", "Ocurrió un error al registrar el estudiante en la base de datos. Por favor verifica que el servidor de base de datos esté activo e intenta nuevamente.");
+                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
                 request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
             }
         }
+    }
+
+    private void preservarCamposEmpresa(HttpServletRequest request, String nombre, String apellido,
+                                        String razonSocial, String ruc, String correo, String telefono,
+                                        String direccion, String descripcion) {
+        request.setAttribute("nombre", nombre);
+        request.setAttribute("apellido", apellido);
+        request.setAttribute("razonSocial", razonSocial);
+        request.setAttribute("ruc", ruc);
+        request.setAttribute("correo", correo);
+        request.setAttribute("telefono", telefono);
+        request.setAttribute("direccion", direccion);
+        request.setAttribute("descripcion", descripcion);
+    }
+
+    private void preservarCamposEstudiante(HttpServletRequest request, String nombre, String apellidos,
+                                           String correo, String universidad, String carrera,
+                                           int ciclo, String telefono) {
+        request.setAttribute("nombre", nombre);
+        request.setAttribute("apellidos", apellidos);
+        request.setAttribute("correo", correo);
+        request.setAttribute("universidad", universidad);
+        request.setAttribute("carrera", carrera);
+        request.setAttribute("ciclo", ciclo);
+        request.setAttribute("telefono", telefono);
     }
 }

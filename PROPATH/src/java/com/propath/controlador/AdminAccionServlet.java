@@ -241,8 +241,9 @@ public class AdminAccionServlet extends HttpServlet {
                     u.setApellidos(apellidos.trim());
                 if (correo != null && !correo.trim().isEmpty())
                     u.setCorreo(correo.trim());
-                if (contrasena != null && !contrasena.trim().isEmpty())
-                    u.setContrasena(contrasena.trim());
+                if (contrasena != null && !contrasena.trim().isEmpty()) {
+                    usuarioDAO.actualizarContrasena(id, contrasena.trim());
+                }
                 if (est != null && !est.trim().isEmpty())
                     u.setEstado(est.trim().toUpperCase());
                 ok = usuarioDAO.actualizar(u);

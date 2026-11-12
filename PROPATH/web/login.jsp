@@ -1,133 +1,398 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
-    <!DOCTYPE html>
-    <html lang="es" data-bs-theme="light">
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión | ProPath - Portal de Prácticas y Empleo</title>
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Iniciar Sesión | ProPath - Portal de Prácticas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css">
+</head>
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-            rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css">
-    </head>
-
-    <body>
-        <div class="login-wrapper">
-            <div class="login-card">
-                <div class="login-header text-center mb-4">
-                    <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath" class="logo-login">
-                    <div>
-                        <span class="login-badge-role">
-                            <i class="bi bi-person-circle"></i> Acceso a ProPath
-                        </span>
+<body>
+    <div class="login-desktop-wrapper">
+        <div class="login-enterprise-container">
+            
+            <!-- =========================================================================
+                 COLUMNA IZQUIERDA: HERO SHOWCASE INSTITUCIONAL PROPATH (DISEÑO PC)
+                 ========================================================================= -->
+            <div class="login-side-showcase">
+                <div class="showcase-brand-header">
+                    <div class="showcase-logo-box">
+                        <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath" class="showcase-logo-img">
                     </div>
+                    <h1 class="showcase-title">Impulsa tu Futuro Profesional</h1>
+                    <p class="showcase-subtitle">
+                        Conecta tu talento con las oportunidades de empleo y prácticas pre-profesionales más destacadas del mercado.
+                    </p>
                 </div>
-                <% String error=(String) request.getAttribute("error"); if (error==null || error.isEmpty()) {
-                    error=request.getParameter("error"); } if (error !=null && !error.isEmpty()) { %>
-                    <div class="alert alert-danger d-flex align-items-center mb-4 py-2 px-3 rounded-3 border-danger-subtle"
-                        role="alert">
-                        <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
-                        <div class="small fw-semibold">
-                            <%= error %>
+
+                <div class="showcase-features-list">
+                    <div class="showcase-feature-item">
+                        <div class="showcase-feature-icon">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                        <div class="showcase-feature-text">
+                            <h6>Para Estudiantes y Egresados</h6>
+                            <p>Postula a convocatorias exclusivas, gestiona tus postulaciones y valida tus horas de prácticas.</p>
                         </div>
                     </div>
-                    <% } %>
-                        <% String logoutParam=request.getParameter("logout"); if ("1".equals(logoutParam)) { %>
-                            <div class="alert alert-info d-flex align-items-center mb-4 py-2 px-3 rounded-3 border-info-subtle"
-                                role="alert">
-                                <i class="bi bi-info-circle-fill fs-5 me-2 text-info"></i>
-                                <div class="small fw-semibold">
-                                    Has cerrado sesión de forma segura.
-                                </div>
-                            </div>
+
+                    <div class="showcase-feature-item">
+                        <div class="showcase-feature-icon">
+                            <i class="bi bi-building-check"></i>
+                        </div>
+                        <div class="showcase-feature-text">
+                            <h6>Para Empresas e Instituciones</h6>
+                            <p>Publica ofertas laborales, filtra perfiles calificados y optimiza tus procesos de selección.</p>
+                        </div>
+                    </div>
+
+                    <div class="showcase-feature-item">
+                        <div class="showcase-feature-icon">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div class="showcase-feature-text">
+                            <h6>Seguridad Integral y 2FA</h6>
+                            <p>Acceso blindado con autenticación en dos pasos, cifrado BCrypt y verificación institucional.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="showcase-footer">
+                    <div class="showcase-pill-stat">
+                        <i class="bi bi-patch-check-fill text-info"></i>
+                        <span>Red Oficial ProPath</span>
+                    </div>
+                    <div class="small text-white-50">
+                        &copy; <%= java.time.Year.now().getValue() %> ProPath
+                    </div>
+                </div>
+            </div>
+
+            <!-- =========================================================================
+                 COLUMNA DERECHA: FORMULARIO DE ACCESO PROFESIONAL
+                 ========================================================================= -->
+            <div class="login-side-form">
+                
+                <div class="login-form-header">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="login-badge-role">
+                            <i class="bi bi-shield-lock-fill"></i> Portal Seguro
+                        </span>
+                        <a href="${pageContext.request.contextPath}/index.jsp" class="small text-decoration-none text-muted">
+                            <i class="bi bi-house-door me-1"></i> Inicio
+                        </a>
+                    </div>
+                    <h2 class="login-form-title">Bienvenido a ProPath</h2>
+                    <p class="login-form-subtitle">Ingresa tus credenciales registradas para acceder a tu panel.</p>
+                </div>
+
+                <% 
+                    String error = (String) request.getAttribute("error"); 
+                    if (error == null || error.isEmpty()) {
+                        error = request.getParameter("error"); 
+                    } 
+                    if (error != null && !error.isEmpty()) { 
+                %>
+                    <div class="alert alert-danger d-flex align-items-center mb-4 py-2 px-3 rounded-3 border-danger-subtle" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
+                        <div class="small fw-semibold">
+                            <% if ("no_autorizado".equals(error)) { %>
+                                Debes iniciar sesión con una cuenta autorizada para acceder a esta página.
+                            <% } else if ("sesion_cerrada".equals(error)) { %>
+                                Tu sesión ha sido finalizada correctamente.
+                            <% } else { %>
+                                <%= error %>
                             <% } %>
-                                <% String exitoParam=request.getParameter("exito"); if (exitoParam !=null &&
-                                    !exitoParam.isEmpty()) { %>
-                                    <div class="alert alert-success d-flex align-items-center mb-4 py-2 px-3 rounded-3 border-success-subtle"
-                                        role="alert">
-                                        <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
-                                        <div class="small fw-semibold">
-                                            <%= "cuenta_desactivada" .equals(exitoParam)
-                                                ? "Tu cuenta ha sido dada de baja correctamente."
-                                                : ("password_actualizada".equals(exitoParam)
-                                                    ? "Tu contraseña ha sido restablecida exitosamente. Inicia sesión con tu nueva contraseña."
-                                                    : "Operación realizada exitosamente.") %>
-                                        </div>
-                                    </div>
-                                    <% } %>
-                                        <form action="${pageContext.request.contextPath}/LoginServlet" method="POST"
-                                            autocomplete="off" novalidate>
-                                            <div class="form-floating-custom">
-                                                <input type="email" class="form-control" id="correo" name="correo"
-                                                    placeholder="admin@propath.com" required autofocus>
-                                                <i class="bi bi-envelope-fill input-icon"></i>
-                                            </div>
-                                            <div class="form-floating-custom">
-                                                <input type="password" class="form-control" id="contrasena"
-                                                    name="contrasena" placeholder="Contraseña" required>
-                                                <i class="bi bi-lock-fill input-icon"></i>
-                                                <button type="button" class="toggle-password-btn" id="togglePassword"
-                                                    title="Mostrar/ocultar contraseña" tabindex="-1">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            </div>
+                        </div>
+                    </div>
+                <% } %>
 
-                                            <div class="text-end mt-2 mb-3">
-                                                <a href="${pageContext.request.contextPath}/recuperar-contrasena.jsp"
-                                                    class="small text-decoration-none fw-semibold">
-                                                    ¿Olvidaste tu contraseña?
-                                                </a>
-                                            </div>
+                <% 
+                    String exito = request.getParameter("exito"); 
+                    if (exito != null && !exito.isEmpty()) { 
+                %>
+                    <div class="alert alert-success d-flex align-items-center mb-4 py-2 px-3 rounded-3 border-success-subtle" role="alert">
+                        <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
+                        <div class="small fw-semibold">
+                            <% if ("registro_exitoso".equals(exito)) { %>
+                                ¡Cuenta creada con éxito! Ya puedes iniciar sesión con tus credenciales.
+                            <% } else if ("password_actualizada".equals(exito)) { %>
+                                Tu contraseña ha sido actualizada con éxito. Inicia sesión con tu nueva clave.
+                            <% } else { %>
+                                Operación completada satisfactoriamente.
+                            <% } %>
+                        </div>
+                    </div>
+                <% } %>
 
-                                            <div class="d-grid mt-4">
-                                                <button type="submit" class="btn btn-propath-primary">
-                                                    <span>Iniciar sesión</span>
-                                                    <i class="bi bi-arrow-right-short fs-4"></i>
-                                                </button>
-                                            </div>
-                                        </form>
-                                        <div class="text-center mt-4">
+                <form action="${pageContext.request.contextPath}/login" method="POST" autocomplete="off" id="formLoginPrincipal">
+                    
+                    <div class="form-floating-custom mb-3">
+                        <input type="email" class="form-control" id="correo" name="correo"
+                            placeholder="nombre@ejemplo.com"
+                            value="<%= request.getAttribute("correoIngresado") != null ? request.getAttribute("correoIngresado") : "" %>"
+                            required autofocus>
+                        <i class="bi bi-envelope-fill input-icon"></i>
+                    </div>
 
-                                            <p class="text-muted small mb-3">
-                                                ¿Todavía no tienes una cuenta?
-                                            </p>
+                    <div class="form-floating-custom mb-3">
+                        <input type="password" class="form-control" id="contrasena" name="contrasena"
+                            placeholder="Ingresa tu contraseña" required minlength="6">
+                        <i class="bi bi-lock-fill input-icon"></i>
+                        <button type="button" class="toggle-password-btn" id="togglePasswordBtn"
+                            aria-label="Mostrar u ocultar contraseña" tabindex="-1">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
 
-                                            <div class="d-grid gap-2">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="recordarme" name="recordarme" value="1">
+                            <label class="form-check-label small text-secondary" for="recordarme">
+                                Recordar sesión
+                            </label>
+                        </div>
+                        <a href="${pageContext.request.contextPath}/recuperar-contrasena"
+                            class="small text-primary text-decoration-none fw-semibold">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
 
-                                                <a href="${pageContext.request.contextPath}/registro-estudiante.jsp"
-                                                    class="btn btn-outline-primary">
-                                                    <i class="bi bi-mortarboard-fill me-2"></i>
-                                                    Registrarme como Estudiante
-                                                </a>
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-propath-primary py-2" id="btnIniciarSesion">
+                            <span class="fw-semibold">Iniciar Sesión</span>
+                            <i class="bi bi-arrow-right-short fs-4"></i>
+                        </button>
+                    </div>
+                </form>
 
-                                                <a href="${pageContext.request.contextPath}/registro-empresa.jsp"
-                                                    class="btn btn-outline-primary">
-                                                    <i class="bi bi-building me-2"></i>
-                                                    Registrarme como Empresa
-                                                </a>
+                <div class="login-divider-custom">
+                    <span>¿No tienes una cuenta?</span>
+                </div>
 
-                                            </div>
-
-                                            <hr class="my-4">
-
-                                            <a href="${pageContext.request.contextPath}/index.jsp"
-                                                class="text-decoration-none fw-semibold">
-                                                <i class="bi bi-arrow-left me-2"></i>
-                                                Volver a la página principal
-                                            </a>
-
-                                        </div>
+                <div class="row g-2">
+                    <div class="col-sm-6">
+                        <a href="${pageContext.request.contextPath}/registro?tipo=estudiante" class="btn-registro-opcion">
+                            <i class="bi bi-mortarboard text-primary fs-5"></i>
+                            <span>Soy Estudiante</span>
+                        </a>
+                    </div>
+                    <div class="col-sm-6">
+                        <a href="${pageContext.request.contextPath}/registro?tipo=empresa" class="btn-registro-opcion">
+                            <i class="bi bi-building text-primary fs-5"></i>
+                            <span>Soy Empresa</span>
+                        </a>
+                    </div>
+                </div>
 
             </div>
         </div>
+    </div>
 
-        <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
-        <script type="module" src="${pageContext.request.contextPath}/js/script.js"></script>
-    </body>
+    <!-- =========================================================================
+         MODAL DE VERIFICACIÓN 2FA DE INICIO DE SESIÓN
+         ========================================================================= -->
+    <div class="modal fade modal-seguridad" id="modal2FA" tabindex="-1" aria-labelledby="modal2FALabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title h6 fw-bold mb-0 text-white" id="modal2FALabel">
+                        <i class="bi bi-shield-lock-fill me-2 text-info"></i> Verificación de Acceso (2FA)
+                    </h5>
+                    <button type="button" class="btn-close" id="btnCerrar2FAX" aria-label="Cancelar"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3">
+                        <div class="avatar-icon-wrapper mx-auto mb-2" style="width: 54px; height: 54px; background: #E0F2FE; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-envelope-check-fill text-primary fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Código de Seguridad</h6>
+                        <p class="text-muted small mb-0">Hemos enviado un código alfanumérico de <strong>6 caracteres</strong> a:</p>
+                        <p class="fw-bold text-primary small mb-0" id="textoCorreo2FA">
+                            <%= request.getAttribute("correoMascara") != null ? request.getAttribute("correoMascara") : "tu correo registrado" %>
+                        </p>
+                    </div>
 
-    </html>
+                    <div id="contenedorAlertas2FA"></div>
+
+                    <div class="mb-3">
+                        <label for="inputCodigo2FA" class="form-label small fw-semibold text-secondary">Ingresa el código de 6 caracteres:</label>
+                        <input type="text" class="form-control input-codigo-seguridad" id="inputCodigo2FA"
+                               maxlength="6" autocomplete="one-time-code" placeholder="ABC123" autofocus>
+                        <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                            <span class="small text-muted" id="textoExpiracion2FA">
+                                <i class="bi bi-stopwatch me-1 text-primary"></i> Expira en <strong>10:00</strong>
+                            </span>
+                            <span class="small text-muted" id="textoIntentos2FA">5 intentos permitidos</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top d-flex justify-content-between p-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="btnCancelar2FA">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="btnReenviar2FA">
+                            <i class="bi bi-arrow-repeat me-1"></i> Reenviar código
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" id="btnConfirmar2FA">
+                            <span>Verificar y Entrar</span>
+                            <i class="bi bi-arrow-right-short fs-5 ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="${pageContext.request.contextPath}/js/verificacion-seguridad.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Toggle de contraseña
+            const toggleBtn = document.getElementById('togglePasswordBtn');
+            const passInput = document.getElementById('contrasena');
+            if (toggleBtn && passInput) {
+                toggleBtn.addEventListener('click', function () {
+                    const isPass = passInput.type === 'password';
+                    passInput.type = isPass ? 'text' : 'password';
+                    this.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+                });
+            }
+
+            const modalElement = document.getElementById('modal2FA');
+            const bsModal = new bootstrap.Modal(modalElement);
+            const inputCodigo = document.getElementById('inputCodigo2FA');
+            const btnConfirmar = document.getElementById('btnConfirmar2FA');
+            const btnReenviar = document.getElementById('btnReenviar2FA');
+            const btnCancelar = document.getElementById('btnCancelar2FA');
+            const btnCerrarX = document.getElementById('btnCerrar2FAX');
+            const alertasArea = document.getElementById('contenedorAlertas2FA');
+            const textoExpiracion = document.getElementById('textoExpiracion2FA');
+            const textoIntentos = document.getElementById('textoIntentos2FA');
+
+            let procesando = false;
+
+            function ejecutarVerificacion2FA() {
+                const codigo = inputCodigo.value.trim().toUpperCase();
+                if (codigo.length !== 6) {
+                    ProPathSeguridad.mostrarAlerta(alertasArea, 'danger', 'El código debe tener exactamente 6 caracteres alfanuméricos.');
+                    return;
+                }
+
+                if (procesando) return;
+                procesando = true;
+                btnConfirmar.disabled = true;
+                btnConfirmar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Verificando...';
+
+                const params = new URLSearchParams();
+                params.append('accion', 'verificar_2fa');
+                params.append('codigo', codigo);
+
+                fetch('${pageContext.request.contextPath}/login', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: params.toString()
+                })
+                .then(r => r.json())
+                .then(data => {
+                    procesando = false;
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.innerHTML = '<span>Verificar y Entrar</span> <i class="bi bi-arrow-right-short fs-5 ms-1"></i>';
+
+                    if (data.exito) {
+                        ProPathSeguridad.mostrarAlerta(alertasArea, 'success', '¡Código verificado! Redirigiendo a tu panel...');
+                        const destino = data.redirectUrl || data.redirect || '${pageContext.request.contextPath}/estudiante/dashboard.jsp';
+                        setTimeout(() => {
+                            window.location.href = destino;
+                        }, 500);
+                    } else {
+                        ProPathSeguridad.mostrarAlerta(alertasArea, 'danger', data.mensaje);
+                        if (data.intentosRestantes !== undefined) {
+                            textoIntentos.innerText = data.intentosRestantes + ' intento(s) restante(s)';
+                        }
+                        inputCodigo.select();
+                    }
+                })
+                .catch(() => {
+                    procesando = false;
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.innerHTML = '<span>Verificar y Entrar</span> <i class="bi bi-arrow-right-short fs-5 ms-1"></i>';
+                    ProPathSeguridad.mostrarAlerta(alertasArea, 'danger', 'Error de conexión con el servidor al verificar el código 2FA.');
+                });
+            }
+
+            btnConfirmar.addEventListener('click', ejecutarVerificacion2FA);
+            ProPathSeguridad.configurarCampoCodigo(inputCodigo, ejecutarVerificacion2FA);
+
+            // Reenviar código 2FA
+            btnReenviar.addEventListener('click', function () {
+                btnReenviar.disabled = true;
+                btnReenviar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Reenviando...';
+
+                const params = new URLSearchParams();
+                params.append('accion', 'reenviar');
+                params.append('proposito', 'LOGIN');
+
+                fetch('${pageContext.request.contextPath}/verificar-codigo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: params.toString()
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.exito) {
+                        ProPathSeguridad.mostrarAlerta(alertasArea, 'info', data.mensaje);
+                        inputCodigo.value = '';
+                        inputCodigo.focus();
+                        ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 60);
+                        ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 600);
+                    } else {
+                        ProPathSeguridad.mostrarAlerta(alertasArea, 'danger', data.mensaje);
+                        btnReenviar.disabled = false;
+                        btnReenviar.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Reenviar código';
+                    }
+                })
+                .catch(() => {
+                    btnReenviar.disabled = false;
+                    btnReenviar.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Reenviar código';
+                    ProPathSeguridad.mostrarAlerta(alertasArea, 'danger', 'Error de red al intentar reenviar el código.');
+                });
+            });
+
+            // Cancelar y cerrar flujo 2FA
+            const cancelarFlujo = function () {
+                fetch('${pageContext.request.contextPath}/verificar-codigo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: 'accion=cancelar_2fa'
+                }).finally(() => {
+                    ProPathSeguridad.limpiarTemporizadores();
+                    bsModal.hide();
+                    window.location.href = '${pageContext.request.contextPath}/login.jsp';
+                });
+            };
+
+            btnCancelar.addEventListener('click', cancelarFlujo);
+            btnCerrarX.addEventListener('click', cancelarFlujo);
+
+            <% if (Boolean.TRUE.equals(request.getAttribute("mostrarModal2FA")) || session.getAttribute("AUTH_2FA_PENDIENTE_USUARIO") != null) { %>
+                bsModal.show();
+                setTimeout(() => inputCodigo.focus(), 500);
+                ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, <%= request.getAttribute("segundosEspera") != null ? request.getAttribute("segundosEspera") : 60 %>);
+                ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, <%= request.getAttribute("segundosExpiracion") != null ? request.getAttribute("segundosExpiracion") : 600 %>);
+            <% } %>
+        });
+    </script>
+</body>
+</html>

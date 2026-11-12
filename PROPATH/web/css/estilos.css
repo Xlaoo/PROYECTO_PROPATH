@@ -2546,3 +2546,351 @@ body.modal-open {
   overflow: hidden;
 }
 
+
+
+/* ==========================================================================
+   PROPATH - ESTILOS DEL MÓDULO DE AUTENTICACIÓN Y SEGURIDAD (MODALES Y CÓDIGOS)
+   ========================================================================== */
+.input-codigo-seguridad {
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 1.85rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 8px !important;
+    text-align: center !important;
+    text-transform: uppercase !important;
+    color: var(--propath-blue, #2563EB) !important;
+    background-color: #F8FAFC !important;
+    border: 2px dashed #93C5FD !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    transition: all 0.25s ease-in-out !important;
+}
+
+.input-codigo-seguridad:focus {
+    background-color: #FFFFFF !important;
+    border-color: var(--propath-blue, #2563EB) !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
+    outline: none !important;
+}
+
+.modal-seguridad .modal-content {
+    border-radius: 16px !important;
+    border: 1px solid var(--propath-border, #DCE4EF) !important;
+    box-shadow: var(--propath-shadow-xl, 0 20px 35px rgba(16, 36, 72, 0.12)) !important;
+    overflow: hidden;
+}
+
+.modal-seguridad .modal-header {
+    background: linear-gradient(135deg, var(--propath-navy, #102448) 0%, #1e3a8a 100%) !important;
+    color: #FFFFFF !important;
+    padding: 18px 24px !important;
+    border-bottom: 3px solid var(--propath-blue, #2563EB) !important;
+}
+
+.modal-seguridad .modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.badge-correo-verificado {
+    display: inline-flex;
+    align-items: center;
+    background-color: #DCFCE7;
+    color: #15803D;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #BBF7D0;
+}
+
+.badge-correo-pendiente {
+    display: inline-flex;
+    align-items: center;
+    background-color: #FEF3C7;
+    color: #B45309;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #FDE68A;
+}
+
+/* ==========================================================================
+   DISEÑO PROFESIONAL DESKTOP / ENTERPRISE PARA LOGIN
+   ========================================================================== */
+.login-desktop-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 15% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 80%, rgba(8, 145, 178, 0.08) 0%, transparent 45%),
+                linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+    padding: 30px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-enterprise-container {
+    width: 100%;
+    max-width: 1050px;
+    background: #FFFFFF;
+    border-radius: 24px;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.16), 0 0 1px 1px rgba(15, 23, 42, 0.06);
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    min-height: 640px;
+}
+
+/* Columna Izquierda: Showcase de Marca */
+.login-side-showcase {
+    flex: 1 1 45%;
+    background: linear-gradient(145deg, #0A192F 0%, #0F2A4A 45%, #1E40AF 90%, #0284C7 100%);
+    padding: 48px 40px;
+    color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-side-showcase::before {
+    content: "";
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+}
+
+.login-side-showcase::after {
+    content: "";
+    position: absolute;
+    bottom: -60px;
+    left: -60px;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.3) 0%, transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+}
+
+.showcase-brand-header {
+    position: relative;
+    z-index: 1;
+}
+
+.showcase-logo-box {
+    background: #FFFFFF;
+    padding: 14px 18px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+    margin-bottom: 24px;
+}
+
+.showcase-logo-img {
+    height: 68px;
+    width: auto;
+    object-fit: contain;
+}
+
+.showcase-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+}
+
+.showcase-subtitle {
+    font-size: 0.95rem;
+    color: #CBD5E1;
+    line-height: 1.5;
+    margin-bottom: 28px;
+}
+
+.showcase-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    z-index: 1;
+}
+
+.showcase-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    border-radius: 14px;
+    padding: 12px 16px;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.showcase-feature-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(4px);
+}
+
+.showcase-feature-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+}
+
+.showcase-feature-text h6 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+    color: #F8FAFC;
+}
+
+.showcase-feature-text p {
+    font-size: 0.78rem;
+    color: #94A3B8;
+    margin-bottom: 0;
+    line-height: 1.35;
+}
+
+.showcase-footer {
+    position: relative;
+    z-index: 1;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.showcase-pill-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #E2E8F0;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Columna Derecha: Formulario */
+.login-side-form {
+    flex: 1 1 55%;
+    padding: 48px 46px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #FFFFFF;
+}
+
+.login-form-header {
+    margin-bottom: 26px;
+}
+
+.login-form-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+}
+
+.login-form-subtitle {
+    font-size: 0.92rem;
+    color: #64748B;
+    margin-bottom: 0;
+}
+
+.btn-registro-opcion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    border: 1.5px solid #E2E8F0;
+    color: #1E293B;
+    background: #F8FAFC;
+    text-decoration: none;
+}
+
+.btn-registro-opcion:hover {
+    border-color: #2563EB;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.login-divider-custom {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 22px 0;
+    color: #94A3B8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.login-divider-custom::before,
+.login-divider-custom::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.login-divider-custom:not(:empty)::before {
+    margin-right: .85em;
+}
+
+.login-divider-custom:not(:empty)::after {
+    margin-left: .85em;
+}
+
+@media (max-width: 991.98px) {
+    .login-enterprise-container {
+        flex-direction: column;
+        max-width: 520px;
+    }
+
+    .login-side-showcase {
+        padding: 32px 28px;
+    }
+
+    .showcase-features-list {
+        display: none;
+    }
+
+    .login-side-form {
+        padding: 36px 28px;
+    }
+}

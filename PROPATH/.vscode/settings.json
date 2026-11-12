@@ -4,7 +4,24 @@
     ],
     "java.project.outputPath": "build/web/WEB-INF/classes",
     "java.project.referencedLibraries": [
-        "D:/apache-tomcat-10.1.60/apache-tomcat-10.1.60/lib/*.jar",
         "web/WEB-INF/lib/*.jar"
-    ]
+    ],
+    "java.compile.nullAnalysis.mode": "disabled",
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.errors.incompleteClasspath.severity": "ignore",
+    "java.compiler.problem.missingSerialVersion": "ignore",
+    "java.compiler.problem.rawTypeReference": "ignore",
+    "java.compiler.problem.uncheckedTypeOperation": "ignore",
+    "java.compiler.problem.unusedImport": "ignore",
+    "java.compiler.problem.unusedLocal": "ignore",
+    "java.compiler.problem.unusedPrivateMember": "ignore",
+    "java.compiler.problem.nullReference": "ignore",
+    "java.compiler.problem.potentialNullReference": "ignore",
+    "html.validate.scripts": false,
+    "html.validate.styles": false,
+    "css.lint.unknownAtRules": "ignore",
+    "css.lint.duplicateProperties": "ignore",
+    "css.lint.emptyRules": "ignore",
+    "javascript.suggestionActions.enabled": false,
+    "typescript.validate.enable": false
 }

@@ -1,4 +1,4 @@
-﻿<%! private String entrevistaCampo(String objeto, String campo) { java.util.regex.Matcher
+<%! private String entrevistaCampo(String objeto, String campo) { java.util.regex.Matcher
     m=java.util.regex.Pattern.compile( java.util.regex.Pattern.quote("\"" + campo + "\"")
         + "\\s*:\\s*(?:\"([^\"]*)\"|([0-9]+))").matcher(objeto); return m.find() ? (m.group(1) !=null ? m.group(1) :
     m.group(2)) : "" ; } private java.util.List<String> entrevistasJson(String json) {
@@ -1846,18 +1846,25 @@
                                                                                                                         value="<%= usuario.getCorreo() != null ? usuario.getCorreo() : "" %>"
                                                                                                                         required>
                                                                                                                 </div>
-                                                                                                                <div
-                                                                                                                    class="col-sm-6">
-                                                                                                                    <label
-                                                                                                                        class="form-label small fw-semibold">Nueva
-                                                                                                                        Contraseña
-                                                                                                                        (opcional)</label>
-                                                                                                                    <input
-                                                                                                                        type="password"
-                                                                                                                        class="form-control"
-                                                                                                                        name="contrasena"
-                                                                                                                        placeholder="Dejar en blanco para conservar"
-                                                                                                                        minlength="6">
+                                                                                                                <div class="col-12 mt-3 pt-2 border-top">
+                                                                                                                    <div class="small fw-bold text-secondary mb-2">
+                                                                                                                        <i class="bi bi-shield-lock me-1"></i> Cambio de Contraseña (Opcional)
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                                <div class="col-12">
+                                                                                                                    <label class="form-label small fw-semibold text-secondary">Contraseña Actual</label>
+                                                                                                                    <input type="password" class="form-control" name="contrasenaActual"
+                                                                                                                           placeholder="Requerida solo si vas a cambiar tu contraseña">
+                                                                                                                </div>
+                                                                                                                <div class="col-sm-6">
+                                                                                                                    <label class="form-label small fw-semibold text-secondary">Nueva Contraseña</label>
+                                                                                                                    <input type="password" class="form-control" name="contrasena"
+                                                                                                                           placeholder="Mínimo 8 caracteres" minlength="8">
+                                                                                                                </div>
+                                                                                                                <div class="col-sm-6">
+                                                                                                                    <label class="form-label small fw-semibold text-secondary">Confirmar Nueva Contraseña</label>
+                                                                                                                    <input type="password" class="form-control" name="confirmarContrasena"
+                                                                                                                           placeholder="Repite la nueva contraseña" minlength="8">
                                                                                                                 </div>
                                                                                                                 <div
                                                                                                                     class="col-12">
