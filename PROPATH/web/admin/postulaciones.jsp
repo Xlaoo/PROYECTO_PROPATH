@@ -1,6 +1,7 @@
 ﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.Postulacion"%>
+<%@page import="com.propath.conexion.SeguridadUtil"%>
 <%@page import="com.propath.servicio.BackendCliente"%>
 <%
     request.setAttribute("activePage", "postulaciones");
@@ -57,11 +58,11 @@
 
                     
                     <div class="alert alert-primary d-flex align-items-center mb-4 py-3 px-4 rounded-3 border-primary-subtle shadow-sm" role="alert">
-                        <i class="bi bi-info-circle-fill fs-4 me-3 text-primary flex-shrink-0"></i>
+                        <i class="bi bi-shield-check fs-4 me-3 text-primary flex-shrink-0"></i>
                         <div>
-                            <div class="fw-bold text-primary mb-1">Módulo de Solo Consulta</div>
+                            <div class="fw-bold text-primary mb-1">Supervisión y Gestión Administrativa</div>
                             <div class="small text-secondary">
-                                Como administrador, tienes acceso de auditoría y supervisión global. La modificación y decisión final sobre cada postulación (<em>Postulado, En revisión, Seleccionado, No seleccionado</em>) es potestad exclusiva de la empresa evaluadora.
+                                Puedes consultar el cuestionario completo de cada postulante, moderar su estado (<em>Postulado, En revisión, Seleccionado, No seleccionado</em>) o eliminar registros inválidos.
                             </div>
                         </div>
                     </div>
@@ -154,19 +155,42 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <button type="button" 
-                                                    class="btn-action btn-action-view" 
-                                                    title="Ver postulación completa"
-                                                    data-bs-toggle="tooltip"
-                                                    data-id="<%= pos.getId() %>"
-                                                    data-estudiante="<%= pos.getEstudiante() %>"
-                                                    data-oferta="<%= pos.getOferta() %>"
-                                                    data-empresa="<%= pos.getEmpresa() %>"
-                                                    data-fecha="<%= pos.getFechaPostulacion() %>"
-                                                    data-estado="<%= pos.getEstado() %>"
-                                                    onclick="verDetallePostulacionAdmin(this)">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
+                                            <div class="action-btn-group justify-content-center">
+                                                <button type="button" 
+                                                        class="btn-action btn-action-view" 
+                                                        title="Ver postulación completa"
+                                                        data-bs-toggle="tooltip"
+                                                        data-id="<%= pos.getId() %>"
+                                                        data-estudiante="<%= SeguridadUtil.escaparHtml(pos.getEstudiante()) %>"
+                                                        data-oferta="<%= SeguridadUtil.escaparHtml(pos.getOferta()) %>"
+                                                        data-empresa="<%= SeguridadUtil.escaparHtml(pos.getEmpresa()) %>"
+                                                        data-fecha="<%= SeguridadUtil.escaparHtml(pos.getFechaPostulacion()) %>"
+                                                        data-estado="<%= SeguridadUtil.escaparHtml(pos.getEstado()) %>"
+                                                        onclick="verDetallePostulacionAdmin(this)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-action btn-action-edit"
+                                                        title="Cambiar estado"
+                                                        data-bs-toggle="tooltip"
+                                                        data-id="<%= pos.getId() %>"
+                                                        data-estudiante="<%= SeguridadUtil.escaparHtml(pos.getEstudiante()) %>"
+                                                        data-oferta="<%= SeguridadUtil.escaparHtml(pos.getOferta()) %>"
+                                                        data-estado="<%= SeguridadUtil.escaparHtml(pos.getEstado()) %>"
+                                                        data-motivo="<%= pos.getMotivoRechazo() != null ? SeguridadUtil.escaparHtml(pos.getMotivoRechazo()) : "" %>"
+                                                        onclick="abrirModalEstadoPostulacionAdmin(this)">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-action btn-action-danger"
+                                                        title="Eliminar postulación"
+                                                        data-bs-toggle="tooltip"
+                                                        data-id="<%= pos.getId() %>"
+                                                        data-estudiante="<%= SeguridadUtil.escaparHtml(pos.getEstudiante()) %>"
+                                                        onclick="eliminarPostulacionAdmin(this.dataset.id, this.dataset.estudiante)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     <%  }
@@ -227,6 +251,47 @@
                     <div class="modal-footer bg-light border-0">
                         <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Cambiar Estado Postulación Admin -->
+        <div class="modal fade" id="modalEstadoPostulacionAdmin" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content modal-content-propath">
+                    <div class="modal-header modal-header-propath">
+                        <h2 class="modal-title h5"><i class="bi bi-sliders me-2 text-primary"></i>Actualizar Estado de Postulación</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <form id="formEstadoPostulacionAdmin" onsubmit="event.preventDefault(); guardarEstadoPostulacionAdmin();">
+                        <input type="hidden" id="editPostAdminId">
+                        <div class="modal-body modal-body-propath">
+                            <div class="mb-3 p-3 bg-light rounded-3 border">
+                                <div class="small text-muted">Postulante</div>
+                                <div class="fw-bold text-dark" id="editPostAdminEstudiante">—</div>
+                                <div class="small text-primary" id="editPostAdminOferta">—</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-secondary">Nuevo Estado *</label>
+                                <select class="form-select" id="editPostAdminEstado" onchange="toggleMotivoPostAdmin()" required>
+                                    <option value="POSTULADO">POSTULADO</option>
+                                    <option value="EN_REVISION">EN_REVISION</option>
+                                    <option value="SELECCIONADO">SELECCIONADO</option>
+                                    <option value="NO_SELECCIONADO">NO_SELECCIONADO</option>
+                                </select>
+                            </div>
+                            <div class="mb-0 d-none" id="grupoMotivoPostAdmin">
+                                <label class="form-label small fw-semibold text-secondary">Motivo de No Selección *</label>
+                                <textarea class="form-control" id="editPostAdminMotivo" rows="3" maxlength="1000" placeholder="Explica brevemente el motivo..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light border-0">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarEstadoPostAdmin">
+                                <i class="bi bi-check2 me-1"></i> Guardar Estado
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -307,6 +372,91 @@
                 }
             }
 
+            function abrirModalEstadoPostulacionAdmin(btn) {
+                document.getElementById('editPostAdminId').value = btn.getAttribute('data-id') || '';
+                document.getElementById('editPostAdminEstudiante').textContent = btn.getAttribute('data-estudiante') || '—';
+                document.getElementById('editPostAdminOferta').textContent = btn.getAttribute('data-oferta') || '—';
+                const estRaw = (btn.getAttribute('data-estado') || 'POSTULADO').toUpperCase();
+                let estVal = 'POSTULADO';
+                if (estRaw.includes('REVISION') || estRaw.includes('REVISIÓN')) estVal = 'EN_REVISION';
+                else if (estRaw.includes('NO')) estVal = 'NO_SELECCIONADO';
+                else if (estRaw.includes('SELECCION')) estVal = 'SELECCIONADO';
+                document.getElementById('editPostAdminEstado').value = estVal;
+                document.getElementById('editPostAdminMotivo').value = btn.getAttribute('data-motivo') || '';
+                toggleMotivoPostAdmin();
+                const modalEl = document.getElementById('modalEstadoPostulacionAdmin');
+                const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                if (ModalClass) {
+                    const inst = ModalClass.getOrCreateInstance(modalEl);
+                    if (inst) inst.show();
+                }
+            }
+
+            function toggleMotivoPostAdmin() {
+                const est = document.getElementById('editPostAdminEstado').value;
+                const grp = document.getElementById('grupoMotivoPostAdmin');
+                const txt = document.getElementById('editPostAdminMotivo');
+                if (est === 'NO_SELECCIONADO') {
+                    grp.classList.remove('d-none');
+                    txt.required = true;
+                } else {
+                    grp.classList.add('d-none');
+                    txt.required = false;
+                }
+            }
+
+            async function guardarEstadoPostulacionAdmin() {
+                const btn = document.getElementById('btnGuardarEstadoPostAdmin');
+                btn.disabled = true;
+                try {
+                    const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                        body: new URLSearchParams({
+                            accion: 'cambiarEstadoPostulacion',
+                            id: document.getElementById('editPostAdminId').value,
+                            estado: document.getElementById('editPostAdminEstado').value,
+                            motivo: document.getElementById('editPostAdminMotivo').value.trim()
+                        }).toString()
+                    });
+                    const data = await res.json();
+                    const modalEl = document.getElementById('modalEstadoPostulacionAdmin');
+                    const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                    if (ModalClass && data.exito) {
+                        const inst = ModalClass.getInstance(modalEl);
+                        if (inst) inst.hide();
+                    }
+                    if (data.exito) mostrarModalMensaje('Estado Actualizado', data.mensaje, 'success', () => window.location.reload());
+                    else { mostrarModalMensaje('Error', data.mensaje || 'No se pudo actualizar.', 'danger'); btn.disabled = false; }
+                } catch (err) {
+                    mostrarModalMensaje('Error de Conexión', err.message, 'danger');
+                    btn.disabled = false;
+                }
+            }
+
+            function eliminarPostulacionAdmin(id, estudiante) {
+                mostrarModalConfirmacion('Eliminar Postulación',
+                    '¿Estás seguro de eliminar la postulación #' + id + ' de "' + estudiante + '"? Se eliminarán sus respuestas y entrevistas vinculadas.',
+                    async function () {
+                        try {
+                            const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                body: new URLSearchParams({ accion: 'eliminar', recurso: 'postulaciones', id: id }).toString()
+                            });
+                            const data = await res.json();
+                            if (data.exito) mostrarModalMensaje('Postulación Eliminada', data.mensaje, 'success', () => window.location.reload());
+                            else mostrarModalMensaje('Error', data.mensaje || 'No se pudo eliminar.', 'danger');
+                        } catch (err) {
+                            mostrarModalMensaje('Error de Conexión', err.message, 'danger');
+                        }
+                    });
+            }
+
+            window.abrirModalEstadoPostulacionAdmin = abrirModalEstadoPostulacionAdmin;
+            window.toggleMotivoPostAdmin = toggleMotivoPostAdmin;
+            window.guardarEstadoPostulacionAdmin = guardarEstadoPostulacionAdmin;
+            window.eliminarPostulacionAdmin = eliminarPostulacionAdmin;
             window.verDetallePostulacionAdmin = verDetallePostulacionAdmin;
         </script>
 </main>

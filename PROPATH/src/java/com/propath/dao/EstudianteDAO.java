@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -124,6 +125,14 @@ public class EstudianteDAO {
         return null;
     }
 
+    private void setDniOrNull(PreparedStatement ps, int index, String dni) throws SQLException {
+        if (dni == null || dni.trim().isEmpty()) {
+            ps.setNull(index, Types.VARCHAR);
+        } else {
+            ps.setString(index, dni.trim());
+        }
+    }
+
     public int crear(Estudiante estudiante) {
         if (estudiante == null || estudiante.getIdUsuario() <= 0) {
             return -1;
@@ -136,7 +145,7 @@ public class EstudianteDAO {
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setInt(1, estudiante.getIdUsuario());
-            ps.setString(2, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+            setDniOrNull(ps, 2, estudiante.getDni());
             ps.setString(3, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
             ps.setString(4, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
             ps.setString(5, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
@@ -198,7 +207,7 @@ public class EstudianteDAO {
             int idEstudianteGenerado = -1;
             try (PreparedStatement psEst = conn.prepareStatement(sqlEstudiante, Statement.RETURN_GENERATED_KEYS)) {
                 psEst.setInt(1, idUsuarioGenerado);
-                psEst.setString(2, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+                setDniOrNull(psEst, 2, estudiante.getDni());
                 psEst.setString(3, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
                 psEst.setString(4, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
                 psEst.setString(5, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
@@ -260,7 +269,7 @@ public class EstudianteDAO {
             conn.setAutoCommit(false);
 
             try (PreparedStatement ps = conn.prepareStatement(sqlEst)) {
-                ps.setString(1, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+                setDniOrNull(ps, 1, estudiante.getDni());
                 ps.setString(2, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
                 ps.setString(3, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
                 ps.setString(4, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
@@ -325,7 +334,7 @@ public class EstudianteDAO {
             conn.setAutoCommit(false);
 
             try (PreparedStatement ps = conn.prepareStatement(sqlEst)) {
-                ps.setString(1, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+                setDniOrNull(ps, 1, estudiante.getDni());
                 ps.setString(2, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
                 ps.setString(3, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
                 ps.setString(4, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");

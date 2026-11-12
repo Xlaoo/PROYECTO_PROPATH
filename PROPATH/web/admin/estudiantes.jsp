@@ -48,10 +48,14 @@
                             <h1 class="h3 fw-bold text-dark mb-0">Gestión de Estudiantes</h1>
                             <p class="text-muted small mb-0">Administra los estudiantes postulantes registrados para prácticas preprofesionales</p>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold">
                                 <i class="bi bi-people-fill me-1"></i> <%= listaEstudiantes.size() %> Estudiantes en vista
                             </span>
+                            <button type="button" class="btn btn-success rounded-pill px-3 py-2 fw-semibold shadow-sm"
+                                    onclick="abrirModalNuevoEstudiante()">
+                                <i class="bi bi-person-plus-fill me-1"></i> Nuevo Estudiante
+                            </button>
                         </div>
                     </div>
 
@@ -181,6 +185,7 @@
                                                         title="Editar estudiante"
                                                         data-bs-toggle="tooltip"
                                                         data-id="<%= est.getId() %>"
+                                                        data-dni="<%= est.getDni() != null ? est.getDni() : "" %>"
                                                         data-nombres="<%= est.getNombre() != null ? est.getNombre() : "" %>"
                                                         data-apellidos="<%= est.getApellido() != null ? est.getApellido() : "" %>"
                                                         data-correo="<%= est.getCorreo() %>"
@@ -290,7 +295,11 @@
                                     <label class="form-label small fw-semibold text-secondary">Apellidos *</label>
                                     <input type="text" class="form-control" id="editEstudianteApellidos" name="apellido" required>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-sm-5">
+                                    <label class="form-label small fw-semibold text-secondary">DNI (8 dígitos)</label>
+                                    <input type="text" class="form-control" id="editEstudianteDni" name="dni" maxlength="8" pattern="[0-9]{8}" placeholder="Opcional">
+                                </div>
+                                <div class="col-sm-7">
                                     <label class="form-label small fw-semibold text-secondary">Correo Electrónico</label>
                                     <input type="email" class="form-control bg-light" id="editEstudianteCorreo" readonly disabled>
                                 </div>
@@ -325,6 +334,71 @@
                             <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarEditarEstudiante">
                                 <i class="bi bi-check2 me-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalNuevoEstudiante" tabindex="-1" aria-labelledby="modalNuevoEstudianteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content modal-content-propath">
+                    <div class="modal-header modal-header-propath">
+                        <h2 class="modal-title h5" id="modalNuevoEstudianteLabel">
+                            <i class="bi bi-person-plus-fill me-2 text-primary"></i> Registrar Nuevo Estudiante
+                        </h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <form id="formNuevoEstudianteAdmin" onsubmit="event.preventDefault(); guardarNuevoEstudianteAdmin();">
+                        <div class="modal-body modal-body-propath">
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Nombres *</label>
+                                    <input type="text" class="form-control" id="newEstNombre" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Apellidos *</label>
+                                    <input type="text" class="form-control" id="newEstApellidos" required>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label small fw-semibold text-secondary">DNI (8 dígitos)</label>
+                                    <input type="text" class="form-control" id="newEstDni" maxlength="8" pattern="[0-9]{8}" placeholder="Opcional">
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label small fw-semibold text-secondary">Correo Electrónico *</label>
+                                    <input type="email" class="form-control" id="newEstCorreo" required>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label small fw-semibold text-secondary">Contraseña Inicial *</label>
+                                    <input type="password" class="form-control" id="newEstClave" minlength="6" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Universidad *</label>
+                                    <input type="text" class="form-control" id="newEstUniversidad" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Carrera Profesional *</label>
+                                    <input type="text" class="form-control" id="newEstCarrera" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Ciclo Actual *</label>
+                                    <select class="form-select" id="newEstCiclo" required>
+                                        <% for (int c = 1; c <= 12; c++) { %>
+                                            <option value="<%= c %>">Ciclo <%= c %></option>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Teléfono</label>
+                                    <input type="tel" class="form-control" id="newEstTelefono" maxlength="9" placeholder="987654321">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light border-0">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarNuevoEstudiante">
+                                <i class="bi bi-check2 me-1"></i> Registrar Estudiante
                             </button>
                         </div>
                     </form>
@@ -373,6 +447,7 @@ badge.className = 'badge-status ' +
 
             function abrirModalEditarEstudiante(btn) {
                 document.getElementById('editEstudianteId').value = btn.getAttribute('data-id') || '';
+                document.getElementById('editEstudianteDni').value = (btn.getAttribute('data-dni') || '').trim();
                 document.getElementById('editEstudianteNombre').value = (btn.getAttribute('data-nombres') || '').trim();
                 document.getElementById('editEstudianteApellidos').value = (btn.getAttribute('data-apellidos') || '').trim();
                 document.getElementById('editEstudianteCorreo').value = (btn.getAttribute('data-correo') || '').trim();
@@ -398,6 +473,7 @@ badge.className = 'badge-status ' +
                 const body = new URLSearchParams({
                     accion: 'actualizarEstudiante',
                     id: document.getElementById('editEstudianteId').value,
+                    dni: document.getElementById('editEstudianteDni').value.trim(),
                     nombre: document.getElementById('editEstudianteNombre').value,
                     apellido: document.getElementById('editEstudianteApellidos').value,
                     universidad: document.getElementById('editEstudianteUniversidad').value,
@@ -465,6 +541,59 @@ badge.className = 'badge-status ' +
                 );
             }
 
+            function abrirModalNuevoEstudiante() {
+                document.getElementById('formNuevoEstudianteAdmin').reset();
+                const modalEl = document.getElementById('modalNuevoEstudiante');
+                const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                if (ModalClass) {
+                    const inst = ModalClass.getOrCreateInstance(modalEl);
+                    if (inst) inst.show();
+                }
+            }
+
+            async function guardarNuevoEstudianteAdmin() {
+                const btn = document.getElementById('btnGuardarNuevoEstudiante');
+                btn.disabled = true;
+                const body = new URLSearchParams({
+                    accion: 'crearUsuario',
+                    rol: 'ESTUDIANTE',
+                    nombre: document.getElementById('newEstNombre').value.trim(),
+                    apellidos: document.getElementById('newEstApellidos').value.trim(),
+                    dni: document.getElementById('newEstDni').value.trim(),
+                    correo: document.getElementById('newEstCorreo').value.trim(),
+                    contrasena: document.getElementById('newEstClave').value.trim(),
+                    universidad: document.getElementById('newEstUniversidad').value.trim(),
+                    carrera: document.getElementById('newEstCarrera').value.trim(),
+                    ciclo: document.getElementById('newEstCiclo').value,
+                    telefono: document.getElementById('newEstTelefono').value.trim()
+                });
+                try {
+                    const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                        body: body.toString()
+                    });
+                    const data = await res.json();
+                    const modalEl = document.getElementById('modalNuevoEstudiante');
+                    const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                    if (ModalClass && data.exito) {
+                        const inst = ModalClass.getInstance(modalEl);
+                        if (inst) inst.hide();
+                    }
+                    if (data.exito) {
+                        mostrarModalMensaje('Estudiante Registrado', data.mensaje || 'Estudiante creado con éxito.', 'success', () => window.location.reload());
+                    } else {
+                        mostrarModalMensaje('Error al Registrar', data.mensaje || 'No se pudo registrar el estudiante.', 'danger');
+                        btn.disabled = false;
+                    }
+                } catch (err) {
+                    mostrarModalMensaje('Error de Conexión', 'No se pudo conectar con el servidor: ' + err.message, 'danger');
+                    btn.disabled = false;
+                }
+            }
+
+            window.abrirModalNuevoEstudiante = abrirModalNuevoEstudiante;
+            window.guardarNuevoEstudianteAdmin = guardarNuevoEstudianteAdmin;
             window.mostrarFichaEstudianteAdmin = mostrarFichaEstudianteAdmin;
             window.abrirModalEditarEstudiante = abrirModalEditarEstudiante;
             window.ejecutarGuardarEditarEstudiante = ejecutarGuardarEditarEstudiante;

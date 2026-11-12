@@ -53,10 +53,15 @@
                                                             <p class="text-muted small mb-0">Supervisión y consulta de
                                                                 cuentas registradas</p>
                                                         </div>
-                                                        <div class="d-flex align-items-center gap-2">
+                                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                            <button type="button"
+                                                                class="btn btn-success rounded-pill px-3 py-2 fw-semibold shadow-sm"
+                                                                onclick="abrirModalNuevoUsuario()">
+                                                                <i class="bi bi-person-plus-fill me-1"></i> Nuevo Usuario
+                                                            </button>
                                                             <a href="${pageContext.request.contextPath}/admin/usuarios.jsp"
                                                                 class="btn btn-primary rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm"
-                                                                title="Consultar y refrescar lista desde MariaDB">
+                                                                title="Consultar y refrescar lista desde MySQL">
                                                                 <i class="bi bi-arrow-clockwise fs-6"></i> Actualizar
                                                             </a>
                                                             <span
@@ -188,6 +193,15 @@
                                                                                             data-cargo="<%= esAdmin ? (u.getId() == 60 ? "Administrador Principal del Sistema" : "Administrador del Sistema") : "" %>"
                                                                                             onclick="verDetallesUsuario(this)">
                                                                                             <i class="bi bi-eye"></i>
+                                                                                        </button>
+                                                                                        <button type="button"
+                                                                                            class="btn-action btn-action-edit"
+                                                                                            title="Cambiar estado de usuario"
+                                                                                            data-id="<%= u.getId() %>"
+                                                                                            data-nombre="<%= u.getNombre() %> <%= u.getApellidos() != null ? u.getApellidos() : "" %>"
+                                                                                            data-estado="<%= u.getEstado() %>"
+                                                                                            onclick="abrirModalEstadoUsuario(this)">
+                                                                                            <i class="bi bi-sliders"></i>
                                                                                         </button>
                                                                                         <button type="button"
                                                                                             class="btn-action btn-action-danger"
@@ -387,6 +401,126 @@
                                             </div>
                                         </div>
 
+                                        <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content modal-content-propath">
+                                                    <div class="modal-header modal-header-propath">
+                                                        <h2 class="modal-title h5"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Registrar Nuevo Usuario</h2>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <form id="formNuevoUsuarioAdmin" onsubmit="event.preventDefault(); guardarNuevoUsuarioAdmin();">
+                                                        <div class="modal-body modal-body-propath">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold text-secondary">Rol de Cuenta *</label>
+                                                                    <select class="form-select" id="newUsrRol" onchange="toggleCamposNuevoUsuario()" required>
+                                                                        <option value="ESTUDIANTE" selected>ESTUDIANTE</option>
+                                                                        <option value="EMPRESA">EMPRESA</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold text-secondary">Nombres *</label>
+                                                                    <input type="text" class="form-control" id="newUsrNombre" required>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold text-secondary">Apellidos *</label>
+                                                                    <input type="text" class="form-control" id="newUsrApellidos" required>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">Correo Electrónico *</label>
+                                                                    <input type="email" class="form-control" id="newUsrCorreo" required>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">Contraseña Inicial *</label>
+                                                                    <input type="password" class="form-control" id="newUsrClave" minlength="6" required>
+                                                                </div>
+                                                            </div>
+                                                            <div id="camposNuevoEst" class="row g-3 mt-1 pt-2 border-top">
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold text-secondary">DNI (8 dígitos)</label>
+                                                                    <input type="text" class="form-control" id="newUsrDni" maxlength="8" pattern="[0-9]{8}" placeholder="Opcional">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold text-secondary">Universidad *</label>
+                                                                    <input type="text" class="form-control" id="newUsrUniversidad" required>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold text-secondary">Carrera *</label>
+                                                                    <input type="text" class="form-control" id="newUsrCarrera" required>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">Ciclo *</label>
+                                                                    <input type="number" class="form-control" id="newUsrCiclo" min="1" max="14" value="1" required>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">Teléfono</label>
+                                                                    <input type="text" class="form-control" id="newUsrTelEst" maxlength="9">
+                                                                </div>
+                                                            </div>
+                                                            <div id="camposNuevoEmp" class="row g-3 mt-1 pt-2 border-top d-none">
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">Razón Social *</label>
+                                                                    <input type="text" class="form-control" id="newUsrRazon">
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">RUC (11 dígitos) *</label>
+                                                                    <input type="text" class="form-control" id="newUsrRuc" maxlength="11" pattern="[0-9]{11}">
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">Teléfono</label>
+                                                                    <input type="text" class="form-control" id="newUsrTelEmp" maxlength="9">
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-semibold text-secondary">Dirección</label>
+                                                                    <input type="text" class="form-control" id="newUsrDirEmp">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer bg-light border-0">
+                                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarNuevoUsuario">
+                                                                <i class="bi bi-check2 me-1"></i> Crear Usuario
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal fade" id="modalEstadoUsuarioAdmin" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content modal-content-propath">
+                                                    <div class="modal-header modal-header-propath">
+                                                        <h2 class="modal-title h5"><i class="bi bi-sliders me-2 text-primary"></i>Cambiar Estado de Cuenta</h2>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <form id="formEstadoUsuarioAdmin" onsubmit="event.preventDefault(); guardarEstadoUsuarioAdmin();">
+                                                        <input type="hidden" id="editUsrEstadoId">
+                                                        <div class="modal-body modal-body-propath">
+                                                            <div class="mb-3 p-3 bg-light rounded-3 border">
+                                                                <div class="small text-muted">Usuario seleccionado</div>
+                                                                <div class="fw-bold text-dark" id="editUsrEstadoNombre">—</div>
+                                                            </div>
+                                                            <div class="mb-0">
+                                                                <label class="form-label small fw-semibold text-secondary">Nuevo Estado *</label>
+                                                                <select class="form-select" id="editUsrEstadoSelect" required>
+                                                                    <option value="ACTIVO">ACTIVO</option>
+                                                                    <option value="BLOQUEADO">BLOQUEADO</option>
+                                                                    <option value="INACTIVO">INACTIVO</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer bg-light border-0">
+                                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarEstadoUsuario">
+                                                                <i class="bi bi-check2 me-1"></i> Actualizar Estado
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <script>
                                             document.addEventListener('DOMContentLoaded', function () {
                                                 function verDetallesUsuario(btn) {
@@ -501,6 +635,123 @@
                                                     }
                                                 }
 
+                                                function abrirModalNuevoUsuario() {
+                                                    document.getElementById('formNuevoUsuarioAdmin').reset();
+                                                    toggleCamposNuevoUsuario();
+                                                    const modalEl = document.getElementById('modalNuevoUsuario');
+                                                    if (window.BootstrapModalCompat) {
+                                                        const inst = window.BootstrapModalCompat.getOrCreateInstance(modalEl);
+                                                        if (inst) inst.show();
+                                                    }
+                                                }
+
+                                                function toggleCamposNuevoUsuario() {
+                                                    const rol = document.getElementById('newUsrRol').value;
+                                                    const divEst = document.getElementById('camposNuevoEst');
+                                                    const divEmp = document.getElementById('camposNuevoEmp');
+                                                    const isEst = (rol === 'ESTUDIANTE');
+                                                    divEst.classList.toggle('d-none', !isEst);
+                                                    divEmp.classList.toggle('d-none', isEst);
+                                                    document.getElementById('newUsrUniversidad').required = isEst;
+                                                    document.getElementById('newUsrCarrera').required = isEst;
+                                                    document.getElementById('newUsrCiclo').required = isEst;
+                                                    document.getElementById('newUsrRazon').required = !isEst;
+                                                    document.getElementById('newUsrRuc').required = !isEst;
+                                                }
+
+                                                async function guardarNuevoUsuarioAdmin() {
+                                                    const btn = document.getElementById('btnGuardarNuevoUsuario');
+                                                    btn.disabled = true;
+                                                    const rol = document.getElementById('newUsrRol').value;
+                                                    const params = {
+                                                        accion: 'crearUsuario',
+                                                        rol: rol,
+                                                        nombre: document.getElementById('newUsrNombre').value.trim(),
+                                                        apellidos: document.getElementById('newUsrApellidos').value.trim(),
+                                                        correo: document.getElementById('newUsrCorreo').value.trim(),
+                                                        contrasena: document.getElementById('newUsrClave').value.trim()
+                                                    };
+                                                    if (rol === 'ESTUDIANTE') {
+                                                        params.dni = document.getElementById('newUsrDni').value.trim();
+                                                        params.universidad = document.getElementById('newUsrUniversidad').value.trim();
+                                                        params.carrera = document.getElementById('newUsrCarrera').value.trim();
+                                                        params.ciclo = document.getElementById('newUsrCiclo').value;
+                                                        params.telefono = document.getElementById('newUsrTelEst').value.trim();
+                                                    } else {
+                                                        params.razonSocial = document.getElementById('newUsrRazon').value.trim();
+                                                        params.ruc = document.getElementById('newUsrRuc').value.trim();
+                                                        params.telefono = document.getElementById('newUsrTelEmp').value.trim();
+                                                        params.direccion = document.getElementById('newUsrDirEmp').value.trim();
+                                                    }
+                                                    try {
+                                                        const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                                            body: new URLSearchParams(params).toString()
+                                                        });
+                                                        const data = await res.json();
+                                                        const modalEl = document.getElementById('modalNuevoUsuario');
+                                                        if (window.BootstrapModalCompat && data.exito) {
+                                                            const inst = window.BootstrapModalCompat.getInstance(modalEl);
+                                                            if (inst) inst.hide();
+                                                        }
+                                                        if (data.exito) window.mostrarModalMensaje('Usuario Creado', data.mensaje, 'success', () => window.location.reload());
+                                                        else { window.mostrarModalMensaje('Error', data.mensaje || 'No se pudo crear el usuario.', 'danger'); btn.disabled = false; }
+                                                    } catch (err) {
+                                                        window.mostrarModalMensaje('Error de Conexión', err.message, 'danger');
+                                                        btn.disabled = false;
+                                                    }
+                                                }
+
+                                                function abrirModalEstadoUsuario(btn) {
+                                                    const id = btn.getAttribute('data-id');
+                                                    if (id === '60') {
+                                                        if (window.mostrarModalProhibido) window.mostrarModalProhibido('No está permitido modificar el estado del administrador principal del sistema.');
+                                                        return;
+                                                    }
+                                                    document.getElementById('editUsrEstadoId').value = id;
+                                                    document.getElementById('editUsrEstadoNombre').textContent = btn.getAttribute('data-nombre') || ('Usuario #' + id);
+                                                    document.getElementById('editUsrEstadoSelect').value = (btn.getAttribute('data-estado') || 'ACTIVO').toUpperCase();
+                                                    const modalEl = document.getElementById('modalEstadoUsuarioAdmin');
+                                                    if (window.BootstrapModalCompat) {
+                                                        const inst = window.BootstrapModalCompat.getOrCreateInstance(modalEl);
+                                                        if (inst) inst.show();
+                                                    }
+                                                }
+
+                                                async function guardarEstadoUsuarioAdmin() {
+                                                    const btn = document.getElementById('btnGuardarEstadoUsuario');
+                                                    btn.disabled = true;
+                                                    try {
+                                                        const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                                            body: new URLSearchParams({
+                                                                accion: 'cambiarEstadoUsuario',
+                                                                id: document.getElementById('editUsrEstadoId').value,
+                                                                estado: document.getElementById('editUsrEstadoSelect').value
+                                                            }).toString()
+                                                        });
+                                                        const data = await res.json();
+                                                        const modalEl = document.getElementById('modalEstadoUsuarioAdmin');
+                                                        if (window.BootstrapModalCompat && data.exito) {
+                                                            const inst = window.BootstrapModalCompat.getInstance(modalEl);
+                                                            if (inst) inst.hide();
+                                                        }
+                                                        if (data.exito) window.mostrarModalMensaje('Estado Actualizado', data.mensaje, 'success', () => window.location.reload());
+                                                        else if (data.prohibido && window.mostrarModalProhibido) { window.mostrarModalProhibido(data.mensaje); btn.disabled = false; }
+                                                        else { window.mostrarModalMensaje('Error', data.mensaje || 'No se pudo actualizar.', 'danger'); btn.disabled = false; }
+                                                    } catch (err) {
+                                                        window.mostrarModalMensaje('Error de Conexión', err.message, 'danger');
+                                                        btn.disabled = false;
+                                                    }
+                                                }
+
+                                                window.abrirModalNuevoUsuario = abrirModalNuevoUsuario;
+                                                window.toggleCamposNuevoUsuario = toggleCamposNuevoUsuario;
+                                                window.guardarNuevoUsuarioAdmin = guardarNuevoUsuarioAdmin;
+                                                window.abrirModalEstadoUsuario = abrirModalEstadoUsuario;
+                                                window.guardarEstadoUsuarioAdmin = guardarEstadoUsuarioAdmin;
                                                 window.eliminarUsuario = eliminarUsuario;
                                             });
                                         </script>

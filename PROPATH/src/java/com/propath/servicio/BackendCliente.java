@@ -139,6 +139,10 @@ public class BackendCliente {
         return new PostulacionDAO().listarPorEmpresa(idEmpresa);
     }
 
+    public static List<Entrevista> listarEntrevistas() {
+        return new EntrevistaDAO().listarTodas();
+    }
+
     public static List<Entrevista> listarEntrevistasPorEmpresa(int idEmpresa) {
         return new EntrevistaDAO().listarPorEmpresa(idEmpresa);
     }

@@ -1,10 +1,13 @@
 ﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.OfertaPractica"%>
+<%@page import="com.propath.modelo.Empresa"%>
+<%@page import="com.propath.conexion.SeguridadUtil"%>
 <%@page import="com.propath.servicio.BackendCliente"%>
 <%
     request.setAttribute("activePage", "ofertas");
     List<OfertaPractica> listaOfertas = BackendCliente.listarOfertas();
+    List<Empresa> listaEmpresas = BackendCliente.listarEmpresas();
 %>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="light">
@@ -48,10 +51,14 @@
                             <h1 class="h3 fw-bold text-dark mb-0">Gestión de Ofertas de Prácticas</h1>
                             <p class="text-muted small mb-0">Revisa, modera y valida las convocatorias para prácticas preprofesionales publicadas</p>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="badge bg-teal-subtle border px-3 py-2 rounded-pill fw-semibold" style="background-color: #ccfbf1; color: #0f766e; border-color: #99f6e4 !important;">
                                 <i class="bi bi-briefcase-fill me-1"></i> <%= (listaOfertas != null ? listaOfertas.size() : 0) %> Ofertas en plataforma
                             </span>
+                            <button type="button" class="btn btn-success rounded-pill px-3 py-2 fw-semibold shadow-sm"
+                                    onclick="abrirModalNuevaOfertaAdmin()">
+                                <i class="bi bi-plus-circle me-1"></i> Nueva Oferta
+                            </button>
                         </div>
                     </div>
 
@@ -145,20 +152,58 @@
                                                         class="btn-action btn-action-view" 
                                                         title="Ver detalle completo"
                                                         data-bs-toggle="tooltip"
-                                                        data-titulo="<%= ofr.getTitulo() %>"
-                                                        data-empresa="<%= ofr.getEmpresa() %>"
-                                                        data-carrera="<%= ofr.getCarrera() %>"
-                                                        data-modalidad="<%= ofr.getModalidad() %>"
+                                                        data-titulo="<%= SeguridadUtil.escaparHtml(ofr.getTitulo()) %>"
+                                                        data-empresa="<%= SeguridadUtil.escaparHtml(ofr.getEmpresa()) %>"
+                                                        data-carrera="<%= SeguridadUtil.escaparHtml(ofr.getCarrera()) %>"
+                                                        data-modalidad="<%= SeguridadUtil.escaparHtml(ofr.getModalidad()) %>"
                                                         data-vacantes="<%= ofr.getVacantes() %>"
-                                                        data-fecha="<%= ofr.getFechaPublicacion() %>"
-                                                        data-fecha-limite="<%= ofr.getFechaLimite() != null ? ofr.getFechaLimite() : "" %>"
-                                                        data-ubicacion="<%= ofr.getUbicacion() != null ? ofr.getUbicacion() : "" %>"
-                                                        data-remuneracion="<%= ofr.getRemuneracion() != null ? ofr.getRemuneracion() : "" %>"
-                                                        data-descripcion="<%= ofr.getDescripcion() != null ? ofr.getDescripcion().replace("\"", "&quot;") : "" %>"
-                                                        data-requisitos="<%= ofr.getRequisitos() != null ? ofr.getRequisitos().replace("\"", "&quot;") : "" %>"
-                                                        data-estado="<%= ofr.getEstado() %>"
+                                                        data-fecha="<%= SeguridadUtil.escaparHtml(ofr.getFechaPublicacion()) %>"
+                                                        data-fecha-limite="<%= ofr.getFechaLimite() != null ? SeguridadUtil.escaparHtml(ofr.getFechaLimite()) : "" %>"
+                                                        data-ubicacion="<%= ofr.getUbicacion() != null ? SeguridadUtil.escaparHtml(ofr.getUbicacion()) : "" %>"
+                                                        data-remuneracion="<%= ofr.getRemuneracion() != null ? SeguridadUtil.escaparHtml(ofr.getRemuneracion()) : "" %>"
+                                                        data-descripcion="<%= ofr.getDescripcion() != null ? SeguridadUtil.escaparHtml(ofr.getDescripcion()) : "" %>"
+                                                        data-requisitos="<%= ofr.getRequisitos() != null ? SeguridadUtil.escaparHtml(ofr.getRequisitos()) : "" %>"
+                                                        data-estado="<%= SeguridadUtil.escaparHtml(ofr.getEstado()) %>"
                                                         onclick="verDetalleOfertaBtn(this)">
                                                     <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-action btn-action-edit"
+                                                        title="Editar oferta"
+                                                        data-bs-toggle="tooltip"
+                                                        data-id="<%= ofr.getId() %>"
+                                                        data-idempresa="<%= ofr.getIdEmpresa() %>"
+                                                        data-titulo="<%= SeguridadUtil.escaparHtml(ofr.getTitulo()) %>"
+                                                        data-carrera="<%= SeguridadUtil.escaparHtml(ofr.getCarrera()) %>"
+                                                        data-modalidad="<%= SeguridadUtil.escaparHtml(ofr.getModalidad()) %>"
+                                                        data-vacantes="<%= ofr.getVacantes() %>"
+                                                        data-fecha-limite="<%= ofr.getFechaLimite() != null ? SeguridadUtil.escaparHtml(ofr.getFechaLimite()) : "" %>"
+                                                        data-ubicacion="<%= ofr.getUbicacion() != null ? SeguridadUtil.escaparHtml(ofr.getUbicacion()) : "" %>"
+                                                        data-remuneracion="<%= ofr.getRemuneracion() != null ? SeguridadUtil.escaparHtml(ofr.getRemuneracion()) : "" %>"
+                                                        data-descripcion="<%= ofr.getDescripcion() != null ? SeguridadUtil.escaparHtml(ofr.getDescripcion()) : "" %>"
+                                                        data-requisitos="<%= ofr.getRequisitos() != null ? SeguridadUtil.escaparHtml(ofr.getRequisitos()) : "" %>"
+                                                        data-estado="<%= SeguridadUtil.escaparHtml(ofr.getEstado()) %>"
+                                                        onclick="abrirModalEditarOfertaAdmin(this)">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-action <%= esActiva ? "btn-action-warning" : "btn-action-approve" %>"
+                                                        title="<%= esActiva ? "Cerrar oferta" : "Activar oferta" %>"
+                                                        data-bs-toggle="tooltip"
+                                                        data-id="<%= ofr.getId() %>"
+                                                        data-estado="<%= esActiva ? "CERRADA" : "ACTIVA" %>"
+                                                        data-titulo="<%= SeguridadUtil.escaparHtml(ofr.getTitulo()) %>"
+                                                        onclick="cambiarEstadoOfertaAdmin(this.dataset.id, this.dataset.estado, this.dataset.titulo)">
+                                                    <i class="bi <%= esActiva ? "bi-lock-fill" : "bi-check-circle-fill" %>"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-action btn-action-danger"
+                                                        title="Eliminar oferta"
+                                                        data-bs-toggle="tooltip"
+                                                        data-id="<%= ofr.getId() %>"
+                                                        data-titulo="<%= SeguridadUtil.escaparHtml(ofr.getTitulo()) %>"
+                                                        onclick="eliminarOfertaAdmin(this.dataset.id, this.dataset.titulo)">
+                                                    <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -243,6 +288,223 @@
             </div>
         </div>
 
+        <div class="modal fade" id="modalFormOfertaAdmin" tabindex="-1" aria-labelledby="modalFormOfertaAdminLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content modal-content-propath">
+                    <div class="modal-header modal-header-propath">
+                        <h2 class="modal-title h5" id="modalFormOfertaAdminLabel">
+                            <i class="bi bi-briefcase me-2 text-primary"></i>
+                            <span id="modalFormOfertaTituloHdr">Nueva Oferta</span>
+                        </h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <form id="formOfertaAdmin" onsubmit="event.preventDefault(); guardarOfertaAdmin();">
+                        <input type="hidden" id="ofertaAdminId" value="">
+                        <div class="modal-body modal-body-propath">
+                            <div class="row g-3">
+                                <div class="col-md-6" id="grupoEmpresaOfertaAdmin">
+                                    <label class="form-label small fw-semibold text-secondary">Empresa Publicadora *</label>
+                                    <select class="form-select" id="ofertaAdminEmpresa" required>
+                                        <option value="">Selecciona una empresa...</option>
+                                        <% if (listaEmpresas != null) {
+                                            for (Empresa em : listaEmpresas) { %>
+                                        <option value="<%= em.getId() %>"><%= SeguridadUtil.escaparHtml(em.getRazonSocial()) %> (<%= SeguridadUtil.escaparHtml(em.getEstado()) %>)</option>
+                                        <% } } %>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-secondary">Título del Puesto *</label>
+                                    <input type="text" class="form-control" id="ofertaAdminTitulo" maxlength="150" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-secondary">Carrera Solicitada *</label>
+                                    <input type="text" class="form-control" id="ofertaAdminCarrera" maxlength="150" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold text-secondary">Modalidad *</label>
+                                    <select class="form-select" id="ofertaAdminModalidad" required>
+                                        <option value="PRESENCIAL">Presencial</option>
+                                        <option value="HIBRIDA">Híbrida</option>
+                                        <option value="VIRTUAL">Virtual / Remoto</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold text-secondary">Vacantes *</label>
+                                    <input type="number" class="form-control" id="ofertaAdminVacantes" min="1" max="100" value="1" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-secondary">Fecha Límite *</label>
+                                    <input type="date" class="form-control" id="ofertaAdminFechaLimite" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-secondary">Ubicación / Sede</label>
+                                    <input type="text" class="form-control" id="ofertaAdminUbicacion" placeholder="Ej. Miraflores, Lima">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-secondary">Subvención (S/)</label>
+                                    <input type="text" class="form-control" id="ofertaAdminRemuneracion" placeholder="Ej. 1200">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-secondary">Estado</label>
+                                    <select class="form-select" id="ofertaAdminEstado">
+                                        <option value="ACTIVA">ACTIVA</option>
+                                        <option value="CERRADA">CERRADA</option>
+                                        <option value="PENDIENTE">PENDIENTE</option>
+                                        <option value="RECHAZADA">RECHAZADA</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold text-secondary">Descripción</label>
+                                    <textarea class="form-control" id="ofertaAdminDescripcion" rows="2"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold text-secondary">Requisitos</label>
+                                    <textarea class="form-control" id="ofertaAdminRequisitos" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light border-0">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnGuardarOfertaAdmin">
+                                <i class="bi bi-check2 me-1"></i> Guardar Oferta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function abrirModalNuevaOfertaAdmin() {
+                document.getElementById('formOfertaAdmin').reset();
+                document.getElementById('ofertaAdminId').value = '';
+                document.getElementById('modalFormOfertaTituloHdr').textContent = 'Publicar Nueva Oferta';
+                document.getElementById('grupoEmpresaOfertaAdmin').classList.remove('d-none');
+                document.getElementById('ofertaAdminEmpresa').required = true;
+                document.getElementById('ofertaAdminEstado').value = 'ACTIVA';
+                const modalEl = document.getElementById('modalFormOfertaAdmin');
+                const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                if (ModalClass) {
+                    const inst = ModalClass.getOrCreateInstance(modalEl);
+                    if (inst) inst.show();
+                }
+            }
+
+            function abrirModalEditarOfertaAdmin(btn) {
+                document.getElementById('ofertaAdminId').value = btn.getAttribute('data-id') || '';
+                document.getElementById('modalFormOfertaTituloHdr').textContent = 'Editar Oferta #' + (btn.getAttribute('data-id') || '');
+                document.getElementById('grupoEmpresaOfertaAdmin').classList.add('d-none');
+                document.getElementById('ofertaAdminEmpresa').required = false;
+                document.getElementById('ofertaAdminEmpresa').value = btn.getAttribute('data-idempresa') || '';
+                document.getElementById('ofertaAdminTitulo').value = btn.getAttribute('data-titulo') || '';
+                document.getElementById('ofertaAdminCarrera').value = btn.getAttribute('data-carrera') || '';
+                const modRaw = (btn.getAttribute('data-modalidad') || 'PRESENCIAL').toUpperCase();
+                document.getElementById('ofertaAdminModalidad').value = modRaw.includes('HIBRID') ? 'HIBRIDA' : (modRaw.includes('VIRTUAL') || modRaw.includes('REMOT') ? 'VIRTUAL' : 'PRESENCIAL');
+                document.getElementById('ofertaAdminVacantes').value = btn.getAttribute('data-vacantes') || '1';
+                document.getElementById('ofertaAdminFechaLimite').value = btn.getAttribute('data-fecha-limite') || '';
+                document.getElementById('ofertaAdminUbicacion').value = btn.getAttribute('data-ubicacion') || '';
+                document.getElementById('ofertaAdminRemuneracion').value = btn.getAttribute('data-remuneracion') || '';
+                document.getElementById('ofertaAdminDescripcion').value = btn.getAttribute('data-descripcion') || '';
+                document.getElementById('ofertaAdminRequisitos').value = btn.getAttribute('data-requisitos') || '';
+                document.getElementById('ofertaAdminEstado').value = (btn.getAttribute('data-estado') || 'ACTIVA').toUpperCase();
+                const modalEl = document.getElementById('modalFormOfertaAdmin');
+                const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                if (ModalClass) {
+                    const inst = ModalClass.getOrCreateInstance(modalEl);
+                    if (inst) inst.show();
+                }
+            }
+
+            async function guardarOfertaAdmin() {
+                const btn = document.getElementById('btnGuardarOfertaAdmin');
+                btn.disabled = true;
+                const id = document.getElementById('ofertaAdminId').value.trim();
+                const params = {
+                    accion: id ? 'actualizarOferta' : 'crearOferta',
+                    titulo: document.getElementById('ofertaAdminTitulo').value.trim(),
+                    carrera: document.getElementById('ofertaAdminCarrera').value.trim(),
+                    modalidad: document.getElementById('ofertaAdminModalidad').value,
+                    vacantes: document.getElementById('ofertaAdminVacantes').value,
+                    fechaLimite: document.getElementById('ofertaAdminFechaLimite').value,
+                    ubicacion: document.getElementById('ofertaAdminUbicacion').value.trim(),
+                    remuneracion: document.getElementById('ofertaAdminRemuneracion').value.trim(),
+                    descripcion: document.getElementById('ofertaAdminDescripcion').value.trim(),
+                    requisitos: document.getElementById('ofertaAdminRequisitos').value.trim(),
+                    estado: document.getElementById('ofertaAdminEstado').value
+                };
+                if (id) params.id = id;
+                else params.idEmpresa = document.getElementById('ofertaAdminEmpresa').value;
+
+                try {
+                    const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                        body: new URLSearchParams(params).toString()
+                    });
+                    const data = await res.json();
+                    const modalEl = document.getElementById('modalFormOfertaAdmin');
+                    const ModalClass = window.BootstrapModalCompat || (window.bootstrap && window.bootstrap.Modal);
+                    if (ModalClass && data.exito) {
+                        const inst = ModalClass.getInstance(modalEl);
+                        if (inst) inst.hide();
+                    }
+                    if (data.exito) {
+                        mostrarModalMensaje('Oferta Guardada', data.mensaje || 'Operación exitosa.', 'success', () => window.location.reload());
+                    } else {
+                        mostrarModalMensaje('Error', data.mensaje || 'No se pudo guardar la oferta.', 'danger');
+                        btn.disabled = false;
+                    }
+                } catch (err) {
+                    mostrarModalMensaje('Error de Conexión', 'No se pudo conectar: ' + err.message, 'danger');
+                    btn.disabled = false;
+                }
+            }
+
+            function cambiarEstadoOfertaAdmin(id, estado, titulo) {
+                const verbo = estado === 'ACTIVA' ? 'activar' : 'cerrar';
+                mostrarModalConfirmacion('Confirmar cambio de estado',
+                    '¿Deseas ' + verbo + ' la oferta "' + titulo + '"?',
+                    async function () {
+                        try {
+                            const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                body: new URLSearchParams({ accion: 'cambiarEstadoOferta', id: id, estado: estado }).toString()
+                            });
+                            const data = await res.json();
+                            if (data.exito) mostrarModalMensaje('Estado Actualizado', data.mensaje, 'success', () => window.location.reload());
+                            else mostrarModalMensaje('Error', data.mensaje || 'No se pudo cambiar el estado.', 'danger');
+                        } catch (err) {
+                            mostrarModalMensaje('Error de Conexión', err.message, 'danger');
+                        }
+                    });
+            }
+
+            function eliminarOfertaAdmin(id, titulo) {
+                mostrarModalConfirmacion('Eliminar Oferta',
+                    '¿Deseas eliminar la oferta "' + titulo + '"? Si ya tiene postulaciones registradas, se cerrará para preservar el historial.',
+                    async function () {
+                        try {
+                            const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                body: new URLSearchParams({ accion: 'eliminar', recurso: 'ofertas', id: id }).toString()
+                            });
+                            const data = await res.json();
+                            if (data.exito) mostrarModalMensaje('Oferta Procesada', data.mensaje, 'success', () => window.location.reload());
+                            else mostrarModalMensaje('Error', data.mensaje || 'No se pudo eliminar la oferta.', 'danger');
+                        } catch (err) {
+                            mostrarModalMensaje('Error de Conexión', err.message, 'danger');
+                        }
+                    });
+            }
+
+            window.abrirModalNuevaOfertaAdmin = abrirModalNuevaOfertaAdmin;
+            window.abrirModalEditarOfertaAdmin = abrirModalEditarOfertaAdmin;
+            window.guardarOfertaAdmin = guardarOfertaAdmin;
+            window.cambiarEstadoOfertaAdmin = cambiarEstadoOfertaAdmin;
+            window.eliminarOfertaAdmin = eliminarOfertaAdmin;
+        </script>
         <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
         <script type="module" src="${pageContext.request.contextPath}/js/script.js"></script>
     </body>

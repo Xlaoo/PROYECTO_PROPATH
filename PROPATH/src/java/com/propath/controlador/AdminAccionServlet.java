@@ -143,10 +143,14 @@ public class AdminAccionServlet extends HttpServlet {
             String contrasena = request.getParameter("contrasena");
             String rol = request.getParameter("rol");
 
-            if ("ADMIN".equalsIgnoreCase(rol)) {
+            if (correo == null || correo.trim().isEmpty() || contrasena == null || contrasena.trim().length() < 6) {
+                ok = false;
+                mensaje = "Debe ingresar un correo válido y una contraseña de al menos 6 caracteres.";
+            } else if ("ADMIN".equalsIgnoreCase(rol)) {
                 ok = false;
                 mensaje = "No está permitido crear cuentas de administrador adicionales.";
             } else if ("ESTUDIANTE".equalsIgnoreCase(rol)) {
+                String dni = request.getParameter("dni");
                 String universidad = request.getParameter("universidad");
                 String carrera = request.getParameter("carrera");
                 String cicloStr = request.getParameter("ciclo");
@@ -154,11 +158,21 @@ public class AdminAccionServlet extends HttpServlet {
                 int ciclo = 1;
                 try {
                     if (cicloStr != null)
-                        ciclo = Integer.parseInt(cicloStr);
+                        ciclo = Math.max(1, Math.min(14, Integer.parseInt(cicloStr.trim())));
                 } catch (NumberFormatException ignored) {
                 }
 
-                if (universidad == null || universidad.trim().isEmpty() || carrera == null
+                String dniTrim = dni != null ? dni.trim() : "";
+                if (nombre == null || nombre.trim().isEmpty() || apellidos == null || apellidos.trim().isEmpty()) {
+                    ok = false;
+                    mensaje = "Debe completar nombres y apellidos del estudiante.";
+                } else if (!dniTrim.isEmpty() && !dniTrim.matches("^[0-9]{8}$")) {
+                    ok = false;
+                    mensaje = "El DNI debe contener exactamente 8 dígitos numéricos.";
+                } else if (!dniTrim.isEmpty() && estudianteDAO.obtenerPorDni(dniTrim) != null) {
+                    ok = false;
+                    mensaje = "El DNI ya se encuentra registrado por otro estudiante.";
+                } else if (universidad == null || universidad.trim().isEmpty() || carrera == null
                         || carrera.trim().isEmpty()) {
                     ok = false;
                     mensaje = "Debe completar la universidad y carrera para el perfil de estudiante.";
@@ -167,13 +181,14 @@ public class AdminAccionServlet extends HttpServlet {
                     mensaje = "El correo electrónico ya se encuentra registrado.";
                 } else {
                     Estudiante est = new Estudiante();
-                    est.setNombre(nombre != null ? nombre.trim() : "");
-                    est.setApellido(apellidos != null ? apellidos.trim() : "");
+                    est.setDni(dniTrim);
+                    est.setNombre(nombre.trim());
+                    est.setApellido(apellidos.trim());
                     est.setUniversidad(universidad.trim());
                     est.setCarrera(carrera.trim());
                     est.setCiclo(ciclo);
                     est.setTelefono(telefono != null ? telefono.trim() : "");
-                    int idGen = estudianteDAO.registrarConUsuario(est, correo.trim(), contrasena);
+                    int idGen = estudianteDAO.registrarConUsuario(est, correo.trim().toLowerCase(), contrasena);
                     ok = (idGen > 0);
                     mensaje = ok ? "Estudiante registrado exitosamente." : "Error al registrar el estudiante.";
                 }
@@ -347,22 +362,37 @@ public class AdminAccionServlet extends HttpServlet {
             } catch (NumberFormatException ignored) {
             }
 
+            String dni = request.getParameter("dni");
             Estudiante estudiante = estudianteDAO.obtenerPorId(id);
             if (estudiante != null) {
-                if (nombre != null && !nombre.trim().isEmpty())
-                    estudiante.setNombre(nombre.trim());
-                if (apellido != null)
-                    estudiante.setApellido(apellido.trim());
-                if (universidad != null && !universidad.trim().isEmpty())
-                    estudiante.setUniversidad(universidad.trim());
-                if (carrera != null && !carrera.trim().isEmpty())
-                    estudiante.setCarrera(carrera.trim());
-                estudiante.setCiclo(ciclo);
-                if (telefono != null)
-                    estudiante.setTelefono(telefono.trim());
+                String dniTrim = dni != null ? dni.trim() : "";
+                if (!dniTrim.isEmpty() && !dniTrim.matches("^[0-9]{8}$")) {
+                    ok = false;
+                    mensaje = "El DNI debe contener exactamente 8 dígitos numéricos.";
+                } else {
+                    Estudiante porDni = !dniTrim.isEmpty() ? estudianteDAO.obtenerPorDni(dniTrim) : null;
+                    if (porDni != null && porDni.getId() != estudiante.getId()) {
+                        ok = false;
+                        mensaje = "El DNI ya pertenece a otro estudiante.";
+                    } else {
+                        if (!dniTrim.isEmpty())
+                            estudiante.setDni(dniTrim);
+                        if (nombre != null && !nombre.trim().isEmpty())
+                            estudiante.setNombre(nombre.trim());
+                        if (apellido != null)
+                            estudiante.setApellido(apellido.trim());
+                        if (universidad != null && !universidad.trim().isEmpty())
+                            estudiante.setUniversidad(universidad.trim());
+                        if (carrera != null && !carrera.trim().isEmpty())
+                            estudiante.setCarrera(carrera.trim());
+                        estudiante.setCiclo(Math.max(1, Math.min(14, ciclo)));
+                        if (telefono != null)
+                            estudiante.setTelefono(telefono.trim());
 
-                ok = estudianteDAO.actualizarConEstado(estudiante, est != null ? est.trim().toUpperCase() : "ACTIVO");
-                mensaje = ok ? "Estudiante actualizado exitosamente." : "Error al actualizar los datos del estudiante.";
+                        ok = estudianteDAO.actualizarConEstado(estudiante, est != null ? est.trim().toUpperCase() : "ACTIVO");
+                        mensaje = ok ? "Estudiante actualizado exitosamente." : "Error al actualizar los datos del estudiante.";
+                    }
+                }
             } else {
                 ok = false;
                 mensaje = "Estudiante no encontrado.";
@@ -409,6 +439,94 @@ public class AdminAccionServlet extends HttpServlet {
                     mensaje = "Empresa no encontrada.";
                 }
             }
+        } else if ("crearOferta".equalsIgnoreCase(accion)) {
+            int idEmpresa = 0;
+            try {
+                idEmpresa = Integer.parseInt(request.getParameter("idEmpresa"));
+            } catch (Exception ignored) {
+            }
+            String titulo = request.getParameter("titulo");
+            String carrera = request.getParameter("carrera");
+            String modalidad = request.getParameter("modalidad");
+            String fechaLimite = request.getParameter("fechaLimite");
+            String ubicacion = request.getParameter("ubicacion");
+            String remuneracion = request.getParameter("remuneracion");
+            String descripcion = request.getParameter("descripcion");
+            String requisitos = request.getParameter("requisitos");
+            String estOferta = request.getParameter("estado");
+            int vacantes = 1;
+            try {
+                vacantes = Integer.parseInt(request.getParameter("vacantes"));
+            } catch (Exception ignored) {
+            }
+
+            if (idEmpresa <= 0 || titulo == null || titulo.trim().isEmpty()
+                    || carrera == null || carrera.trim().isEmpty()
+                    || fechaLimite == null || fechaLimite.trim().isEmpty()) {
+                ok = false;
+                mensaje = "Debe seleccionar una empresa e ingresar título, carrera y fecha límite.";
+            } else if (vacantes < 1 || vacantes > 100) {
+                ok = false;
+                mensaje = "El número de vacantes debe estar entre 1 y 100.";
+            } else {
+                OfertaPractica of = new OfertaPractica();
+                of.setIdEmpresa(idEmpresa);
+                of.setTitulo(titulo.trim());
+                of.setCarrera(carrera.trim());
+                of.setModalidad(modalidad != null ? modalidad.trim() : "PRESENCIAL");
+                of.setVacantes(vacantes);
+                of.setFechaLimite(fechaLimite.trim());
+                of.setUbicacion(ubicacion != null ? ubicacion.trim() : "");
+                of.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
+                of.setDescripcion(descripcion != null ? descripcion.trim() : "");
+                of.setRequisitos(requisitos != null ? requisitos.trim() : "");
+                of.setEstado(estOferta != null && !estOferta.trim().isEmpty() ? estOferta.trim().toUpperCase() : "ACTIVA");
+                int idGen = ofertaDAO.crear(of);
+                ok = (idGen > 0);
+                mensaje = ok ? "Oferta publicada exitosamente." : "No se pudo registrar la oferta.";
+            }
+        } else if ("actualizarOferta".equalsIgnoreCase(accion) && id > 0) {
+            OfertaPractica of = ofertaDAO.obtenerPorId(id);
+            String titulo = request.getParameter("titulo");
+            String carrera = request.getParameter("carrera");
+            String modalidad = request.getParameter("modalidad");
+            String fechaLimite = request.getParameter("fechaLimite");
+            String ubicacion = request.getParameter("ubicacion");
+            String remuneracion = request.getParameter("remuneracion");
+            String descripcion = request.getParameter("descripcion");
+            String requisitos = request.getParameter("requisitos");
+            String estOferta = request.getParameter("estado");
+            int vacantes = 1;
+            try {
+                vacantes = Integer.parseInt(request.getParameter("vacantes"));
+            } catch (Exception ignored) {
+            }
+
+            if (of == null) {
+                ok = false;
+                mensaje = "Oferta no encontrada.";
+            } else if (titulo == null || titulo.trim().isEmpty()
+                    || carrera == null || carrera.trim().isEmpty()
+                    || fechaLimite == null || fechaLimite.trim().isEmpty()) {
+                ok = false;
+                mensaje = "Título, carrera y fecha límite son obligatorios.";
+            } else if (vacantes < 1 || vacantes > 100) {
+                ok = false;
+                mensaje = "El número de vacantes debe estar entre 1 y 100.";
+            } else {
+                of.setTitulo(titulo.trim());
+                of.setCarrera(carrera.trim());
+                of.setModalidad(modalidad != null ? modalidad.trim() : of.getModalidad());
+                of.setVacantes(vacantes);
+                of.setFechaLimite(fechaLimite.trim());
+                of.setUbicacion(ubicacion != null ? ubicacion.trim() : "");
+                of.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
+                of.setDescripcion(descripcion != null ? descripcion.trim() : "");
+                of.setRequisitos(requisitos != null ? requisitos.trim() : "");
+                of.setEstado(estOferta != null && !estOferta.trim().isEmpty() ? estOferta.trim().toUpperCase() : of.getEstado());
+                ok = ofertaDAO.actualizar(of);
+                mensaje = ok ? "Oferta actualizada exitosamente." : "No se pudo actualizar la oferta.";
+            }
         } else if ("aprobarEmpresa".equalsIgnoreCase(accion) && id > 0) {
             ok = empresaDAO.actualizarEstado(id, "APROBADA");
             mensaje = ok ? "Empresa aprobada exitosamente." : "No se pudo aprobar la empresa.";
@@ -418,12 +536,38 @@ public class AdminAccionServlet extends HttpServlet {
         } else if ("cambiarEstadoEstudiante".equalsIgnoreCase(accion) && id > 0 && estado != null) {
             ok = estudianteDAO.actualizarEstado(id, estado);
             mensaje = ok ? "Estado de estudiante actualizado." : "No se pudo actualizar el estado del estudiante.";
+        } else if ("cambiarEstadoUsuario".equalsIgnoreCase(accion) && id > 0 && estado != null) {
+            if (id == 60 || id == usuarioLogueado.getId()) {
+                esProhibido = true;
+                ok = false;
+                mensaje = "No está permitido cambiar el estado del administrador principal o de tu propia sesión.";
+            } else {
+                String estNorm = estado.trim().toUpperCase();
+                if (!estNorm.equals("ACTIVO") && !estNorm.equals("BLOQUEADO") && !estNorm.equals("INACTIVO")) {
+                    ok = false;
+                    mensaje = "Estado de usuario no válido.";
+                } else {
+                    ok = usuarioDAO.actualizarEstado(id, estNorm);
+                    mensaje = ok ? "Estado de usuario actualizado a " + estNorm + "." : "No se pudo actualizar el estado del usuario.";
+                }
+            }
         } else if ("cambiarEstadoOferta".equalsIgnoreCase(accion) && id > 0 && estado != null) {
             ok = ofertaDAO.actualizarEstado(id, estado);
             mensaje = ok ? "Estado de oferta actualizado." : "No se pudo actualizar el estado de la oferta.";
         } else if ("cambiarEstadoPostulacion".equalsIgnoreCase(accion) && id > 0 && estado != null) {
-            ok = postulacionDAO.actualizarEstado(id, estado);
-            mensaje = ok ? "Estado de postulación actualizado." : "No se pudo actualizar el estado de la postulación.";
+            String estNorm = estado.trim().toUpperCase();
+            String motivo = request.getParameter("motivo");
+            if (!estNorm.equals("POSTULADO") && !estNorm.equals("EN_REVISION")
+                    && !estNorm.equals("SELECCIONADO") && !estNorm.equals("NO_SELECCIONADO")) {
+                ok = false;
+                mensaje = "Estado de postulación no válido.";
+            } else if ("NO_SELECCIONADO".equals(estNorm) && (motivo == null || motivo.trim().isEmpty())) {
+                ok = false;
+                mensaje = "Debe indicar el motivo cuando el estado es NO_SELECCIONADO.";
+            } else {
+                ok = postulacionDAO.evaluar(id, estNorm, "NO_SELECCIONADO".equals(estNorm) ? motivo.trim() : null);
+                mensaje = ok ? "Estado de postulación actualizado." : "No se pudo actualizar el estado de la postulación.";
+            }
         } else if ("activarCuentaEmpresa".equalsIgnoreCase(accion) && id > 0) {
             Empresa emp = empresaDAO.obtenerPorId(id);
             if (emp != null) {

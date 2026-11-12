@@ -66,6 +66,11 @@
                                                     registradas
                                             </span>
                                             <button type="button"
+                                                class="btn btn-success rounded-pill px-3 py-2 fw-semibold shadow-sm"
+                                                data-bs-toggle="modal" data-bs-target="#modalNuevaEmpresa">
+                                                <i class="bi bi-plus-circle me-1"></i> Nueva Empresa
+                                            </button>
+                                            <button type="button"
                                                 class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm"
                                                 onclick="window.location.reload()">
                                                 <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
