@@ -184,12 +184,210 @@ public class AdminAccionServlet extends HttpServlet {
         String mensaje = null;
         boolean esProhibido = false;
 
-        if ("crearEstudiante".equalsIgnoreCase(accion)) {
-            ok = false;
-            mensaje = "El alta administrativa de estudiantes no estÃ¡ permitida. Los estudiantes deben registrarse a travÃ©s del formulario pÃºblico.";
+        if ("crearAdministrador".equalsIgnoreCase(accion)) {
+            if (!usuarioLogueado.esAdminPrincipal()) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write("{\"exito\":false,\"prohibido\":true,\"mensaje\":\"Acceso restringido al Administrador Principal.\"}");
+                return;
+            }
+
+            String nombre = request.getParameter("nombre");
+            String apellidos = request.getParameter("apellidos");
+            String correo = request.getParameter("correo");
+            String cargo = request.getParameter("cargo");
+            String contrasena = request.getParameter("contrasena");
+            String confirmarContrasena = request.getParameter("confirmarContrasena");
+
+            if (correo != null) {
+                correo = correo.trim().toLowerCase(java.util.Locale.ROOT);
+            }
+
+            if (nombre == null || nombre.trim().isEmpty() ||
+                apellidos == null || apellidos.trim().isEmpty() ||
+                correo == null || correo.trim().isEmpty() ||
+                cargo == null || cargo.trim().isEmpty() ||
+                contrasena == null || contrasena.trim().isEmpty()) {
+
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"Por favor completa todos los campos obligatorios.\"}");
+                return;
+            }
+
+            if (!correo.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"El formato del correo electrónico no es válido.\"}");
+                return;
+            }
+
+            if (usuarioDAO.obtenerPorCorreo(correo) != null) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"El correo electrónico ya se encuentra registrado en el sistema.\"}");
+                return;
+            }
+
+            if (contrasena.length() < 8 || !contrasena.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"La contraseña inicial debe tener al menos 8 caracteres y combinar letras y números.\"}");
+                return;
+            }
+
+            if (confirmarContrasena != null && !confirmarContrasena.trim().isEmpty() && !contrasena.equals(confirmarContrasena.trim())) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"La contraseña inicial y su confirmación no coinciden.\"}");
+                return;
+            }
+
+            Administrador nuevoAdmin = new Administrador();
+            nuevoAdmin.setCargo(cargo.trim());
+
+            int idGen = adminDAO.registrarAdministradorConUsuario(nuevoAdmin, correo, contrasena, nombre.trim(), apellidos.trim());
+            if (idGen > 0) {
+                ok = true;
+                mensaje = "Administrador registrado exitosamente.";
+            } else {
+                ok = false;
+                mensaje = "Error al registrar el administrador en la base de datos.";
+            }
+        } else if ("actualizarAdministrador".equalsIgnoreCase(accion) && id > 0) {
+            if (!usuarioLogueado.esAdminPrincipal()) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write("{\"exito\":false,\"prohibido\":true,\"mensaje\":\"Acceso restringido al Administrador Principal.\"}");
+                return;
+            }
+
+            String nombre = request.getParameter("nombre");
+            String apellidos = request.getParameter("apellidos");
+            String cargo = request.getParameter("cargo");
+
+            if (nombre == null || nombre.trim().isEmpty() ||
+                apellidos == null || apellidos.trim().isEmpty() ||
+                cargo == null || cargo.trim().isEmpty()) {
+
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"Nombre, apellidos y cargo son campos obligatorios.\"}");
+                return;
+            }
+
+            ok = adminDAO.actualizarAdministrador(id, nombre.trim(), apellidos.trim(), cargo.trim());
+            mensaje = ok ? "Datos del administrador actualizados exitosamente." : "No se pudo actualizar el administrador.";
+        } else if ("darBajaAdministrador".equalsIgnoreCase(accion) && id > 0) {
+            if (!usuarioLogueado.esAdminPrincipal()) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write("{\"exito\":false,\"prohibido\":true,\"mensaje\":\"Acceso restringido al Administrador Principal.\"}");
+                return;
+            }
+
+            Administrador adm = adminDAO.obtenerAdministradorPorId(id);
+            if (adm == null) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"Administrador no encontrado.\"}");
+                return;
+            }
+
+            if (adm.getIdUsuario() == 60 || (adm.getUsuario() != null && adm.getUsuario().esAdminPrincipal())) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write("{\"exito\":false,\"prohibido\":true,\"mensaje\":\"No está permitido dar de baja al administrador principal del sistema.\"}");
+                return;
+            }
+
+            if (adm.getIdUsuario() == usuarioLogueado.getId()) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write("{\"exito\":false,\"prohibido\":true,\"mensaje\":\"No puedes dar de baja tu propia cuenta en sesión.\"}");
+                return;
+            }
+
+            ok = adminDAO.darDeBajaAdministrador(id);
+            mensaje = ok ? "Administrador dado de baja exitosamente. La cuenta ha pasado a estado INACTIVO conservando su perfil."
+                         : "No se pudo dar de baja al administrador.";
         } else if ("crearUsuario".equalsIgnoreCase(accion)) {
-            ok = false;
-            mensaje = "El registro de cuentas no estÃ¡ permitido desde el panel administrativo. Los estudiantes y empresas deben registrarse a travÃ©s del portal pÃºblico.";
+            String nombre = request.getParameter("nombre");
+            String apellidos = request.getParameter("apellidos");
+            String correo = request.getParameter("correo");
+            String contrasena = request.getParameter("contrasena");
+            String rol = request.getParameter("rol");
+
+            if (correo == null || correo.trim().isEmpty() || contrasena == null || contrasena.trim().length() < 6) {
+                ok = false;
+                mensaje = "Debe ingresar un correo válido y una contraseña de al menos 6 caracteres.";
+            } else if ("ADMIN".equalsIgnoreCase(rol)) {
+                ok = false;
+                mensaje = "No está permitido crear cuentas de administrador adicionales.";
+            } else if ("ESTUDIANTE".equalsIgnoreCase(rol)) {
+                String dni = request.getParameter("dni");
+                String universidad = request.getParameter("universidad");
+                String carrera = request.getParameter("carrera");
+                String cicloStr = request.getParameter("ciclo");
+                String telefono = request.getParameter("telefono");
+                int ciclo = 1;
+                try {
+                    if (cicloStr != null)
+                        ciclo = Math.max(1, Math.min(14, Integer.parseInt(cicloStr.trim())));
+                } catch (NumberFormatException ignored) {
+                }
+
+                String dniTrim = dni != null ? dni.trim() : "";
+                if (nombre == null || nombre.trim().isEmpty() || apellidos == null || apellidos.trim().isEmpty()) {
+                    ok = false;
+                    mensaje = "Debe completar nombres y apellidos del estudiante.";
+                } else if (!dniTrim.isEmpty() && !dniTrim.matches("^[0-9]{8}$")) {
+                    ok = false;
+                    mensaje = "El DNI debe contener exactamente 8 dígitos numéricos.";
+                } else if (!dniTrim.isEmpty() && estudianteDAO.obtenerPorDni(dniTrim) != null) {
+                    ok = false;
+                    mensaje = "El DNI ya se encuentra registrado por otro estudiante.";
+                } else if (universidad == null || universidad.trim().isEmpty() || carrera == null
+                        || carrera.trim().isEmpty()) {
+                    ok = false;
+                    mensaje = "Debe completar la universidad y carrera para el perfil de estudiante.";
+                } else if (usuarioDAO.obtenerPorCorreo(correo) != null) {
+                    ok = false;
+                    mensaje = "El correo electrónico ya se encuentra registrado.";
+                } else {
+                    Estudiante est = new Estudiante();
+                    est.setDni(dniTrim);
+                    est.setNombre(nombre.trim());
+                    est.setApellido(apellidos.trim());
+                    est.setUniversidad(universidad.trim());
+                    est.setCarrera(carrera.trim());
+                    est.setCiclo(ciclo);
+                    est.setTelefono(telefono != null ? telefono.trim() : "");
+                    int idGen = estudianteDAO.registrarConUsuario(est, correo.trim().toLowerCase(), contrasena);
+                    ok = (idGen > 0);
+                    mensaje = ok ? "Estudiante registrado exitosamente." : "Error al registrar el estudiante.";
+                }
+            } else if ("EMPRESA".equalsIgnoreCase(rol)) {
+                String razonSocial = request.getParameter("razonSocial");
+                String ruc = request.getParameter("ruc");
+                String telefono = request.getParameter("telefono");
+                String direccion = request.getParameter("direccion");
+                String descripcion = request.getParameter("descripcion");
+
+                if (razonSocial == null || razonSocial.trim().isEmpty() || ruc == null || ruc.trim().length() != 11) {
+                    ok = false;
+                    mensaje = "Debe proporcionar una razón social válida y un RUC de 11 dígitos.";
+                } else if (usuarioDAO.obtenerPorCorreo(correo) != null) {
+                    ok = false;
+                    mensaje = "El correo electrónico ya se encuentra registrado.";
+                } else if (empresaDAO.obtenerPorRuc(ruc) != null) {
+                    ok = false;
+                    mensaje = "El RUC ya se encuentra registrado.";
+                } else {
+                    Empresa emp = new Empresa();
+                    emp.setRazonSocial(razonSocial.trim());
+                    emp.setRuc(ruc.trim());
+                    emp.setTelefono(telefono != null ? telefono.trim() : "");
+                    emp.setDireccion(direccion != null ? direccion.trim() : "");
+                    emp.setDescripcion(descripcion != null ? descripcion.trim() : "");
+                    emp.setEstado("APROBADA");
+                    int idGen = empresaDAO.registrarConUsuario(emp, correo.trim(), contrasena,
+                            nombre != null ? nombre.trim() : "", apellidos != null ? apellidos.trim() : "");
+                    ok = (idGen > 0);
+                    mensaje = ok ? "Empresa registrada exitosamente." : "Error al registrar la empresa.";
+                }
+            } else {
+                ok = false;
+                mensaje = "Debe seleccionar un rol válido (ESTUDIANTE o EMPRESA).";
+            }
         } else if ("actualizarUsuario".equalsIgnoreCase(accion) && id > 0) {
             if (id != usuarioLogueado.getId()) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
