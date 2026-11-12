@@ -39,10 +39,19 @@ public class AdminAuthFilter implements Filter {
                 if (obj instanceof Usuario) {
                     Usuario usuario = (Usuario) obj;
                     String rol = usuario.getRol();
-                    String estado = usuario.getEstado();
 
-                    if ("ADMIN".equalsIgnoreCase(rol) && "ACTIVO".equalsIgnoreCase(estado)) {
-                        autorizado = true;
+                    if ("ADMIN".equalsIgnoreCase(rol)) {
+                        com.propath.dao.UsuarioDAO usuarioDAO = new com.propath.dao.UsuarioDAO();
+                        String estadoActual = usuarioDAO.obtenerEstadoPorId(usuario.getId());
+                        if ("ACTIVO".equalsIgnoreCase(estadoActual)) {
+                            usuario.setEstado(estadoActual);
+                            autorizado = true;
+                        } else {
+                            try {
+                                session.invalidate();
+                            } catch (Exception ignored) {
+                            }
+                        }
                     }
                 }
             }

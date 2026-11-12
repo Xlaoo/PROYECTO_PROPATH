@@ -1,9 +1,12 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="com.propath.modelo.Usuario"%>
 <%
     String activePage = (String) request.getAttribute("activePage");
     if (activePage == null) {
         activePage = "";
     }
+    Usuario uSidebarLog = (Usuario) session.getAttribute("usuarioLogueado");
+    boolean esAdminPrinc = (uSidebarLog != null && uSidebarLog.esAdminPrincipal());
 %>
 
 <aside class="admin-sidebar">
@@ -58,6 +61,14 @@
                 <i class="bi bi-file-earmark-person-fill"></i>
                 <span>Postulaciones</span>
             </a>
+
+            <% if (esAdminPrinc) { %>
+            <a class="nav-link-admin <%= "administradores".equals(activePage) ? "active" : "" %>" 
+               href="${pageContext.request.contextPath}/admin/administradores">
+                <i class="bi bi-shield-lock-fill"></i>
+                <span>Administradores</span>
+            </a>
+            <% } %>
 
             <a class="nav-link-admin <%= "usuarios".equals(activePage) ? "active" : "" %>" 
                href="${pageContext.request.contextPath}/admin/usuarios">

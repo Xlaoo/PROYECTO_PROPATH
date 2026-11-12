@@ -4,8 +4,10 @@ import com.propath.dao.AdminDAO;
 import com.propath.dao.EmpresaDAO;
 import com.propath.dao.EstudianteDAO;
 import com.propath.dao.UsuarioDAO;
+import com.propath.dto.DashboardAdministradoresDTO;
 import com.propath.dto.DashboardEmpresasDTO;
 import com.propath.dto.DashboardEstudiantesDTO;
+import com.propath.modelo.Administrador;
 import com.propath.modelo.Empresa;
 import com.propath.modelo.Estudiante;
 import com.propath.modelo.Usuario;
@@ -34,10 +36,13 @@ import java.util.Map;
     "/admin/estudiantes/dashboard",
     "/admin/empresas",
     "/admin/empresas/dashboard",
+    "/admin/administradores",
+    "/admin/administradores/dashboard",
     "/admin/usuarios",
     "/admin/reporte-usuarios",
     "/admin/api/estudiantes-dashboard",
-    "/admin/api/empresas-dashboard"
+    "/admin/api/empresas-dashboard",
+    "/admin/api/administradores-dashboard"
 })
 public class AdminServlet extends HttpServlet {
 
@@ -79,7 +84,27 @@ public class AdminServlet extends HttpServlet {
             path = "";
         }
 
-        if (path.endsWith("/estudiantes/dashboard")) {
+        // Restricción estricta de todo el módulo Administradores al Administrador Principal
+        if (path.endsWith("/administradores") || path.endsWith("/administradores/dashboard") || path.endsWith("/api/administradores-dashboard")) {
+            if (!usuarioLogueado.esAdminPrincipal()) {
+                if (isApiRequest(request)) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"exito\":false,\"prohibido\":true,\"mensaje\":\"Acceso restringido al Administrador Principal.\"}");
+                    return;
+                }
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard?error=acceso_denegado");
+                return;
+            }
+        }
+
+        if (path.endsWith("/administradores/dashboard")) {
+            mostrarDashboardAdministradores(request, response);
+        } else if (path.endsWith("/api/administradores-dashboard")) {
+            apiDashboardAdministradores(request, response);
+        } else if (path.endsWith("/administradores")) {
+            mostrarAdministradores(request, response);
+        } else if (path.endsWith("/estudiantes/dashboard")) {
             mostrarDashboardEstudiantes(request, response);
         } else if (path.endsWith("/empresas/dashboard")) {
             mostrarDashboardEmpresas(request, response);
@@ -135,6 +160,43 @@ public class AdminServlet extends HttpServlet {
         request.setAttribute("activePage", "dashboard");
 
         request.getRequestDispatcher("/admin/dashboard.jsp").forward(request, response);
+    }
+
+    private void mostrarAdministradores(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String busqueda = request.getParameter("busqueda");
+        AdminDAO adminDAO = new AdminDAO();
+        List<Administrador> lista = adminDAO.listarAdministradores(busqueda);
+
+        request.setAttribute("listaAdministradores", lista);
+        request.setAttribute("busqueda", busqueda != null ? busqueda.trim() : "");
+        request.setAttribute("totalAdministradores", lista.size());
+        request.setAttribute("activePage", "administradores");
+
+        request.getRequestDispatcher("/admin/administradores.jsp").forward(request, response);
+    }
+
+    private void mostrarDashboardAdministradores(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        AdminDAO adminDAO = new AdminDAO();
+        DashboardAdministradoresDTO dashboard = adminDAO.obtenerDashboardAdministradores("TODOS", "TODOS");
+
+        request.setAttribute("dashboard", dashboard);
+        request.setAttribute("activePage", "administradores");
+
+        request.getRequestDispatcher("/admin/administradores-dashboard.jsp").forward(request, response);
+    }
+
+    private void apiDashboardAdministradores(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String estado = request.getParameter("estado");
+        String cargo = request.getParameter("cargo");
+
+        AdminDAO adminDAO = new AdminDAO();
+        DashboardAdministradoresDTO dashboard = adminDAO.obtenerDashboardAdministradores(estado, cargo);
+
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(dashboard.toJson());
     }
 
     private void mostrarEstudiantes(HttpServletRequest request, HttpServletResponse response)

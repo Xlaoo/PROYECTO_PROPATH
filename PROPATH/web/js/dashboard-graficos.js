@@ -130,6 +130,15 @@
             monthly('graficoAltas', data.tendenciaMeses);
             bars('graficoRanking', (data.rankingEmpresasOfertas || []).slice(0, 8)
                 .map(item => [item.empresa, item.ofertas]));
+        },
+        administradores(data) {
+            const total = count(data.total);
+            donut('graficoEstado', [
+                ['Activos', data.activos],
+                ['Inactivos', data.inactivos],
+                ['Bloqueados', data.bloqueados]
+            ], total);
+            bars('graficoCargos', (data.distribucionCargos || []).map(item => [item.cargo, item.cantidad]));
         }
     };
 })();

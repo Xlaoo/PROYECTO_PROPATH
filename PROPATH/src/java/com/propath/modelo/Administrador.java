@@ -51,4 +51,28 @@ public class Administrador implements Serializable {
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
     }
+
+    public String getNombre() {
+        return usuario != null && usuario.getNombre() != null ? usuario.getNombre() : "";
+    }
+
+    public String getApellidos() {
+        return usuario != null && usuario.getApellidos() != null ? usuario.getApellidos() : "";
+    }
+
+    public String getNombreCompleto() {
+        return usuario != null ? usuario.getNombreCompleto() : "";
+    }
+
+    public String getCorreo() {
+        return usuario != null && usuario.getCorreo() != null ? usuario.getCorreo() : "";
+    }
+
+    public String getEstado() {
+        return usuario != null && usuario.getEstado() != null ? usuario.getEstado() : "ACTIVO";
+    }
+
+    public String getFechaRegistro() {
+        return usuario != null ? usuario.getFechaRegistro() : "";
+    }
 }

@@ -1,11 +1,13 @@
 package com.propath.controlador;
 
+import com.propath.dao.AdminDAO;
 import com.propath.dao.EmpresaDAO;
 import com.propath.dao.EntrevistaDAO;
 import com.propath.dao.EstudianteDAO;
 import com.propath.dao.OfertaPracticaDAO;
 import com.propath.dao.PostulacionDAO;
 import com.propath.dao.UsuarioDAO;
+import com.propath.modelo.Administrador;
 import com.propath.modelo.Empresa;
 import com.propath.modelo.Estudiante;
 import com.propath.modelo.OfertaPractica;
@@ -44,6 +46,51 @@ public class AdminAccionServlet extends HttpServlet {
         }
 
         String accion = request.getParameter("accion");
+        if ("obtenerAdministrador".equalsIgnoreCase(accion)) {
+            if (!usuarioLogueado.esAdminPrincipal()) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write(
+                        "{\"exito\":false,\"prohibido\":true,\"mensaje\":\"Acceso restringido al Administrador Principal.\"}");
+                return;
+            }
+            int idAdmin = 0;
+            try {
+                idAdmin = Integer.parseInt(request.getParameter("id"));
+            } catch (Exception ignored) {
+            }
+
+            AdminDAO adminDAO = new AdminDAO();
+            Administrador a = adminDAO.obtenerAdministradorPorId(idAdmin);
+            if (a == null) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                response.getWriter().write("{\"exito\":false,\"mensaje\":\"Administrador no encontrado.\"}");
+                return;
+            }
+
+            String nom = a.getNombre() != null ? a.getNombre().replace("\"", "\\\"") : "";
+            String ape = a.getApellidos() != null ? a.getApellidos().replace("\"", "\\\"") : "";
+            String nomComp = a.getNombreCompleto() != null ? a.getNombreCompleto().replace("\"", "\\\"") : "";
+            String cor = a.getCorreo() != null ? a.getCorreo().replace("\"", "\\\"") : "";
+            String crg = a.getCargo() != null ? a.getCargo().replace("\"", "\\\"") : "";
+            String est = a.getEstado() != null ? a.getEstado().replace("\"", "\\\"") : "";
+            String fec = a.getFechaRegistro() != null ? a.getFechaRegistro().replace("\"", "\\\"") : "";
+
+            StringBuilder sb = new StringBuilder("{");
+            sb.append("\"exito\":true,");
+            sb.append("\"id\":").append(a.getId()).append(",");
+            sb.append("\"idUsuario\":").append(a.getIdUsuario()).append(",");
+            sb.append("\"nombre\":\"").append(nom).append("\",");
+            sb.append("\"apellidos\":\"").append(ape).append("\",");
+            sb.append("\"nombreCompleto\":\"").append(nomComp).append("\",");
+            sb.append("\"correo\":\"").append(cor).append("\",");
+            sb.append("\"cargo\":\"").append(crg).append("\",");
+            sb.append("\"estado\":\"").append(est).append("\",");
+            sb.append("\"fechaRegistro\":\"").append(fec).append("\"");
+            sb.append("}");
+            response.getWriter().write(sb.toString());
+            return;
+        }
+
         if ("obtenerPostulacion".equalsIgnoreCase(accion)) {
             int idPostulacion = 0;
             try {
@@ -126,6 +173,7 @@ public class AdminAccionServlet extends HttpServlet {
         }
 
         UsuarioDAO usuarioDAO = new UsuarioDAO();
+        AdminDAO adminDAO = new AdminDAO();
         EmpresaDAO empresaDAO = new EmpresaDAO();
         EstudianteDAO estudianteDAO = new EstudianteDAO();
         OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
@@ -136,95 +184,12 @@ public class AdminAccionServlet extends HttpServlet {
         String mensaje = null;
         boolean esProhibido = false;
 
-        if ("crearUsuario".equalsIgnoreCase(accion)) {
-            String nombre = request.getParameter("nombre");
-            String apellidos = request.getParameter("apellidos");
-            String correo = request.getParameter("correo");
-            String contrasena = request.getParameter("contrasena");
-            String rol = request.getParameter("rol");
-
-            if (correo == null || correo.trim().isEmpty() || contrasena == null || contrasena.trim().length() < 6) {
-                ok = false;
-                mensaje = "Debe ingresar un correo válido y una contraseña de al menos 6 caracteres.";
-            } else if ("ADMIN".equalsIgnoreCase(rol)) {
-                ok = false;
-                mensaje = "No está permitido crear cuentas de administrador adicionales.";
-            } else if ("ESTUDIANTE".equalsIgnoreCase(rol)) {
-                String dni = request.getParameter("dni");
-                String universidad = request.getParameter("universidad");
-                String carrera = request.getParameter("carrera");
-                String cicloStr = request.getParameter("ciclo");
-                String telefono = request.getParameter("telefono");
-                int ciclo = 1;
-                try {
-                    if (cicloStr != null)
-                        ciclo = Math.max(1, Math.min(14, Integer.parseInt(cicloStr.trim())));
-                } catch (NumberFormatException ignored) {
-                }
-
-                String dniTrim = dni != null ? dni.trim() : "";
-                if (nombre == null || nombre.trim().isEmpty() || apellidos == null || apellidos.trim().isEmpty()) {
-                    ok = false;
-                    mensaje = "Debe completar nombres y apellidos del estudiante.";
-                } else if (!dniTrim.isEmpty() && !dniTrim.matches("^[0-9]{8}$")) {
-                    ok = false;
-                    mensaje = "El DNI debe contener exactamente 8 dígitos numéricos.";
-                } else if (!dniTrim.isEmpty() && estudianteDAO.obtenerPorDni(dniTrim) != null) {
-                    ok = false;
-                    mensaje = "El DNI ya se encuentra registrado por otro estudiante.";
-                } else if (universidad == null || universidad.trim().isEmpty() || carrera == null
-                        || carrera.trim().isEmpty()) {
-                    ok = false;
-                    mensaje = "Debe completar la universidad y carrera para el perfil de estudiante.";
-                } else if (usuarioDAO.obtenerPorCorreo(correo) != null) {
-                    ok = false;
-                    mensaje = "El correo electrónico ya se encuentra registrado.";
-                } else {
-                    Estudiante est = new Estudiante();
-                    est.setDni(dniTrim);
-                    est.setNombre(nombre.trim());
-                    est.setApellido(apellidos.trim());
-                    est.setUniversidad(universidad.trim());
-                    est.setCarrera(carrera.trim());
-                    est.setCiclo(ciclo);
-                    est.setTelefono(telefono != null ? telefono.trim() : "");
-                    int idGen = estudianteDAO.registrarConUsuario(est, correo.trim().toLowerCase(), contrasena);
-                    ok = (idGen > 0);
-                    mensaje = ok ? "Estudiante registrado exitosamente." : "Error al registrar el estudiante.";
-                }
-            } else if ("EMPRESA".equalsIgnoreCase(rol)) {
-                String razonSocial = request.getParameter("razonSocial");
-                String ruc = request.getParameter("ruc");
-                String telefono = request.getParameter("telefono");
-                String direccion = request.getParameter("direccion");
-                String descripcion = request.getParameter("descripcion");
-
-                if (razonSocial == null || razonSocial.trim().isEmpty() || ruc == null || ruc.trim().length() != 11) {
-                    ok = false;
-                    mensaje = "Debe proporcionar una razón social válida y un RUC de 11 dígitos.";
-                } else if (usuarioDAO.obtenerPorCorreo(correo) != null) {
-                    ok = false;
-                    mensaje = "El correo electrónico ya se encuentra registrado.";
-                } else if (empresaDAO.obtenerPorRuc(ruc) != null) {
-                    ok = false;
-                    mensaje = "El RUC ya se encuentra registrado.";
-                } else {
-                    Empresa emp = new Empresa();
-                    emp.setRazonSocial(razonSocial.trim());
-                    emp.setRuc(ruc.trim());
-                    emp.setTelefono(telefono != null ? telefono.trim() : "");
-                    emp.setDireccion(direccion != null ? direccion.trim() : "");
-                    emp.setDescripcion(descripcion != null ? descripcion.trim() : "");
-                    emp.setEstado("APROBADA");
-                    int idGen = empresaDAO.registrarConUsuario(emp, correo.trim(), contrasena,
-                            nombre != null ? nombre.trim() : "", apellidos != null ? apellidos.trim() : "");
-                    ok = (idGen > 0);
-                    mensaje = ok ? "Empresa registrada exitosamente." : "Error al registrar la empresa.";
-                }
-            } else {
-                ok = false;
-                mensaje = "Debe seleccionar un rol válido (ESTUDIANTE o EMPRESA).";
-            }
+        if ("crearEstudiante".equalsIgnoreCase(accion)) {
+            ok = false;
+            mensaje = "El alta administrativa de estudiantes no estÃ¡ permitida. Los estudiantes deben registrarse a travÃ©s del formulario pÃºblico.";
+        } else if ("crearUsuario".equalsIgnoreCase(accion)) {
+            ok = false;
+            mensaje = "El registro de cuentas no estÃ¡ permitido desde el panel administrativo. Los estudiantes y empresas deben registrarse a travÃ©s del portal pÃºblico.";
         } else if ("actualizarUsuario".equalsIgnoreCase(accion) && id > 0) {
             if (id != usuarioLogueado.getId()) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -296,7 +261,8 @@ public class AdminAccionServlet extends HttpServlet {
                     com.propath.servicio.DesafioSeguridadServicio.invalidarTodoPorCorreo(u.getCorreo());
                     if (com.propath.servicio.ServicioCorreo.isConfigurado()) {
                         try {
-                            com.propath.servicio.ServicioCorreo.enviarConfirmacionCambioPassword(u.getCorreo(), u.getNombre());
+                            com.propath.servicio.ServicioCorreo.enviarConfirmacionCambioPassword(u.getCorreo(),
+                                    u.getNombre());
                         } catch (Exception ignored) {
                         }
                     }
@@ -465,7 +431,8 @@ public class AdminAccionServlet extends HttpServlet {
                 of.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
                 of.setDescripcion(descripcion != null ? descripcion.trim() : "");
                 of.setRequisitos(requisitos != null ? requisitos.trim() : "");
-                of.setEstado(estOferta != null && !estOferta.trim().isEmpty() ? estOferta.trim().toUpperCase() : "ACTIVA");
+                of.setEstado(
+                        estOferta != null && !estOferta.trim().isEmpty() ? estOferta.trim().toUpperCase() : "ACTIVA");
                 int idGen = ofertaDAO.crear(of);
                 ok = (idGen > 0);
                 mensaje = ok ? "Oferta publicada exitosamente." : "No se pudo registrar la oferta.";
@@ -508,7 +475,8 @@ public class AdminAccionServlet extends HttpServlet {
                 of.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
                 of.setDescripcion(descripcion != null ? descripcion.trim() : "");
                 of.setRequisitos(requisitos != null ? requisitos.trim() : "");
-                of.setEstado(estOferta != null && !estOferta.trim().isEmpty() ? estOferta.trim().toUpperCase() : of.getEstado());
+                of.setEstado(estOferta != null && !estOferta.trim().isEmpty() ? estOferta.trim().toUpperCase()
+                        : of.getEstado());
                 ok = ofertaDAO.actualizar(of);
                 mensaje = ok ? "Oferta actualizada exitosamente." : "No se pudo actualizar la oferta.";
             }
@@ -533,7 +501,8 @@ public class AdminAccionServlet extends HttpServlet {
                     mensaje = "Estado de usuario no válido.";
                 } else {
                     ok = usuarioDAO.actualizarEstado(id, estNorm);
-                    mensaje = ok ? "Estado de usuario actualizado a " + estNorm + "." : "No se pudo actualizar el estado del usuario.";
+                    mensaje = ok ? "Estado de usuario actualizado a " + estNorm + "."
+                            : "No se pudo actualizar el estado del usuario.";
                 }
             }
         } else if ("cambiarEstadoOferta".equalsIgnoreCase(accion) && id > 0 && estado != null) {
@@ -551,7 +520,8 @@ public class AdminAccionServlet extends HttpServlet {
                 mensaje = "Debe indicar el motivo cuando el estado es NO_SELECCIONADO.";
             } else {
                 ok = postulacionDAO.evaluar(id, estNorm, "NO_SELECCIONADO".equals(estNorm) ? motivo.trim() : null);
-                mensaje = ok ? "Estado de postulación actualizado." : "No se pudo actualizar el estado de la postulación.";
+                mensaje = ok ? "Estado de postulación actualizado."
+                        : "No se pudo actualizar el estado de la postulación.";
             }
         } else if ("activarCuentaEmpresa".equalsIgnoreCase(accion) && id > 0) {
             Empresa emp = empresaDAO.obtenerPorId(id);
@@ -675,6 +645,35 @@ public class AdminAccionServlet extends HttpServlet {
             } else if ("entrevista".equalsIgnoreCase(recurso) || "entrevistas".equalsIgnoreCase(recurso)) {
                 ok = entrevistaDAO.eliminar(id);
                 mensaje = ok ? "Entrevista eliminada exitosamente." : "No se pudo eliminar la entrevista.";
+            } else if ("administrador".equalsIgnoreCase(recurso) || "administradores".equalsIgnoreCase(recurso)) {
+                if (!usuarioLogueado.esAdminPrincipal()) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write(
+                            "{\"exito\":false,\"prohibido\":true,\"mensaje\":\"Acceso restringido al Administrador Principal.\"}");
+                    return;
+                }
+
+                Administrador adm = adminDAO.obtenerAdministradorPorId(id);
+                if (adm == null) {
+                    ok = false;
+                    mensaje = "Administrador no encontrado.";
+                } else if (adm.getIdUsuario() == 60
+                        || (adm.getUsuario() != null && adm.getUsuario().esAdminPrincipal())) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write(
+                            "{\"exito\":false,\"prohibido\":true,\"mensaje\":\"No está permitido dar de baja al administrador principal del sistema.\"}");
+                    return;
+                } else if (adm.getIdUsuario() == usuarioLogueado.getId()) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write(
+                            "{\"exito\":false,\"prohibido\":true,\"mensaje\":\"No puedes dar de baja tu propia cuenta en sesión.\"}");
+                    return;
+                } else {
+                    ok = adminDAO.darDeBajaAdministrador(id);
+                    mensaje = ok
+                            ? "Administrador dado de baja exitosamente. La cuenta ha pasado a estado INACTIVO conservando su perfil."
+                            : "No se pudo dar de baja al administrador.";
+                }
             }
         }
 
@@ -684,7 +683,8 @@ public class AdminAccionServlet extends HttpServlet {
     }
 
     /**
-     * Valida que el parÃ¡metro ciclo sea un entero vÃ¡lido dentro del rango de ciclos
+     * Valida que el parÃ¡metro ciclo sea un entero vÃ¡lido dentro del rango de
+     * ciclos
      * acadÃ©micos admitidos en los formularios de Estudiantes (ciclos 1 al 12).
      * Devuelve el entero validado, o null si falta, estÃ¡ vacÃ­o, no es numÃ©rico o
      * estÃ¡ fuera de rango.

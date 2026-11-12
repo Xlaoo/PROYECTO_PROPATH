@@ -229,6 +229,25 @@ public class UsuarioDAO {
         }
     }
 
+    public String obtenerEstadoPorId(int idUsuario) {
+        if (idUsuario <= 0) {
+            return null;
+        }
+        String sql = "SELECT estado FROM usuarios WHERE id_usuario = ?";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idUsuario);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("estado");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public boolean actualizarContrasena(int idUsuario, String nuevaContrasenaPlana) {
         if (idUsuario <= 0 || nuevaContrasenaPlana == null || nuevaContrasenaPlana.isEmpty()) {
             return false;
