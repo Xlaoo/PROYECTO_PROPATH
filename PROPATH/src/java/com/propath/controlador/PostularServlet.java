@@ -245,11 +245,11 @@ public class PostularServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login.jsp?exito=cuenta_desactivada");
             return;
         } else if ("actualizarPerfil".equalsIgnoreCase(accion)) {
+            String dni = request.getParameter("dni");
             String nombre = request.getParameter("nombre");
             String apellidos = request.getParameter("apellidos");
             String correo = request.getParameter("correo");
             String contrasena = request.getParameter("contrasena");
-            String contrasenaActual = request.getParameter("contrasenaActual");
             String confirmarContrasena = request.getParameter("confirmarContrasena");
             String universidad = request.getParameter("universidad");
             String carrera = request.getParameter("carrera");
@@ -270,21 +270,41 @@ public class PostularServlet extends HttpServlet {
                 return;
             }
 
-            String correoFinal = (correo != null && !correo.trim().isEmpty()) ? correo.trim() : usuario.getCorreo();
+            if (dni != null && !dni.trim().isEmpty() && !dni.trim().matches("^[0-9]{8}$")) {
+                response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
+                        URLEncoder.encode("El DNI debe contener exactamente 8 dígitos numéricos.", StandardCharsets.UTF_8));
+                return;
+            }
+
+            if (telefono != null && !telefono.trim().isEmpty() && !telefono.trim().matches("^[0-9]{9}$")) {
+                response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
+                        URLEncoder.encode("El teléfono celular debe contener exactamente 9 dígitos numéricos.", StandardCharsets.UTF_8));
+                return;
+            }
+
+            // Si el correo no cambió, mantener el actual. Si cambió sin verificación, advertir:
+            String correoFinal = usuario.getCorreo();
+            if (correo != null && !correo.trim().isEmpty() && !correo.trim().equalsIgnoreCase(usuario.getCorreo())) {
+                // Verificar si ya fue validado en sesión o requerir verificación
+                String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_PERFIL");
+                if (correoVerificado != null && correoVerificado.equalsIgnoreCase(correo.trim())) {
+                    correoFinal = correo.trim().toLowerCase();
+                    session.removeAttribute("CORREO_VERIFICADO_PERFIL");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
+                            URLEncoder.encode("Para modificar tu correo electrónico debes verificarlo con el código de seguridad enviado al nuevo correo.", StandardCharsets.UTF_8));
+                    return;
+                }
+            }
 
             usuario.setNombre(nombre != null ? nombre.trim() : usuario.getNombre());
             usuario.setApellidos(apellidos.trim());
             usuario.setCorreo(correoFinal);
             boolean contrasenaCambiada = false;
             if (contrasena != null && !contrasena.trim().isEmpty()) {
-                if (contrasenaActual == null || !com.propath.conexion.SeguridadUtil.verificarPassword(contrasenaActual.trim(), usuario.getContrasena())) {
+                if (contrasena.trim().length() < 8 || !contrasena.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
                     response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
-                            URLEncoder.encode("La contraseña actual es incorrecta.", StandardCharsets.UTF_8));
-                    return;
-                }
-                if (contrasena.trim().length() < 8) {
-                    response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
-                            URLEncoder.encode("La nueva contraseña debe tener al menos 8 caracteres.", StandardCharsets.UTF_8));
+                            URLEncoder.encode("La nueva contraseña debe tener al menos 8 caracteres y combinar letras y números.", StandardCharsets.UTF_8));
                     return;
                 }
                 if (!contrasena.trim().equals(confirmarContrasena != null ? confirmarContrasena.trim() : "")) {
@@ -310,6 +330,9 @@ public class PostularServlet extends HttpServlet {
 
             Estudiante estudiante = estudianteDAO.obtenerPorId(idEstudiante);
             if (estudiante != null) {
+                if (dni != null && !dni.trim().isEmpty()) {
+                    estudiante.setDni(dni.trim());
+                }
                 estudiante.setNombres(nombre != null ? nombre.trim() : usuario.getNombre());
                 estudiante.setApellidos(apellidos.trim());
                 estudiante.setUniversidad(universidad != null ? universidad.trim() : "");

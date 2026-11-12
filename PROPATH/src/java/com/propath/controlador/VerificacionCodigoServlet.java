@@ -53,6 +53,12 @@ public class VerificacionCodigoServlet extends HttpServlet {
             case "verificar_registro":
                 verificarCodigoRegistro(request, response);
                 break;
+            case "solicitar_cambio_correo":
+                solicitarCambioCorreoPerfil(request, response);
+                break;
+            case "verificar_cambio_correo":
+                verificarCambioCorreoPerfil(request, response);
+                break;
             case "verificar_login_2fa":
                 verificarLogin2FA(request, response);
                 break;
@@ -150,6 +156,98 @@ public class VerificacionCodigoServlet extends HttpServlet {
 
         String extraJson = "\"token\":\"" + escaparJson(resultado.getTokenAutorizacion()) + "\",\"correo\":\"" + escaparJson(resultado.getCorreo()) + "\"";
         responderJson(response, true, "¡Correo verificado exitosamente!", extraJson);
+    }
+
+    private void solicitarCambioCorreoPerfil(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("usuarioLogueado") == null) {
+            responderJson(response, false, "Sesión no válida o expirada.", null);
+            return;
+        }
+
+        Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        String nuevoCorreo = request.getParameter("nuevoCorreo");
+
+        if (nuevoCorreo == null || nuevoCorreo.trim().isBlank()) {
+            responderJson(response, false, "Ingresa un nuevo correo electrónico válido.", null);
+            return;
+        }
+
+        nuevoCorreo = nuevoCorreo.trim().toLowerCase(Locale.ROOT);
+        if (!nuevoCorreo.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            responderJson(response, false, "El formato del nuevo correo no es válido.", null);
+            return;
+        }
+
+        if (nuevoCorreo.equalsIgnoreCase(usuario.getCorreo())) {
+            responderJson(response, false, "El nuevo correo debe ser distinto a tu correo actual.", null);
+            return;
+        }
+
+        UsuarioDAO usuarioDAO = new UsuarioDAO();
+        if (usuarioDAO.obtenerPorCorreo(nuevoCorreo) != null) {
+            responderJson(response, false, "Este correo electrónico ya está registrado por otro usuario.", null);
+            return;
+        }
+
+        if (!ServicioCorreo.isConfigurado()) {
+            responderJson(response, false, "El servicio de correo SMTP no está disponible en este momento. Contacta al administrador.", null);
+            return;
+        }
+
+        String codigo = DesafioSeguridadServicio.generarCodigoSeguro();
+
+        // 1. Intentar enviar el correo ANTES de confirmar o guardar
+        try {
+            ServicioCorreo.enviarCodigoCambioCorreo(nuevoCorreo, usuario.getNombre(), codigo);
+        } catch (Exception e) {
+            getServletContext().log("Fallo al enviar correo de verificación de cambio de correo a " + nuevoCorreo + ": " + e.getMessage());
+            responderJson(response, false, "No fue posible enviar el correo de verificación. Comprueba que el correo sea válido o intenta nuevamente.", null);
+            return;
+        }
+
+        // 2. Registrar el código en BD con vigencia de 60 segundos (1 minuto) únicamente tras envío exitoso
+        boolean guardado = usuarioDAO.registrarCodigoCambioCorreo(usuario.getId(), usuario.getCorreo(), nuevoCorreo, codigo);
+        if (!guardado) {
+            responderJson(response, false, "No fue posible procesar la solicitud de cambio de correo.", null);
+            return;
+        }
+
+        String mascara = DesafioSeguridadServicio.enmascararCorreo(nuevoCorreo);
+        // Expiración estricta de 60 segundos (1 minuto) y cooldown de 30 segundos
+        String extraJson = "\"correoMascara\":\"" + escaparJson(mascara) + "\",\"segundosEspera\":30,\"segundosExpiracion\":60";
+        responderJson(response, true, "Hemos enviado un código de 6 dígitos a tu nuevo correo.", extraJson);
+    }
+
+    private void verificarCambioCorreoPerfil(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("usuarioLogueado") == null) {
+            responderJson(response, false, "Sesión no válida o expirada.", null);
+            return;
+        }
+
+        Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        String nuevoCorreo = request.getParameter("nuevoCorreo");
+        String codigo = request.getParameter("codigo");
+
+        if (nuevoCorreo == null || codigo == null) {
+            responderJson(response, false, "Parámetros incompletos.", null);
+            return;
+        }
+
+        UsuarioDAO usuarioDAO = new UsuarioDAO();
+        boolean ok = usuarioDAO.verificarYAplicarCambioCorreo(usuario.getId(), nuevoCorreo.trim().toLowerCase(), codigo.trim());
+        if (ok) {
+            usuario.setCorreo(nuevoCorreo.trim().toLowerCase());
+            session.setAttribute("usuarioLogueado", usuario);
+            session.setAttribute("correoUsuario", usuario.getCorreo());
+            session.setAttribute("CORREO_VERIFICADO_PERFIL", usuario.getCorreo());
+            responderJson(response, true, "¡Correo actualizado exitosamente!", "\"nuevoCorreo\":\"" + escaparJson(usuario.getCorreo()) + "\"");
+        } else {
+            responderJson(response, false, "Código de verificación incorrecto o expirado (validez de 1 minuto). Solicita uno nuevo.", null);
+        }
     }
 
     private void verificarLogin2FA(HttpServletRequest request, HttpServletResponse response)

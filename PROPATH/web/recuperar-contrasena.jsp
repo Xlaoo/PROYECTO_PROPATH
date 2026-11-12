@@ -55,7 +55,7 @@
         <div class="login-card" style="max-width: 480px;">
             <div class="login-header text-center mb-4">
                 <a href="${pageContext.request.contextPath}/index.jsp">
-                    <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath" class="logo-login">
+                    <img src="${pageContext.request.contextPath}/img/logo-propath.png" alt="ProPath" class="logo-login">
                 </a>
                 <div>
                     <span class="login-badge-role">
@@ -69,7 +69,7 @@
                 <div class="alert alert-danger d-flex align-items-center mb-4 py-2 px-3 rounded-3 border-danger-subtle" role="alert">
                     <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
                     <div class="small fw-semibold">
-                        <%= error %>
+                        <%= com.propath.conexion.SeguridadUtil.escaparHtml(error) %>
                     </div>
                 </div>
             <% } %>
@@ -78,7 +78,7 @@
                 <div class="alert alert-info d-flex align-items-center mb-4 py-2 px-3 rounded-3 border-info-subtle" role="alert">
                     <i class="bi bi-info-circle-fill fs-5 me-2 text-info"></i>
                     <div class="small fw-semibold">
-                        <%= info %>
+                        <%= com.propath.conexion.SeguridadUtil.escaparHtml(info) %>
                     </div>
                 </div>
             <% } %>
@@ -98,7 +98,7 @@
                     <div class="form-floating-custom mb-3">
                         <input type="email" class="form-control"
                                id="correo" name="correo"
-                               value="<%= correo %>"
+                               value="<%= com.propath.conexion.SeguridadUtil.escaparHtml(correo) %>"
                                placeholder="correo@ejemplo.com"
                                required autofocus>
                         <i class="bi bi-envelope-fill input-icon"></i>
@@ -119,15 +119,15 @@
                         <i class="bi bi-shield-check text-success fs-3"></i>
                     </div>
                     <h6 class="fw-bold mb-1">Identidad Verificada</h6>
-                    <p class="text-muted small mb-0">Establece tu nueva contraseña para <strong><%= correoMascara %></strong>.</p>
+                    <p class="text-muted small mb-0">Establece tu nueva contraseña para <strong><%= com.propath.conexion.SeguridadUtil.escaparHtml(correoMascara) %></strong>.</p>
                 </div>
 
                 <form action="${pageContext.request.contextPath}/recuperar-contrasena"
                       method="POST" autocomplete="off" id="formCambiarContrasena">
 
-                    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                    <input type="hidden" name="csrfToken" value="<%= com.propath.conexion.SeguridadUtil.escaparHtml(csrfToken) %>">
                     <input type="hidden" name="accion" value="cambiar_contrasena">
-                    <input type="hidden" name="tokenReset" value="<%= tokenReset != null ? tokenReset : "" %>">
+                    <input type="hidden" name="tokenReset" value="<%= tokenReset != null ? com.propath.conexion.SeguridadUtil.escaparHtml(tokenReset) : "" %>">
 
                     <div class="form-floating-custom mb-3">
                         <input type="password" class="form-control"
@@ -192,23 +192,23 @@
                 </div>
                 <form action="${pageContext.request.contextPath}/recuperar-contrasena" method="POST" id="formVerificarModal">
                     <div class="modal-body p-4 text-center">
-                        <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                        <input type="hidden" name="csrfToken" value="<%= com.propath.conexion.SeguridadUtil.escaparHtml(csrfToken) %>">
                         <input type="hidden" name="accion" value="verificar_codigo">
-                        <input type="hidden" name="correo" value="<%= correo %>">
+                        <input type="hidden" name="correo" value="<%= com.propath.conexion.SeguridadUtil.escaparHtml(correo) %>">
 
                         <div class="mb-3">
                             <div class="avatar-icon-wrapper mx-auto mb-2" style="width: 50px; height: 50px; background: #E0F2FE; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                 <i class="bi bi-envelope-paper-heart text-primary fs-3"></i>
                             </div>
                             <h6 class="fw-bold mb-1">Ingresa el código</h6>
-                            <p class="text-muted small mb-0">Hemos enviado un código alfanumérico de <strong>6 caracteres</strong> a:</p>
-                            <p class="fw-bold text-primary small mb-0" id="textoCorreoModal"><%= correoMascara %></p>
+                            <p class="text-muted small mb-0">Hemos enviado un código de seguridad de <strong>6 dígitos</strong> a:</p>
+                            <p class="fw-bold text-primary small mb-0" id="textoCorreoModal"><%= com.propath.conexion.SeguridadUtil.escaparHtml(correoMascara) %></p>
                         </div>
 
                         <div id="contenedorAlertasModal">
                             <% if (error != null && !error.isEmpty() && Boolean.TRUE.equals(abrirModalCodigo)) { %>
                                 <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 text-start">
-                                    <i class="bi bi-exclamation-circle-fill me-1"></i> <%= error %>
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i> <%= com.propath.conexion.SeguridadUtil.escaparHtml(error) %>
                                 </div>
                             <% } %>
                         </div>
@@ -216,7 +216,7 @@
                         <div class="mb-3">
                             <label for="inputCodigoRecuperacion" class="form-label small fw-semibold text-secondary">Código de verificación:</label>
                             <input type="text" class="form-control input-codigo-seguridad" id="inputCodigoRecuperacion"
-                                   name="codigo" maxlength="6" autocomplete="one-time-code" placeholder="ABC123" autofocus required>
+                                   name="codigo" maxlength="6" autocomplete="one-time-code" placeholder="123456" autofocus required>
                             <div class="d-flex justify-content-between align-items-center mt-2 px-1">
                                 <span class="small text-muted" id="textoExpiracionModal">
                                     <i class="bi bi-stopwatch me-1 text-primary"></i> Expira en <strong>10:00</strong>
@@ -248,15 +248,26 @@
 
     <!-- Formulario oculto para reenviar código -->
     <form id="formReenviarCodigo" action="${pageContext.request.contextPath}/recuperar-contrasena" method="POST" style="display:none;">
-        <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+        <input type="hidden" name="csrfToken" value="<%= com.propath.conexion.SeguridadUtil.escaparHtml(csrfToken) %>">
         <input type="hidden" name="accion" value="solicitar_codigo">
-        <input type="hidden" name="correo" value="<%= correo %>">
+        <input type="hidden" name="correo" value="<%= com.propath.conexion.SeguridadUtil.escaparHtml(correo) %>">
     </form>
+
+    <div id="dataRecuperacionConfig" style="display:none;"
+         data-abrir-modal="<%= Boolean.TRUE.equals(abrirModalCodigo) ? "true" : "false" %>"
+         data-segundos-espera="<%= (segundosEspera != null) ? segundosEspera : 60L %>"
+         data-segundos-expiracion="<%= (segundosExpiracion != null) ? segundosExpiracion : 600L %>"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="${pageContext.request.contextPath}/js/verificacion-seguridad.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Leer configuración limpia desde el DOM
+            const configEl = document.getElementById('dataRecuperacionConfig');
+            const abrirModal = configEl && configEl.getAttribute('data-abrir-modal') === 'true';
+            const segEspera = configEl ? (parseInt(configEl.getAttribute('data-segundos-espera'), 10) || 60) : 60;
+            const segExpira = configEl ? (parseInt(configEl.getAttribute('data-segundos-expiracion'), 10) || 600) : 600;
+
             // Configurar botones de ver/ocultar contraseña
             function setupToggle(btnId, inputId) {
                 const btn = document.getElementById(btnId);
@@ -289,15 +300,15 @@
             });
 
             // Si el servidor ordenó abrir el modal (después de solicitar código o error en código)
-            <% if (Boolean.TRUE.equals(abrirModalCodigo)) { %>
+            if (abrirModal) {
                 bsModal.show();
                 setTimeout(() => {
                     inputCodigo.focus();
                 }, 500);
 
-                ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, <%= (segundosEspera != null) ? segundosEspera : 60 %>);
-                ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, <%= (segundosExpiracion != null) ? segundosExpiracion : 600 %>);
-            <% } %>
+                ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, segEspera);
+                ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, segExpira);
+            }
 
             btnReenviar.addEventListener('click', function () {
                 document.getElementById('formReenviarCodigo').submit();

@@ -300,7 +300,6 @@ public class OfertaEmpresaServlet extends HttpServlet {
             String repApellidos = request.getParameter("representanteApellidos");
             String correo = request.getParameter("correo");
             String contrasena = request.getParameter("contrasena");
-            String contrasenaActual = request.getParameter("contrasenaActual");
             String confirmarContrasena = request.getParameter("confirmarContrasena");
             String razonSocial = request.getParameter("razonSocial");
             String rucParam = request.getParameter("ruc");
@@ -310,9 +309,16 @@ public class OfertaEmpresaServlet extends HttpServlet {
 
             Empresa curEmp = empresaDAO.obtenerPorId(idEmpresa);
 
-            if (rucParam == null || !rucParam.trim().matches("\\d{11}")) {
+            if (rucParam == null || !rucParam.trim().matches("^[0-9]{11}$")) {
                 response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
                         URLEncoder.encode("El RUC debe contener exactamente 11 dígitos numéricos.",
+                                StandardCharsets.UTF_8));
+                return;
+            }
+
+            if (telefono != null && !telefono.trim().isEmpty() && !telefono.trim().matches("^[0-9]{7,9}$")) {
+                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
+                        URLEncoder.encode("El teléfono corporativo debe contener entre 7 y 9 dígitos numéricos.",
                                 StandardCharsets.UTF_8));
                 return;
             }
@@ -322,7 +328,20 @@ public class OfertaEmpresaServlet extends HttpServlet {
                     : usuario.getNombre();
             String repApellidosFinal = (repApellidos != null && !repApellidos.trim().isEmpty()) ? repApellidos.trim()
                     : (usuario.getApellidos() != null ? usuario.getApellidos() : "");
-            String correoFinal = (correo != null && !correo.trim().isEmpty()) ? correo.trim() : usuario.getCorreo();
+            
+            String correoFinal = usuario.getCorreo();
+            if (correo != null && !correo.trim().isEmpty() && !correo.trim().equalsIgnoreCase(usuario.getCorreo())) {
+                String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_PERFIL");
+                if (correoVerificado != null && correoVerificado.equalsIgnoreCase(correo.trim())) {
+                    correoFinal = correo.trim().toLowerCase();
+                    session.removeAttribute("CORREO_VERIFICADO_PERFIL");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
+                            URLEncoder.encode("Para modificar tu correo corporativo debes verificarlo con el código de seguridad enviado al nuevo correo.", StandardCharsets.UTF_8));
+                    return;
+                }
+            }
+
             String razonFinal = (razonSocial != null && !razonSocial.trim().isEmpty()) ? razonSocial.trim()
                     : (curEmp != null ? curEmp.getRazonSocial() : usuario.getRazonSocial());
 
@@ -341,14 +360,9 @@ public class OfertaEmpresaServlet extends HttpServlet {
             usuario.setRazonSocial(razonFinal);
             boolean contrasenaCambiada = false;
             if (contrasena != null && !contrasena.trim().isEmpty()) {
-                if (contrasenaActual == null || !com.propath.conexion.SeguridadUtil.verificarPassword(contrasenaActual.trim(), usuario.getContrasena())) {
+                if (contrasena.trim().length() < 8 || !contrasena.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
                     response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                            URLEncoder.encode("La contraseña actual es incorrecta.", StandardCharsets.UTF_8));
-                    return;
-                }
-                if (contrasena.trim().length() < 8) {
-                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                            URLEncoder.encode("La nueva contraseña debe tener al menos 8 caracteres.", StandardCharsets.UTF_8));
+                            URLEncoder.encode("La nueva contraseña debe tener al menos 8 caracteres y combinar letras y números.", StandardCharsets.UTF_8));
                     return;
                 }
                 if (!contrasena.trim().equals(confirmarContrasena != null ? confirmarContrasena.trim() : "")) {

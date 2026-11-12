@@ -15,7 +15,7 @@ public class EstudianteDAO {
 
     public List<Estudiante> listarTodos() {
         List<Estudiante> lista = new ArrayList<>();
-        String sql = "SELECT e.id_estudiante, e.id_usuario, e.nombres, e.apellidos, u.correo, "
+        String sql = "SELECT e.id_estudiante, e.id_usuario, e.dni, e.nombres, e.apellidos, u.correo, "
                    + "e.universidad, e.carrera, e.ciclo, e.telefono, e.cv, u.estado "
                    + "FROM estudiantes e "
                    + "INNER JOIN usuarios u ON e.id_usuario = u.id_usuario "
@@ -35,7 +35,7 @@ public class EstudianteDAO {
     }
 
     public Estudiante obtenerPorId(int idEstudiante) {
-        String sql = "SELECT e.id_estudiante, e.id_usuario, e.nombres, e.apellidos, u.correo, "
+        String sql = "SELECT e.id_estudiante, e.id_usuario, e.dni, e.nombres, e.apellidos, u.correo, "
                    + "e.universidad, e.carrera, e.ciclo, e.telefono, e.cv, u.estado "
                    + "FROM estudiantes e "
                    + "INNER JOIN usuarios u ON e.id_usuario = u.id_usuario "
@@ -57,7 +57,7 @@ public class EstudianteDAO {
     }
 
     public Estudiante obtenerPorUsuarioId(int idUsuario) {
-        String sql = "SELECT e.id_estudiante, e.id_usuario, e.nombres, e.apellidos, u.correo, "
+        String sql = "SELECT e.id_estudiante, e.id_usuario, e.dni, e.nombres, e.apellidos, u.correo, "
                    + "e.universidad, e.carrera, e.ciclo, e.telefono, e.cv, u.estado "
                    + "FROM estudiantes e "
                    + "INNER JOIN usuarios u ON e.id_usuario = u.id_usuario "
@@ -82,7 +82,7 @@ public class EstudianteDAO {
         if (correo == null || correo.trim().isEmpty()) {
             return null;
         }
-        String sql = "SELECT e.id_estudiante, e.id_usuario, e.nombres, e.apellidos, u.correo, "
+        String sql = "SELECT e.id_estudiante, e.id_usuario, e.dni, e.nombres, e.apellidos, u.correo, "
                    + "e.universidad, e.carrera, e.ciclo, e.telefono, e.cv, u.estado "
                    + "FROM estudiantes e "
                    + "INNER JOIN usuarios u ON e.id_usuario = u.id_usuario "
@@ -101,25 +101,49 @@ public class EstudianteDAO {
         return null;
     }
 
+    public Estudiante obtenerPorDni(String dni) {
+        if (dni == null || dni.trim().isEmpty()) {
+            return null;
+        }
+        String sql = "SELECT e.id_estudiante, e.id_usuario, e.dni, e.nombres, e.apellidos, u.correo, "
+                   + "e.universidad, e.carrera, e.ciclo, e.telefono, e.cv, u.estado "
+                   + "FROM estudiantes e "
+                   + "INNER JOIN usuarios u ON e.id_usuario = u.id_usuario "
+                   + "WHERE e.dni = ?";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, dni.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapearEstudiante(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public int crear(Estudiante estudiante) {
         if (estudiante == null || estudiante.getIdUsuario() <= 0) {
             return -1;
         }
 
-        String sql = "INSERT INTO estudiantes (id_usuario, nombres, apellidos, universidad, carrera, ciclo, telefono, cv) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO estudiantes (id_usuario, dni, nombres, apellidos, universidad, carrera, ciclo, telefono, cv) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setInt(1, estudiante.getIdUsuario());
-            ps.setString(2, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
-            ps.setString(3, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
-            ps.setString(4, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
-            ps.setString(5, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
-            ps.setInt(6, estudiante.getCiclo());
-            ps.setString(7, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
-            ps.setString(8, estudiante.getCv() != null ? estudiante.getCv().trim() : "");
+            ps.setString(2, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+            ps.setString(3, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
+            ps.setString(4, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
+            ps.setString(5, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
+            ps.setString(6, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
+            ps.setInt(7, estudiante.getCiclo());
+            ps.setString(8, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
+            ps.setString(9, estudiante.getCv() != null ? estudiante.getCv().trim() : "");
 
             int filas = ps.executeUpdate();
             if (filas > 0) {
@@ -144,7 +168,7 @@ public class EstudianteDAO {
 
         String hash = SeguridadUtil.encriptarPassword(contrasenaPlana);
         String sqlUsuario = "INSERT INTO usuarios (nombre, apellidos, correo, contrasena, rol, estado) VALUES (?, ?, ?, ?, 'ESTUDIANTE', 'ACTIVO')";
-        String sqlEstudiante = "INSERT INTO estudiantes (id_usuario, nombres, apellidos, universidad, carrera, ciclo, telefono, cv) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sqlEstudiante = "INSERT INTO estudiantes (id_usuario, dni, nombres, apellidos, universidad, carrera, ciclo, telefono, cv) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection conn = null;
         try {
@@ -174,13 +198,14 @@ public class EstudianteDAO {
             int idEstudianteGenerado = -1;
             try (PreparedStatement psEst = conn.prepareStatement(sqlEstudiante, Statement.RETURN_GENERATED_KEYS)) {
                 psEst.setInt(1, idUsuarioGenerado);
-                psEst.setString(2, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
-                psEst.setString(3, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
-                psEst.setString(4, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
-                psEst.setString(5, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
-                psEst.setInt(6, estudiante.getCiclo());
-                psEst.setString(7, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
-                psEst.setString(8, estudiante.getCv() != null ? estudiante.getCv().trim() : "");
+                psEst.setString(2, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+                psEst.setString(3, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
+                psEst.setString(4, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
+                psEst.setString(5, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
+                psEst.setString(6, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
+                psEst.setInt(7, estudiante.getCiclo());
+                psEst.setString(8, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
+                psEst.setString(9, estudiante.getCv() != null ? estudiante.getCv().trim() : "");
 
                 psEst.executeUpdate();
                 try (ResultSet rsEst = psEst.getGeneratedKeys()) {
@@ -226,7 +251,7 @@ public class EstudianteDAO {
             return false;
         }
 
-        String sqlEst = "UPDATE estudiantes SET nombres = ?, apellidos = ?, universidad = ?, carrera = ?, ciclo = ?, telefono = ?, cv = ? WHERE id_estudiante = ?";
+        String sqlEst = "UPDATE estudiantes SET dni = ?, nombres = ?, apellidos = ?, universidad = ?, carrera = ?, ciclo = ?, telefono = ?, cv = ? WHERE id_estudiante = ?";
         String sqlUser = "UPDATE usuarios SET nombre = ?, apellidos = ? WHERE id_usuario = ?";
 
         Connection conn = null;
@@ -235,14 +260,15 @@ public class EstudianteDAO {
             conn.setAutoCommit(false);
 
             try (PreparedStatement ps = conn.prepareStatement(sqlEst)) {
-                ps.setString(1, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
-                ps.setString(2, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
-                ps.setString(3, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
-                ps.setString(4, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
-                ps.setInt(5, estudiante.getCiclo());
-                ps.setString(6, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
-                ps.setString(7, estudiante.getCv() != null ? estudiante.getCv().trim() : "");
-                ps.setInt(8, estudiante.getId());
+                ps.setString(1, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+                ps.setString(2, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
+                ps.setString(3, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
+                ps.setString(4, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
+                ps.setString(5, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
+                ps.setInt(6, estudiante.getCiclo());
+                ps.setString(7, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
+                ps.setString(8, estudiante.getCv() != null ? estudiante.getCv().trim() : "");
+                ps.setInt(9, estudiante.getId());
 
                 int filas = ps.executeUpdate();
                 if (filas <= 0) {
@@ -290,7 +316,7 @@ public class EstudianteDAO {
             return false;
         }
 
-        String sqlEst = "UPDATE estudiantes SET nombres = ?, apellidos = ?, universidad = ?, carrera = ?, ciclo = ?, telefono = ? WHERE id_estudiante = ?";
+        String sqlEst = "UPDATE estudiantes SET dni = ?, nombres = ?, apellidos = ?, universidad = ?, carrera = ?, ciclo = ?, telefono = ? WHERE id_estudiante = ?";
         String sqlUser = "UPDATE usuarios SET nombre = ?, apellidos = ?, estado = ? WHERE id_usuario = ?";
 
         Connection conn = null;
@@ -299,13 +325,14 @@ public class EstudianteDAO {
             conn.setAutoCommit(false);
 
             try (PreparedStatement ps = conn.prepareStatement(sqlEst)) {
-                ps.setString(1, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
-                ps.setString(2, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
-                ps.setString(3, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
-                ps.setString(4, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
-                ps.setInt(5, estudiante.getCiclo());
-                ps.setString(6, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
-                ps.setInt(7, estudiante.getId());
+                ps.setString(1, estudiante.getDni() != null ? estudiante.getDni().trim() : "");
+                ps.setString(2, estudiante.getNombre() != null ? estudiante.getNombre().trim() : "");
+                ps.setString(3, estudiante.getApellido() != null ? estudiante.getApellido().trim() : "");
+                ps.setString(4, estudiante.getUniversidad() != null ? estudiante.getUniversidad().trim() : "");
+                ps.setString(5, estudiante.getCarrera() != null ? estudiante.getCarrera().trim() : "");
+                ps.setInt(6, estudiante.getCiclo());
+                ps.setString(7, estudiante.getTelefono() != null ? estudiante.getTelefono().trim() : "");
+                ps.setInt(8, estudiante.getId());
                 ps.executeUpdate();
             }
 
@@ -450,6 +477,10 @@ public class EstudianteDAO {
         Estudiante e = new Estudiante();
         e.setId(rs.getInt("id_estudiante"));
         e.setIdUsuario(rs.getInt("id_usuario"));
+        try {
+            e.setDni(rs.getString("dni"));
+        } catch (SQLException ignored) {
+        }
         e.setNombre(rs.getString("nombres"));
         e.setApellido(rs.getString("apellidos"));
         e.setCorreo(rs.getString("correo"));

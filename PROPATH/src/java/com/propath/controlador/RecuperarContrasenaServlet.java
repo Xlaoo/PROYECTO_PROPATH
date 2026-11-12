@@ -229,8 +229,8 @@ public class RecuperarContrasenaServlet extends HttpServlet {
         String tokenForm = request.getParameter("tokenReset");
         String tokenAValidar = (tokenForm != null && !tokenForm.isBlank()) ? tokenForm.trim() : tokenSesion;
 
-        // Validación estricta y consumo atómico del token de autorización temporal
-        TokenAutorizacion auth = DesafioSeguridadServicio.consumirAutorizacion(tokenAValidar, PropositoDesafio.RECUPERACION);
+        // Validar la vigencia del token de autorización temporal sin consumirlo prematuramente
+        TokenAutorizacion auth = DesafioSeguridadServicio.consultarAutorizacion(tokenAValidar, PropositoDesafio.RECUPERACION);
 
         if (auth == null || auth.idUsuario == null || auth.idUsuario <= 0) {
             limpiarRecuperacion(session);
@@ -244,8 +244,6 @@ public class RecuperarContrasenaServlet extends HttpServlet {
         String confirmar = request.getParameter("confirmarContrasena");
 
         if (nueva == null || nueva.length() < 8) {
-            // Reemitir token de autorización temporal para permitir corregir el formulario sin reiniciar todo el flujo
-            ResultadoValidacion reAuth = DesafioSeguridadServicio.verificarCodigo(auth.correo, "dummy", PropositoDesafio.RECUPERACION);
             session.setAttribute("recuperacionTokenReset", auth.token);
             request.setAttribute("tokenReset", auth.token);
             request.setAttribute("error", "La contraseña debe tener al menos 8 caracteres.");
@@ -264,6 +262,9 @@ public class RecuperarContrasenaServlet extends HttpServlet {
             mostrar(request, response);
             return;
         }
+
+        // Consumir atómicamente el token una vez superadas las validaciones de entrada
+        DesafioSeguridadServicio.consumirAutorizacion(tokenAValidar, PropositoDesafio.RECUPERACION);
 
         UsuarioDAO usuarioDAO = new UsuarioDAO();
         boolean actualizado = usuarioDAO.actualizarContrasena(auth.idUsuario, nueva);
@@ -295,26 +296,38 @@ public class RecuperarContrasenaServlet extends HttpServlet {
     }
 
     private String obtenerIpCliente(HttpServletRequest request) {
+        if (request == null) {
+            return "127.0.0.1";
+        }
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             int comma = forwarded.indexOf(',');
-            return comma > 0 ? forwarded.substring(0, comma).trim() : forwarded.trim();
+            String ip = (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
+            // Validación para no confiar ciegamente en cabeceras manipuladas o proxies anónimos
+            if (!ip.equalsIgnoreCase("unknown") && ip.matches("^[0-9a-fA-F:.]+$")) {
+                return ip;
+            }
         }
-        return request.getRemoteAddr() != null ? request.getRemoteAddr() : "127.0.0.1";
+        String remote = request.getRemoteAddr();
+        return (remote != null && !remote.isBlank()) ? remote : "127.0.0.1";
     }
 
     private void limpiarRecuperacion(HttpSession session) {
-        session.removeAttribute("recuperacionCorreoPendiente");
-        session.removeAttribute("recuperacionTokenReset");
+        if (session != null) {
+            session.removeAttribute("recuperacionCorreoPendiente");
+            session.removeAttribute("recuperacionTokenReset");
+        }
     }
 
     private void asegurarCsrfToken(HttpServletRequest request) {
-        HttpSession session = request.getSession(true);
-        if (session.getAttribute("csrfToken") == null) {
-            byte[] bytes = new byte[24];
-            RANDOM.nextBytes(bytes);
-            session.setAttribute("csrfToken",
-                    Base64.getUrlEncoder().withoutPadding().encodeToString(bytes));
+        if (request != null) {
+            HttpSession session = request.getSession(true);
+            if (session.getAttribute("csrfToken") == null) {
+                byte[] bytes = new byte[24];
+                RANDOM.nextBytes(bytes);
+                session.setAttribute("csrfToken",
+                        Base64.getUrlEncoder().withoutPadding().encodeToString(bytes));
+            }
         }
     }
 

@@ -222,6 +222,7 @@ public class AdminAccionServlet extends HttpServlet {
             String apellidos = request.getParameter("apellidos");
             String correo = request.getParameter("correo");
             String contrasena = request.getParameter("contrasena");
+            String confirmarContrasena = request.getParameter("confirmarContrasena");
             String est = request.getParameter("estado");
 
             if (id == 60 || "admin@propath.com".equalsIgnoreCase(correo)) {
@@ -239,14 +240,60 @@ public class AdminAccionServlet extends HttpServlet {
                     u.setNombre(nombre.trim());
                 if (apellidos != null)
                     u.setApellidos(apellidos.trim());
-                if (correo != null && !correo.trim().isEmpty())
-                    u.setCorreo(correo.trim());
+
+                // Validación obligatoria en el servidor para cambio de correo
+                if (correo != null && !correo.trim().isEmpty() && !correo.trim().equalsIgnoreCase(u.getCorreo())) {
+                    HttpSession ses = request.getSession(false);
+                    String verificado = (ses != null) ? (String) ses.getAttribute("CORREO_VERIFICADO_PERFIL") : null;
+                    if (verificado != null && verificado.equalsIgnoreCase(correo.trim())) {
+                        u.setCorreo(correo.trim().toLowerCase());
+                        ses.removeAttribute("CORREO_VERIFICADO_PERFIL");
+                    } else {
+                        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        response.getWriter().write(
+                                "{\"exito\":false,\"mensaje\":\"Para modificar tu correo electrónico debes verificarlo con el código de seguridad enviado al nuevo correo.\"}");
+                        return;
+                    }
+                }
+
+                boolean contrasenaCambiada = false;
                 if (contrasena != null && !contrasena.trim().isEmpty()) {
+                    if (contrasena.trim().length() < 8 || !contrasena.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
+                        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        response.getWriter().write(
+                                "{\"exito\":false,\"mensaje\":\"La nueva contraseña debe tener al menos 8 caracteres y combinar letras y números.\"}");
+                        return;
+                    }
+                    if (!contrasena.trim().equals(confirmarContrasena != null ? confirmarContrasena.trim() : "")) {
+                        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        response.getWriter().write(
+                                "{\"exito\":false,\"mensaje\":\"La nueva contraseña y su confirmación no coinciden.\"}");
+                        return;
+                    }
                     usuarioDAO.actualizarContrasena(id, contrasena.trim());
+                    u.setContrasena(com.propath.conexion.SeguridadUtil.encriptarPassword(contrasena.trim()));
+                    contrasenaCambiada = true;
                 }
                 if (est != null && !est.trim().isEmpty())
                     u.setEstado(est.trim().toUpperCase());
                 ok = usuarioDAO.actualizar(u);
+                if (contrasenaCambiada) {
+                    com.propath.servicio.DesafioSeguridadServicio.invalidarTodoPorCorreo(u.getCorreo());
+                    if (com.propath.servicio.ServicioCorreo.isConfigurado()) {
+                        try {
+                            com.propath.servicio.ServicioCorreo.enviarConfirmacionCambioPassword(u.getCorreo(), u.getNombre());
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+                if (ok && id == usuarioLogueado.getId()) {
+                    HttpSession ses = request.getSession(false);
+                    if (ses != null) {
+                        ses.setAttribute("usuarioLogueado", u);
+                        ses.setAttribute("correoUsuario", u.getCorreo());
+                        ses.setAttribute("nombreUsuario", u.getNombre());
+                    }
+                }
                 mensaje = ok ? "Usuario actualizado exitosamente." : "Error al actualizar el usuario.";
             } else {
                 ok = false;

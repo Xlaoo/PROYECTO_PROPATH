@@ -100,7 +100,13 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        // Credenciales correctas: Generar desafío de doble factor (2FA) y enviar código por correo
+        // Si el servicio SMTP no está configurado (p. ej. desarrollo local sin credenciales), permitir acceso directo
+        if (!ServicioCorreo.isConfigurado()) {
+            establecerSesionAutenticada(request, response, usuario, esAjax);
+            return;
+        }
+
+        // Credenciales correctas y SMTP configurado: Generar desafío de doble factor (2FA) y enviar código por correo
         String ip = obtenerIpCliente(request);
         ResultadoSolicitud desafio = DesafioSeguridadServicio.solicitarODesafiar(
                 usuario.getCorreo(), PropositoDesafio.LOGIN, usuario.getId(), usuario.getNombre(), ip
@@ -108,11 +114,6 @@ public class LoginServlet extends HttpServlet {
 
         if (!desafio.isExito()) {
             manejarError(request, response, desafio.getMensaje(), correo, esAjax);
-            return;
-        }
-
-        if (!ServicioCorreo.isConfigurado()) {
-            manejarError(request, response, "El servicio de correo SMTP no está configurado en el servidor para enviar el código 2FA.", correo, esAjax);
             return;
         }
 
@@ -185,6 +186,13 @@ public class LoginServlet extends HttpServlet {
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
+
+        establecerSesionAutenticada(request, response, usuario, esAjax);
+    }
+
+    private void establecerSesionAutenticada(HttpServletRequest request, HttpServletResponse response,
+                                             Usuario usuario, boolean esAjax) throws IOException {
+        HttpSession session = request.getSession(true);
 
         // Renovación del identificador de sesión para prevenir Session Fixation
         try {

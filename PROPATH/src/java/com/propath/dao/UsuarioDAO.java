@@ -220,6 +220,154 @@ public class UsuarioDAO {
         return actualizarEstado(idUsuario, "INACTIVO");
     }
 
+    public boolean registrarCodigoCambioCorreo(int idUsuario, String correoActual, String nuevoCorreo, String codigoPlano) {
+        if (idUsuario <= 0 || correoActual == null || nuevoCorreo == null || codigoPlano == null) {
+            return false;
+        }
+
+        String sqlInvalidar = "UPDATE codigos_verificacion_correo SET estado = 'EXPIRADO' WHERE id_usuario = ? AND estado = 'PENDIENTE'";
+        // Vigencia estricta de 60 segundos (1 minuto) en base de datos
+        String sqlInsertar = "INSERT INTO codigos_verificacion_correo (id_usuario, correo_actual, nuevo_correo, codigo_hash, intentos_restantes, estado, fecha_expiracion) "
+                           + "VALUES (?, ?, ?, ?, 5, 'PENDIENTE', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 1 MINUTE))";
+
+        String hash = SeguridadUtil.encriptarPassword(codigoPlano);
+
+        Connection conn = null;
+        try {
+            conn = ConexionBD.getConexion();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement psInv = conn.prepareStatement(sqlInvalidar)) {
+                psInv.setInt(1, idUsuario);
+                psInv.executeUpdate();
+            }
+
+            try (PreparedStatement psIns = conn.prepareStatement(sqlInsertar)) {
+                psIns.setInt(1, idUsuario);
+                psIns.setString(2, correoActual.trim().toLowerCase());
+                psIns.setString(3, nuevoCorreo.trim().toLowerCase());
+                psIns.setString(4, hash);
+                psIns.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    public void invalidarCodigosPendientes(int idUsuario) {
+        if (idUsuario <= 0) return;
+        String sql = "UPDATE codigos_verificacion_correo SET estado = 'EXPIRADO' WHERE id_usuario = ? AND estado = 'PENDIENTE'";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idUsuario);
+            ps.executeUpdate();
+        } catch (SQLException ignored) {
+        }
+    }
+
+    public boolean verificarYAplicarCambioCorreo(int idUsuario, String nuevoCorreo, String codigoPlano) {
+        if (idUsuario <= 0 || nuevoCorreo == null || codigoPlano == null) {
+            return false;
+        }
+
+        String sqlBuscar = "SELECT id_codigo, codigo_hash, intentos_restantes "
+                         + "FROM codigos_verificacion_correo "
+                         + "WHERE id_usuario = ? AND nuevo_correo = ? AND estado = 'PENDIENTE' AND fecha_expiracion > CURRENT_TIMESTAMP "
+                         + "ORDER BY id_codigo DESC LIMIT 1";
+
+        Connection conn = null;
+        try {
+            conn = ConexionBD.getConexion();
+            conn.setAutoCommit(false);
+
+            int idCodigo = -1;
+            String hash = null;
+            int intentos = 0;
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlBuscar)) {
+                ps.setInt(1, idUsuario);
+                ps.setString(2, nuevoCorreo.trim().toLowerCase());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idCodigo = rs.getInt("id_codigo");
+                        hash = rs.getString("codigo_hash");
+                        intentos = rs.getInt("intentos_restantes");
+                    }
+                }
+            }
+
+            if (idCodigo <= 0 || hash == null) {
+                conn.rollback();
+                return false;
+            }
+
+            if (intentos <= 0) {
+                try (PreparedStatement psB = conn.prepareStatement("UPDATE codigos_verificacion_correo SET estado = 'BLOQUEADO' WHERE id_codigo = ?")) {
+                    psB.setInt(1, idCodigo);
+                    psB.executeUpdate();
+                }
+                conn.commit();
+                return false;
+            }
+
+            boolean valido = SeguridadUtil.verificarPassword(codigoPlano.trim(), hash);
+            if (!valido) {
+                int restantes = intentos - 1;
+                String sqlUpdate = (restantes <= 0)
+                        ? "UPDATE codigos_verificacion_correo SET intentos_restantes = 0, estado = 'BLOQUEADO' WHERE id_codigo = ?"
+                        : "UPDATE codigos_verificacion_correo SET intentos_restantes = ? WHERE id_codigo = ?";
+                try (PreparedStatement psU = conn.prepareStatement(sqlUpdate)) {
+                    if (restantes <= 0) {
+                        psU.setInt(1, idCodigo);
+                    } else {
+                        psU.setInt(1, restantes);
+                        psU.setInt(2, idCodigo);
+                    }
+                    psU.executeUpdate();
+                }
+                conn.commit();
+                return false;
+            }
+
+            // Código válido: Marcar como USADO y actualizar el correo del usuario
+            try (PreparedStatement psUsado = conn.prepareStatement("UPDATE codigos_verificacion_correo SET estado = 'USADO' WHERE id_codigo = ?")) {
+                psUsado.setInt(1, idCodigo);
+                psUsado.executeUpdate();
+            }
+
+            try (PreparedStatement psUser = conn.prepareStatement("UPDATE usuarios SET correo = ? WHERE id_usuario = ?")) {
+                psUser.setString(1, nuevoCorreo.trim().toLowerCase());
+                psUser.setInt(2, idUsuario);
+                psUser.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
     public boolean eliminar(int idUsuario) {
         if (idUsuario <= 0) {
             return false;

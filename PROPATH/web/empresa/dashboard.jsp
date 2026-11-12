@@ -153,9 +153,9 @@
                                                                                             <div class="container">
                                                                                                 <a class="navbar-brand d-flex align-items-center"
                                                                                                     href="${pageContext.request.contextPath}/empresa/dashboard.jsp">
-                                                                                                    <img src="${pageContext.request.contextPath}/img/logo.png"
+                                                                                                    <img src="${pageContext.request.contextPath}/img/logo-propath.png"
                                                                                                         alt="ProPath"
-                                                                                                        height="38">
+                                                                                                        height="38" style="object-fit: contain;">
                                                                                                 </a>
                                                                                                 <div
                                                                                                     class="d-flex align-items-center gap-3 ms-auto">
@@ -1795,6 +1795,7 @@
                                                                                                             aria-label="Cerrar"></button>
                                                                                                     </div>
                                                                                                     <form
+                                                                                                        id="formEditarPerfilEmpresa"
                                                                                                         action="${pageContext.request.contextPath}/empresa/oferta"
                                                                                                         method="POST">
                                                                                                         <input
@@ -1833,28 +1834,42 @@
                                                                                                                         value="<%= (miEmpresa != null && miEmpresa.getRepresentanteApellidos() != null && !miEmpresa.getRepresentanteApellidos().isEmpty()) ? miEmpresa.getRepresentanteApellidos() : (usuario.getApellidos() != null ? usuario.getApellidos() : "") %>"
                                                                                                                         required>
                                                                                                                 </div>
-                                                                                                                <div
-                                                                                                                    class="col-sm-6">
-                                                                                                                    <label
-                                                                                                                        class="form-label small fw-semibold">Correo
-                                                                                                                        Electrónico
-                                                                                                                        *</label>
-                                                                                                                    <input
-                                                                                                                        type="email"
-                                                                                                                        class="form-control"
-                                                                                                                        name="correo"
-                                                                                                                        value="<%= usuario.getCorreo() != null ? usuario.getCorreo() : "" %>"
-                                                                                                                        required>
-                                                                                                                </div>
+                                                                                                                
+<div class="col-sm-6">
+    <label class="form-label small fw-semibold">
+        Correo Electrónico *
+    </label>
+
+    <input
+        type="email"
+        class="form-control"
+        id="correoPerfilEmpresa"
+        name="correo"
+        data-correo-actual="<%= usuario.getCorreo() != null ? usuario.getCorreo() : "" %>"
+        value="<%= usuario.getCorreo() != null ? usuario.getCorreo() : "" %>"
+        autocomplete="email"
+        required>
+
+    <button
+        type="button"
+        class="btn btn-primary d-none fw-semibold mt-2"
+        id="btnValidarCorreoEmpresa"
+        style="margin-top: 8px;">
+        <i class="bi bi-patch-check me-1"></i>
+        VALIDAR CORREO
+    </button>
+
+    <div class="d-none mt-1 small text-success fw-semibold"
+         id="estadoCorreoEmpresa">
+        <i class="bi bi-check-circle-fill me-1"></i>
+        Correo verificado correctamente
+    </div>
+</div>
+
                                                                                                                 <div class="col-12 mt-3 pt-2 border-top">
                                                                                                                     <div class="small fw-bold text-secondary mb-2">
                                                                                                                         <i class="bi bi-shield-lock me-1"></i> Cambio de Contraseña (Opcional)
                                                                                                                     </div>
-                                                                                                                </div>
-                                                                                                                <div class="col-12">
-                                                                                                                    <label class="form-label small fw-semibold text-secondary">Contraseña Actual</label>
-                                                                                                                    <input type="password" class="form-control" name="contrasenaActual"
-                                                                                                                           placeholder="Requerida solo si vas a cambiar tu contraseña">
                                                                                                                 </div>
                                                                                                                 <div class="col-sm-6">
                                                                                                                     <label class="form-label small fw-semibold text-secondary">Nueva Contraseña</label>
@@ -1949,6 +1964,7 @@
                                                                                                                     data-bs-dismiss="modal">Cancelar</button>
                                                                                                                 <button
                                                                                                                     type="submit"
+                                                                                                                    id="btnGuardarPerfilEmpresa"
                                                                                                                     class="btn btn-primary rounded-pill px-4">
                                                                                                                     <i
                                                                                                                         class="bi bi-check2 me-1"></i>
@@ -2360,6 +2376,23 @@ window.verDetalleEntrevistaEmpresa = verDetalleEntrevistaEmpresa;
                                                                                             src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
                                                                                         <script type="module"
                                                                                             src="${pageContext.request.contextPath}/js/script.js"></script>
+<%@include file="/includes/modal-cambio-correo.jsp"%>
+<script src="${pageContext.request.contextPath}/js/verificacion-correo-perfil.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.ProPathCambioCorreo) {
+            window.ProPathCambioCorreo.inicializar('${pageContext.request.contextPath}');
+            window.ProPathCambioCorreo.vincularCampoCorreo({
+                inputId: 'correoPerfilEmpresa',
+                btnValidarId: 'btnValidarCorreoEmpresa',
+                estadoId: 'estadoCorreoEmpresa',
+                formId: 'formEditarPerfilEmpresa',
+                btnGuardarId: 'btnGuardarPerfilEmpresa',
+                contextPath: '${pageContext.request.contextPath}'
+            });
+        }
+    });
+</script>
 </body>
 
                                                                                     </html>

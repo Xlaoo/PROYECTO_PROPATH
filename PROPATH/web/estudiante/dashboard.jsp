@@ -111,9 +111,9 @@
                                                                                     <div class="container">
                                                                                         <a class="navbar-brand d-flex align-items-center"
                                                                                             href="${pageContext.request.contextPath}/estudiante/dashboard.jsp">
-                                                                                            <img src="${pageContext.request.contextPath}/img/logo.png"
+                                                                                            <img src="${pageContext.request.contextPath}/img/logo-propath.png"
                                                                                                 alt="ProPath"
-                                                                                                height="38">
+                                                                                                height="38" style="object-fit: contain;">
                                                                                         </a>
                                                                                         <div
                                                                                             class="d-flex align-items-center gap-3 ms-auto">
@@ -1638,6 +1638,7 @@ for (Postulacion p : misPostulaciones) {
                                                                                                     aria-label="Cerrar"></button>
                                                                                             </div>
                                                                                             <form
+                                                                                                id="formEditarPerfilEstudiante"
                                                                                                 action="${pageContext.request.contextPath}/estudiante/postular"
                                                                                                 method="POST">
                                                                                                 <input type="hidden"
@@ -1712,39 +1713,59 @@ for (Postulacion p : misPostulaciones) {
                                                                                                                 required>
                                                                                                         </div>
                                                                                                         <div
-                                                                                                            class="col-12">
+                                                                                                            class="col-sm-6">
                                                                                                             <label
-                                                                                                                class="form-label small fw-semibold">Teléfono
-                                                                                                                de
-                                                                                                                Contacto</label>
+                                                                                                                class="form-label small fw-semibold">DNI (8 dígitos) *</label>
                                                                                                             <input
                                                                                                                 type="text"
                                                                                                                 class="form-control"
-                                                                                                                name="telefono"
-                                                                                                                value="<%= (miEstudiante != null && miEstudiante.getTelefono() != null) ? miEstudiante.getTelefono() : "" %>">
+                                                                                                                name="dni"
+                                                                                                                maxlength="8"
+                                                                                                                pattern="[0-9]{8}"
+                                                                                                                value="<%= (miEstudiante != null && miEstudiante.getDni() != null) ? miEstudiante.getDni() : "" %>"
+                                                                                                                placeholder="12345678"
+                                                                                                                required>
                                                                                                         </div>
                                                                                                         <div
                                                                                                             class="col-sm-6">
                                                                                                             <label
+                                                                                                                class="form-label small fw-semibold">Teléfono de Contacto (9 dígitos)</label>
+                                                                                                            <input
+                                                                                                                type="text"
+                                                                                                                class="form-control"
+                                                                                                                name="telefono"
+                                                                                                                maxlength="9"
+                                                                                                                pattern="[0-9]{9}"
+                                                                                                                placeholder="987654321"
+                                                                                                                value="<%= (miEstudiante != null && miEstudiante.getTelefono() != null) ? miEstudiante.getTelefono() : "" %>">
+                                                                                                        </div>
+                                                                                                        <div
+                                                                                                            class="col-12">
+                                                                                                            <label
                                                                                                                 class="form-label small fw-semibold">Correo
                                                                                                                 Electrónico
                                                                                                                 *</label>
-                                                                                                            <input
-                                                                                                                type="email"
-                                                                                                                class="form-control"
-                                                                                                                name="correo"
-                                                                                                                value="<%= usuario.getCorreo() != null ? usuario.getCorreo() : "" %>"
-                                                                                                                required>
+                                                                                                            <div class="input-group">
+                                                                                                                <input
+                                                                                                                    type="email"
+                                                                                                                    class="form-control"
+                                                                                                                    id="correoPerfilEstudiante"
+                                                                                                                    name="correo"
+                                                                                                                    data-correo-actual="<%= usuario.getCorreo() != null ? usuario.getCorreo() : "" %>"
+                                                                                                                    value="<%= usuario.getCorreo() != null ? usuario.getCorreo() : "" %>"
+                                                                                                                    required>
+                                                                                                                <button type="button" class="btn btn-primary d-none fw-semibold" id="btnValidarCorreoEstudiante">
+                                                                                                                    <i class="bi bi-patch-check me-1"></i> VALIDAR CORREO
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                            <div class="d-none mt-1 small text-success fw-semibold" id="estadoCorreoEstudiante">
+                                                                                                                <i class="bi bi-check-circle-fill me-1"></i> Correo verificado correctamente
+                                                                                                            </div>
                                                                                                         </div>
                                                                                                         <div class="col-12 mt-3 pt-2 border-top">
                                                                                                             <div class="small fw-bold text-secondary mb-2">
                                                                                                                 <i class="bi bi-shield-lock me-1"></i> Cambio de Contraseña (Opcional)
                                                                                                             </div>
-                                                                                                        </div>
-                                                                                                        <div class="col-12">
-                                                                                                            <label class="form-label small fw-semibold text-secondary">Contraseña Actual</label>
-                                                                                                            <input type="password" class="form-control" name="contrasenaActual"
-                                                                                                                   placeholder="Requerida solo si vas a cambiar tu contraseña">
                                                                                                         </div>
                                                                                                         <div class="col-sm-6">
                                                                                                             <label class="form-label small fw-semibold text-secondary">Nueva Contraseña</label>
@@ -1776,6 +1797,7 @@ for (Postulacion p : misPostulaciones) {
                                                                                                             data-bs-dismiss="modal">Cancelar</button>
                                                                                                         <button
                                                                                                             type="submit"
+                                                                                                            id="btnGuardarPerfilEstudiante"
                                                                                                             class="btn btn-primary rounded-pill px-4">
                                                                                                             <i
                                                                                                                 class="bi bi-check2 me-1"></i>
@@ -2211,6 +2233,23 @@ window.validarArchivoPdf = validarArchivoPdf;
 </script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module" src="${pageContext.request.contextPath}/js/script.js"></script>
+<%@include file="/includes/modal-cambio-correo.jsp"%>
+<script src="${pageContext.request.contextPath}/js/verificacion-correo-perfil.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.ProPathCambioCorreo) {
+            window.ProPathCambioCorreo.inicializar('${pageContext.request.contextPath}');
+            window.ProPathCambioCorreo.vincularCampoCorreo({
+                inputId: 'correoPerfilEstudiante',
+                btnValidarId: 'btnValidarCorreoEstudiante',
+                estadoId: 'estadoCorreoEstudiante',
+                formId: 'formEditarPerfilEstudiante',
+                btnGuardarId: 'btnGuardarPerfilEstudiante',
+                contextPath: '${pageContext.request.contextPath}'
+            });
+        }
+    });
+</script>
 </body>
 
                                                                             </html>

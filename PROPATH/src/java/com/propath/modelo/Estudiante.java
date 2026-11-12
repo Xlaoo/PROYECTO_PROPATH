@@ -7,6 +7,7 @@ public class Estudiante implements Serializable {
 
     private int id;
     private int idUsuario;
+    private String dni;
     private String nombre;
     private String apellido;
     private String correo;
@@ -58,6 +59,14 @@ public class Estudiante implements Serializable {
 
     public void setIdUsuario(int idUsuario) {
         this.idUsuario = idUsuario;
+    }
+
+    public String getDni() {
+        return dni != null ? dni : "";
+    }
+
+    public void setDni(String dni) {
+        this.dni = dni;
     }
 
     public String getNombre() {

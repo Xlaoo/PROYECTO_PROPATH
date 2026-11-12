@@ -34,8 +34,8 @@
             <div class="container">
                 <a class="navbar-brand d-flex align-items-center" href="${pageContext.request.contextPath}/index.jsp">
                     <div class="landing-logo-container">
-                        <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath"
-                            class="landing-navbar-logo">
+                        <img src="${pageContext.request.contextPath}/img/logo-propath.png" alt="ProPath"
+                            class="landing-navbar-logo" style="object-fit: contain;">
                     </div>
                 </a>
                 <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse"
@@ -519,8 +519,8 @@
                     class="row g-4 align-items-center justify-content-between pb-4 border-bottom border-secondary border-opacity-25">
                     <div class="col-12 col-md-6 text-center text-md-start">
                         <div class="landing-footer-logo-container mb-2">
-                            <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath"
-                                class="landing-footer-logo">
+                            <img src="${pageContext.request.contextPath}/img/logo-propath.png" alt="ProPath"
+                                class="landing-footer-logo" style="object-fit: contain;">
                         </div>
                         <p class="text-secondary small mb-0">
                             “Tu camino hacia el éxito profesional”
