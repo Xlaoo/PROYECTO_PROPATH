@@ -65,24 +65,40 @@ public class RegistroServlet extends HttpServlet {
             if (nombre == null || nombre.trim().isEmpty() ||
                     apellido == null || apellido.trim().isEmpty() ||
                     razonSocial == null || razonSocial.trim().isEmpty() ||
-                    ruc == null || ruc.trim().length() != 11 ||
+                    ruc == null || !ruc.trim().matches("^[0-9]{11}$") ||
                     correo == null || correo.trim().isEmpty() ||
-                    contrasena == null || contrasena.trim().length() < 6) {
+                    contrasena == null || contrasena.trim().length() < 8) {
 
                 request.setAttribute("error",
-                        "Por favor completa todos los campos obligatorios. El RUC debe tener 11 dígitos y la contraseña al menos 6 caracteres.");
+                        "Por favor completa todos los campos obligatorios. El RUC debe tener exactamente 11 dígitos numéricos y la contraseña al menos 8 caracteres.");
                 preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
                 request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
                 return;
             }
 
-            // Validación de verificación previa de correo electrónico
-            String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_REGISTRO");
-            if (correoVerificado == null || !correoVerificado.equalsIgnoreCase(correo)) {
-                request.setAttribute("error", "Debes verificar tu correo electrónico antes de registrarte. Haz clic en 'Verificar Correo'.");
+            if (telefono != null && !telefono.trim().isEmpty() && !telefono.trim().matches("^[0-9]{7,9}$")) {
+                request.setAttribute("error", "El número telefónico debe contener entre 7 y 9 dígitos numéricos.");
                 preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
                 request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
                 return;
+            }
+
+            if (!contrasena.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
+                request.setAttribute("error", "La contraseña debe contener al menos una letra y un número para garantizar la seguridad.");
+                preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
+                request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
+                return;
+            }
+
+            // Validación de verificación previa de correo electrónico (solo obligatoria si SMTP está activo)
+            if (ServicioCorreo.isConfigurado()) {
+                String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_REGISTRO");
+                if (correoVerificado == null || !correoVerificado.equalsIgnoreCase(correo)) {
+                    request.setAttribute("error", "Debes verificar tu correo electrónico antes de registrarte. Haz clic en 'Verificar Correo'.");
+                    preservarCamposEmpresa(request, nombre, apellido, razonSocial, ruc, correo, telefono, direccion, descripcion);
+                    request.getRequestDispatcher("/registro-empresa.jsp").forward(request, response);
+                    return;
+                }
             }
 
             UsuarioDAO usuarioDAO = new UsuarioDAO();
@@ -131,6 +147,7 @@ public class RegistroServlet extends HttpServlet {
             }
 
         } else {
+            String dni = request.getParameter("dni");
             String nombre = request.getParameter("nombre");
             String apellidos = request.getParameter("apellidos");
             String correo = request.getParameter("correo");
@@ -152,27 +169,50 @@ public class RegistroServlet extends HttpServlet {
             } catch (NumberFormatException ignored) {
             }
 
-            if (nombre == null || nombre.trim().isEmpty() ||
-                    apellidos == null || apellidos.trim().isEmpty() ||
-                    correo == null || correo.trim().isEmpty() ||
-                    contrasena == null || contrasena.trim().length() < 6 ||
-                    universidad == null || universidad.trim().isEmpty() ||
-                    carrera == null || carrera.trim().isEmpty()) {
-
-                request.setAttribute("error",
-                        "Por favor completa todos los campos obligatorios. La contraseña debe tener al menos 6 caracteres.");
-                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+            if (dni == null || !dni.trim().matches("^[0-9]{8}$")) {
+                request.setAttribute("error", "El DNI es obligatorio y debe contener exactamente 8 dígitos numéricos.");
+                preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
                 request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
                 return;
             }
 
-            // Validación de verificación previa de correo electrónico
-            String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_REGISTRO");
-            if (correoVerificado == null || !correoVerificado.equalsIgnoreCase(correo)) {
-                request.setAttribute("error", "Debes verificar tu correo electrónico antes de registrarte. Haz clic en 'Verificar Correo'.");
-                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+            if (nombre == null || nombre.trim().isEmpty() ||
+                    apellidos == null || apellidos.trim().isEmpty() ||
+                    correo == null || correo.trim().isEmpty() ||
+                    contrasena == null || contrasena.trim().length() < 8 ||
+                    universidad == null || universidad.trim().isEmpty() ||
+                    carrera == null || carrera.trim().isEmpty()) {
+
+                request.setAttribute("error",
+                        "Por favor completa todos los campos obligatorios. La contraseña debe tener al menos 8 caracteres.");
+                preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
                 request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
                 return;
+            }
+
+            if (telefono != null && !telefono.trim().isEmpty() && !telefono.trim().matches("^[0-9]{9}$")) {
+                request.setAttribute("error", "El teléfono celular debe contener exactamente 9 dígitos numéricos.");
+                preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+                request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
+                return;
+            }
+
+            if (!contrasena.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
+                request.setAttribute("error", "La contraseña debe contener al menos una letra y un número para garantizar la seguridad.");
+                preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+                request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
+                return;
+            }
+
+            // Validación de verificación previa de correo electrónico (solo obligatoria si SMTP está activo)
+            if (ServicioCorreo.isConfigurado()) {
+                String correoVerificado = (String) session.getAttribute("CORREO_VERIFICADO_REGISTRO");
+                if (correoVerificado == null || !correoVerificado.equalsIgnoreCase(correo)) {
+                    request.setAttribute("error", "Debes verificar tu correo electrónico antes de registrarte. Haz clic en 'Verificar Correo'.");
+                    preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+                    request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
+                    return;
+                }
             }
 
             UsuarioDAO usuarioDAO = new UsuarioDAO();
@@ -180,12 +220,20 @@ public class RegistroServlet extends HttpServlet {
 
             if (usuarioDAO.obtenerPorCorreo(correo) != null) {
                 request.setAttribute("error", "El correo electrónico ya se encuentra registrado.");
-                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+                preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+                request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
+                return;
+            }
+
+            if (estudianteDAO.obtenerPorDni(dni.trim()) != null) {
+                request.setAttribute("error", "El DNI ingresado ya se encuentra registrado en el sistema.");
+                preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
                 request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
                 return;
             }
 
             Estudiante est = new Estudiante();
+            est.setDni(dni.trim());
             est.setNombre(nombre.trim());
             est.setApellido(apellidos.trim());
             est.setUniversidad(universidad.trim());
@@ -211,7 +259,7 @@ public class RegistroServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/login.jsp?registro=exito");
             } else {
                 request.setAttribute("error", "Ocurrió un error al registrar el estudiante en la base de datos. Por favor verifica que el servidor de base de datos esté activo e intenta nuevamente.");
-                preservarCamposEstudiante(request, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
+                preservarCamposEstudiante(request, dni, nombre, apellidos, correo, universidad, carrera, ciclo, telefono);
                 request.getRequestDispatcher("/registro-estudiante.jsp").forward(request, response);
             }
         }
@@ -230,9 +278,10 @@ public class RegistroServlet extends HttpServlet {
         request.setAttribute("descripcion", descripcion);
     }
 
-    private void preservarCamposEstudiante(HttpServletRequest request, String nombre, String apellidos,
+    private void preservarCamposEstudiante(HttpServletRequest request, String dni, String nombre, String apellidos,
                                            String correo, String universidad, String carrera,
                                            int ciclo, String telefono) {
+        request.setAttribute("dni", dni);
         request.setAttribute("nombre", nombre);
         request.setAttribute("apellidos", apellidos);
         request.setAttribute("correo", correo);

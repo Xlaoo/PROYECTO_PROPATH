@@ -1449,7 +1449,7 @@
                 <h2 class="modal-title h5" id="modalEditarPerfilEmpresaLabel"><i class="bi bi-building-gear me-2"></i>Actualizar Mi Empresa</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form action="${pageContext.request.contextPath}/empresa/oferta" method="POST">
+            <form id="formEditarPerfilEmpresa" action="${pageContext.request.contextPath}/empresa/oferta" method="POST">
                 <input type="hidden" name="accion" value="actualizarPerfilEmpresa">
                 <div class="modal-body modal-body-propath">
                     <div class="row g-3">
@@ -1465,14 +1465,18 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold">Correo Electrónico *</label>
-                            <input type="email" class="form-control" name="correo" value="<%= escaparHtml(usuario.getCorreo()) %>" required>
+                            <input type="email" class="form-control" id="correoPerfilEmpresa" name="correo"
+                                   data-correo-actual="<%= escaparHtml(usuario.getCorreo()) %>"
+                                   value="<%= escaparHtml(usuario.getCorreo()) %>" autocomplete="email" required>
+                            <button type="button" class="btn btn-primary d-none fw-semibold mt-2" id="btnValidarCorreoEmpresa">
+                                <i class="bi bi-patch-check me-1"></i> VALIDAR CORREO
+                            </button>
+                            <div class="d-none mt-1 small text-success fw-semibold" id="estadoCorreoEmpresa">
+                                <i class="bi bi-check-circle-fill me-1"></i> Correo verificado correctamente
+                            </div>
                         </div>
                         <div class="col-12 pt-2 border-top">
                             <div class="small fw-bold text-secondary mb-2"><i class="bi bi-shield-lock me-1"></i>Cambio de Contraseña (Opcional)</div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold text-secondary">Contraseña Actual</label>
-                            <input type="password" class="form-control" name="contrasenaActual" placeholder="Requerida solo si vas a cambiar contraseña">
                         </div>
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Nueva Contraseña</label>
@@ -1511,7 +1515,7 @@
                     </button>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-check2 me-1"></i>Guardar Cambios</button>
+                        <button type="submit" id="btnGuardarPerfilEmpresa" class="btn btn-primary rounded-pill px-4"><i class="bi bi-check2 me-1"></i>Guardar Cambios</button>
                     </div>
                 </div>
             </form>
@@ -1967,5 +1971,22 @@ window.cambiarModalidadEntrevista = cambiarModalidadEntrevista;
 </script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module" src="${pageContext.request.contextPath}/js/script.js"></script>
+<%@include file="/includes/modal-cambio-correo.jsp"%>
+<script src="${pageContext.request.contextPath}/js/verificacion-correo-perfil.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.ProPathCambioCorreo) {
+            window.ProPathCambioCorreo.inicializar('${pageContext.request.contextPath}');
+            window.ProPathCambioCorreo.vincularCampoCorreo({
+                inputId: 'correoPerfilEmpresa',
+                btnValidarId: 'btnValidarCorreoEmpresa',
+                estadoId: 'estadoCorreoEmpresa',
+                formId: 'formEditarPerfilEmpresa',
+                btnGuardarId: 'btnGuardarPerfilEmpresa',
+                contextPath: '${pageContext.request.contextPath}'
+            });
+        }
+    });
+</script>
 </body>
 </html>

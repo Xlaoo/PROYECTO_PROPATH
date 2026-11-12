@@ -403,6 +403,52 @@ public class PostulacionDAO {
         return lista;
     }
 
+    public java.util.Map<String, Integer> obtenerEstadisticasSeleccionEmpresa(int idEmpresa) {
+        java.util.Map<String, Integer> stats = new java.util.HashMap<>();
+        stats.put("totalPostulantes", 0);
+        stats.put("postulados", 0);
+        stats.put("enRevision", 0);
+        stats.put("seleccionados", 0);
+        stats.put("noSeleccionados", 0);
+        stats.put("retirados", 0);
+
+        String sql = "SELECT p.estado, COUNT(*) AS cantidad "
+                   + "FROM postulaciones p "
+                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
+                   + "WHERE o.id_empresa = ? "
+                   + "GROUP BY p.estado";
+
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idEmpresa);
+            try (ResultSet rs = ps.executeQuery()) {
+                int total = 0;
+                while (rs.next()) {
+                    String estado = rs.getString("estado");
+                    int cant = rs.getInt("cantidad");
+                    total += cant;
+
+                    if ("POSTULADO".equalsIgnoreCase(estado)) {
+                        stats.put("postulados", cant);
+                    } else if ("EN_REVISION".equalsIgnoreCase(estado)) {
+                        stats.put("enRevision", cant);
+                    } else if ("SELECCIONADO".equalsIgnoreCase(estado)) {
+                        stats.put("seleccionados", cant);
+                    } else if ("NO_SELECCIONADO".equalsIgnoreCase(estado)) {
+                        stats.put("noSeleccionados", cant);
+                    } else if ("RETIRADO".equalsIgnoreCase(estado)) {
+                        stats.put("retirados", cant);
+                    }
+                }
+                stats.put("totalPostulantes", total);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return stats;
+    }
+
     private Postulacion mapearPostulacion(ResultSet rs) throws SQLException {
         Postulacion p = new Postulacion();
         p.setId(rs.getInt("id_postulacion"));

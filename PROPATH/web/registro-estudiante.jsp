@@ -19,7 +19,7 @@
                 
                 <div class="login-header text-center mb-4">
                     <a href="${pageContext.request.contextPath}/index.jsp">
-                        <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath" class="logo-login">
+                        <img src="${pageContext.request.contextPath}/img/logo-propath.png" alt="ProPath" class="logo-login">
                     </a>
                     <div>
                         <span class="login-badge-role">
@@ -42,6 +42,21 @@
 
                 <form action="${pageContext.request.contextPath}/registro" method="POST" autocomplete="off" id="formRegistroEstudiante">
                     <input type="hidden" name="tipo" value="estudiante">
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">DNI (8 dígitos) *</label>
+                            <input type="text" class="form-control" id="dniInput" name="dni" placeholder="12345678"
+                                   pattern="[0-9]{8}" maxlength="8"
+                                   value="<%= request.getAttribute("dni") != null ? request.getAttribute("dni") : "" %>" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Teléfono / Celular (9 dígitos)</label>
+                            <input type="tel" class="form-control" name="telefono" placeholder="987654321"
+                                   pattern="[0-9]{9}" maxlength="9"
+                                   value="<%= request.getAttribute("telefono") != null ? request.getAttribute("telefono") : "" %>">
+                        </div>
+                    </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-sm-6">
@@ -76,11 +91,6 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Contraseña *</label>
-                        <input type="password" class="form-control" name="contrasena" placeholder="Mínimo 6 caracteres" minlength="6" required>
-                    </div>
-
                     <div class="row g-2 mb-3">
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Universidad / Instituto *</label>
@@ -96,14 +106,13 @@
 
                     <div class="row g-2 mb-3">
                         <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Contraseña *</label>
+                            <input type="password" class="form-control" name="contrasena" placeholder="Mínimo 8 caracteres (letras y números)" minlength="8" required>
+                        </div>
+                        <div class="col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Ciclo Actual *</label>
                             <input type="number" class="form-control" name="ciclo" min="1" max="14" placeholder="7" 
                                    value="<%= request.getAttribute("ciclo") != null ? request.getAttribute("ciclo") : "7" %>" required>
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Teléfono / Celular</label>
-                            <input type="tel" class="form-control" name="telefono" placeholder="987654321" 
-                                   value="<%= request.getAttribute("telefono") != null ? request.getAttribute("telefono") : "" %>">
                         </div>
                     </div>
 
@@ -245,11 +254,16 @@
                             textoCorreoModal.innerText = data.correoMascara || correo;
                             ProPathSeguridad.limpiarAlerta(alertasArea);
                             inputCodigo.value = '';
+                            inputCodigo.disabled = false;
+                            btnConfirmar.disabled = false;
                             bsModal.show();
                             setTimeout(() => inputCodigo.focus(), 500);
 
-                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 60);
-                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 600);
+                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 30);
+                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 60, function () {
+                                inputCodigo.disabled = true;
+                                btnConfirmar.disabled = true;
+                            });
                         } else {
                             alert(data.mensaje);
                         }
@@ -350,10 +364,15 @@
                     .then(data => {
                         if (data.exito) {
                             ProPathSeguridad.mostrarAlerta(alertasArea, 'info', data.mensaje);
-                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 60);
-                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 600);
                             inputCodigo.value = '';
+                            inputCodigo.disabled = false;
+                            btnConfirmar.disabled = false;
                             inputCodigo.focus();
+                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 30);
+                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 60, function () {
+                                inputCodigo.disabled = true;
+                                btnConfirmar.disabled = true;
+                            });
                         } else {
                             ProPathSeguridad.mostrarAlerta(alertasArea, 'danger', data.mensaje);
                             if (data.segundosEspera) {

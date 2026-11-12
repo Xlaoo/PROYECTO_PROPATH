@@ -11,9 +11,10 @@
     <div class="sidebar-brand">
         <div class="sidebar-logo-container">
             <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="d-block text-decoration-none">
-                <img src="${pageContext.request.contextPath}/img/logo.png" 
+                <img src="${pageContext.request.contextPath}/img/logo-propath.png" 
                      alt="ProPath" 
-                     class="sidebar-logo">
+                     class="sidebar-logo"
+                     style="object-fit: contain;">
             </a>
         </div>
     </div>

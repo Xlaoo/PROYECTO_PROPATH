@@ -41,15 +41,15 @@ public final class DesafioSeguridadServicio {
         }
     }
 
-    // Alfabeto de 31 caracteres alfanuméricos sin caracteres visualmente ambiguos (excluye 0, O, 1, I, L)
-    private static final char[] ALFABETO = "23456789ABCDEFGHJKMNPQRSTUVWXYZ".toCharArray();
+    // Alfabeto numérico de 6 dígitos para códigos de verificación
+    private static final char[] ALFABETO = "0123456789".toCharArray();
     private static final int LONGITUD_CODIGO = 6;
 
-    private static final long EXPIRACION_MS = 10 * 60 * 1000L; // 10 minutos
-    private static final long COOLDOWN_REENVIO_MS = 60 * 1000L; // 60 segundos
+    private static final long EXPIRACION_MS = 60 * 1000L; // 60 segundos (1 minuto exacto)
+    private static final long COOLDOWN_REENVIO_MS = 30 * 1000L; // 30 segundos
     private static final int MAX_INTENTOS = 5;
 
-    private static final int MAX_SOLICITUDES_VENTANA = 5;
+    private static final int MAX_SOLICITUDES_VENTANA = 15;
     private static final long VENTANA_RATE_LIMIT_MS = 10 * 60 * 1000L; // 10 minutos
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -196,13 +196,16 @@ public final class DesafioSeguridadServicio {
         String clave = claveDesafio(correoNorm, proposito);
         long ahora = System.currentTimeMillis();
 
-        // 1. Validar Rate Limit por IP
-        if (ip != null && !ip.isBlank() && !validarRateLimit(historialSolicitudesIp, ip.trim(), ahora)) {
-            return new ResultadoSolicitud(false, "Demasiadas solicitudes desde esta conexión. Espera unos minutos.", null, 60, 0);
+        // 1. Validar Rate Limit por IP (excepto conexiones locales de desarrollo)
+        boolean esLocal = ip != null && (ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1")
+                || ip.equalsIgnoreCase("localhost") || ip.equals("::1")
+                || ip.startsWith("127.") || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172."));
+        if (!esLocal && ip != null && !ip.isBlank() && !validarRateLimit(historialSolicitudesIp, ip.trim(), ahora)) {
+            return new ResultadoSolicitud(false, "Demasiadas solicitudes desde esta conexión. Espera unos minutos.", null, 30, 0);
         }
 
         // 2. Validar Rate Limit por cuenta/correo
-        if (!validarRateLimit(historialSolicitudesCorreo, correoNorm, ahora)) {
+        if (!esLocal && !validarRateLimit(historialSolicitudesCorreo, correoNorm, ahora)) {
             return new ResultadoSolicitud(false, "Has superado el límite de solicitudes para esta cuenta. Espera unos minutos.", null, 60, 0);
         }
 
@@ -257,7 +260,7 @@ public final class DesafioSeguridadServicio {
 
         if (ahora > desafio.expiracion) {
             desafiosActivos.remove(clave);
-            return new ResultadoValidacion(false, "El código ha expirado (validez de 10 minutos). Solicita uno nuevo.", 0, null, null, correoNorm);
+            return new ResultadoValidacion(false, "El código ha expirado (validez de 1 minuto). Solicita uno nuevo.", 0, null, null, correoNorm);
         }
 
         if (desafio.intentosRestantes <= 0) {

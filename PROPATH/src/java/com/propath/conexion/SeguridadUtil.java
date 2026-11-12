@@ -28,4 +28,42 @@ public final class SeguridadUtil {
             return false;
         }
     }
+
+    /**
+     * Escapa caracteres especiales de HTML de forma segura contra inyecciones XSS.
+     * Maneja valores nulos retornando cadena vacía y reemplaza los caracteres peligrosos.
+     *
+     * @param texto Cadena de entrada a sanitizar.
+     * @return Cadena segura para su inserción en atributos o contenido HTML.
+     */
+    public static String escaparHtml(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(texto.length() + 16);
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+            switch (c) {
+                case '&':
+                    sb.append("&amp;");
+                    break;
+                case '<':
+                    sb.append("&lt;");
+                    break;
+                case '>':
+                    sb.append("&gt;");
+                    break;
+                case '"':
+                    sb.append("&quot;");
+                    break;
+                case '\'':
+                    sb.append("&#39;");
+                    break;
+                default:
+                    sb.append(c);
+                    break;
+            }
+        }
+        return sb.toString();
+    }
 }

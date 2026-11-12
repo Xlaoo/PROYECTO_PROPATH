@@ -27,14 +27,12 @@ public final class RecuperacionContrasenaServicio {
 
     private static class DatosCodigo {
         final int idUsuario;
-        final String correo;
         final String hashCodigo;
         final long expiracion;
         int intentosRestantes;
 
-        DatosCodigo(int idUsuario, String correo, String hashCodigo, long expiracion, int intentosRestantes) {
+        DatosCodigo(int idUsuario, String hashCodigo, long expiracion, int intentosRestantes) {
             this.idUsuario = idUsuario;
-            this.correo = correo;
             this.hashCodigo = hashCodigo;
             this.expiracion = expiracion;
             this.intentosRestantes = intentosRestantes;
@@ -104,7 +102,7 @@ public final class RecuperacionContrasenaServicio {
         String hash = calcularHashSha256(codigo);
 
         long ahora = System.currentTimeMillis();
-        codigosPorCorreo.put(normalizado, new DatosCodigo(idUsuario, normalizado, hash, ahora + EXPIRACION_CODIGO_MS, MAX_INTENTOS_CODIGO));
+        codigosPorCorreo.put(normalizado, new DatosCodigo(idUsuario, hash, ahora + EXPIRACION_CODIGO_MS, MAX_INTENTOS_CODIGO));
         ultimoEnvioPorCorreo.put(normalizado, ahora);
         return codigo;
     }

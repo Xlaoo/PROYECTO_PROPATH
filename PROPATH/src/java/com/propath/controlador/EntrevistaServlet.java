@@ -171,8 +171,8 @@ public class EntrevistaServlet extends HttpServlet {
             }
 
             if ("VIRTUAL".equalsIgnoreCase(modalidad)
-                    && !lugar.trim().matches("https?://[^\\s]+")) {
-                volver(req, res, "error", "Ingresa un enlace válido (https://...) para la entrevista virtual.");
+                    && !lugar.trim().matches("^(https?://)?[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/.*)?$")) {
+                volver(req, res, "error", "Ingresa un enlace de reunión válido (ej. Google Meet, Zoom o Teams).");
                 return;
             }
 
@@ -188,10 +188,15 @@ public class EntrevistaServlet extends HttpServlet {
                 return;
             }
 
-            if (!"SELECCIONADO".equalsIgnoreCase(p.getEstado())) {
+            if ("NO_SELECCIONADO".equalsIgnoreCase(p.getEstado()) || "RETIRADO".equalsIgnoreCase(p.getEstado())) {
                 volver(req, res, "error",
-                        "Debes seleccionar al postulante antes de programar una entrevista.");
+                        "No se puede programar entrevista a un postulante no seleccionado o retirado.");
                 return;
+            }
+
+            // Si estaba en revisión o postulado, promover automáticamente a SELECCIONADO
+            if (!"SELECCIONADO".equalsIgnoreCase(p.getEstado())) {
+                postulacionDAO.actualizarEstado(idPostulacion, "SELECCIONADO");
             }
 
             if ("actualizar".equalsIgnoreCase(accion)) {

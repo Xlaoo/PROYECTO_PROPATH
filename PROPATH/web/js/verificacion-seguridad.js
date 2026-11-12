@@ -20,8 +20,8 @@
 
             const sanitizar = (val) => {
                 if (!val) return '';
-                // Permitir mayúsculas y dígitos del alfabeto seguro
-                return val.toUpperCase().replace(/[^23456789ABCDEFGHJKMNPQRSTUVWXYZ]/g, '').slice(0, 6);
+                // Permitir mayúsculas y todos los dígitos (0-9 y A-Z) sin excluir 0 ni 1
+                return val.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 6);
             };
 
             inputElement.addEventListener('input', function () {
@@ -82,19 +82,22 @@
         },
 
         /**
-         * Inicia el temporizador de vencimiento de 10 minutos.
+         * Inicia el temporizador de vencimiento de 1 minuto (60 segundos).
          */
-        iniciarTemporizadorExpiracion: function (elementoTexto, segundos) {
+        iniciarTemporizadorExpiracion: function (elementoTexto, segundos, onExpirado) {
             if (!elementoTexto) return;
             clearInterval(this.timers.expiracion);
 
             let restante = parseInt(segundos, 10);
-            if (isNaN(restante) || restante <= 0) restante = 600; // 10 minutos
+            if (isNaN(restante) || restante <= 0) restante = 60; // 60 segundos (1 minuto exacto)
 
             const actualizar = () => {
                 if (restante <= 0) {
                     clearInterval(this.timers.expiracion);
-                    elementoTexto.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-circle-fill me-1"></i> El código ha vencido. Solicita uno nuevo.</span>';
+                    elementoTexto.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-circle-fill me-1"></i> El código ha vencido (validez de 1 minuto). Solicita uno nuevo.</span>';
+                    if (typeof onExpirado === 'function') {
+                        onExpirado();
+                    }
                 } else {
                     const min = Math.floor(restante / 60);
                     const seg = restante % 60;

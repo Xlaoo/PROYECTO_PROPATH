@@ -85,11 +85,31 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold">Correo Electrónico *</label>
-                            <input type="email" class="form-control" id="adminLogCorreo" value="<%= corAdminLog %>" required>
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="adminLogCorreo" value="<%= corAdminLog %>" data-correo-actual="<%= corAdminLog %>" required>
+                                <button type="button" class="btn btn-primary d-none fw-semibold" id="btnValidarCorreoAdmin">
+                                    <i class="bi bi-patch-check me-1"></i> VALIDAR CORREO
+                                </button>
+                            </div>
+                            <div class="d-none mt-1 small text-success fw-semibold" id="estadoCorreoAdmin">
+                                <i class="bi bi-check-circle-fill me-1"></i> Correo verificado correctamente
+                            </div>
+                            <div class="form-text small text-muted">
+                                <i class="bi bi-info-circle me-1"></i> Si modificas tu correo, debes pulsar "VALIDAR CORREO" para recibir el código de verificación (válido por 1 minuto).
+                            </div>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold">Nueva Contraseña (opcional)</label>
-                            <input type="password" class="form-control" id="adminLogContrasena" placeholder="Dejar en blanco para conservar actual" minlength="6">
+                        <div class="col-12 mt-2 pt-2 border-top">
+                            <div class="small fw-bold text-secondary mb-2">
+                                <i class="bi bi-shield-lock me-1"></i> Cambio de Contraseña (Opcional)
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Nueva Contraseña</label>
+                            <input type="password" class="form-control" id="adminLogContrasena" placeholder="Mínimo 8 caracteres" minlength="8">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Confirmar Nueva Contraseña</label>
+                            <input type="password" class="form-control" id="adminLogConfirmarContrasena" placeholder="Repite la nueva contraseña" minlength="8">
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold">Rol Asignado</label>
@@ -107,11 +127,47 @@
         </div>
     </div>
 </div>
+<%@include file="/includes/modal-cambio-correo.jsp"%>
+<script src="${pageContext.request.contextPath}/js/verificacion-correo-perfil.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.ProPathCambioCorreo) {
+            window.ProPathCambioCorreo.inicializar('${pageContext.request.contextPath}');
+            window.ProPathCambioCorreo.vincularCampoCorreo({
+                inputId: 'adminLogCorreo',
+                btnValidarId: 'btnValidarCorreoAdmin',
+                estadoId: 'estadoCorreoAdmin',
+                formId: 'formMiCuentaAdmin',
+                btnGuardarId: 'btnGuardarMiCuentaAdmin',
+                contextPath: '${pageContext.request.contextPath}',
+                onGuardar: guardarMiCuentaAdmin
+            });
+        }
+    });
+
     async function guardarMiCuentaAdmin(e) {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
+
+        const pass = document.getElementById('adminLogContrasena').value.trim();
+        const confPass = document.getElementById('adminLogConfirmarContrasena').value.trim();
+
+        if (pass.length > 0) {
+            if (pass.length < 8) {
+                mostrarModalMensaje('Seguridad de Contraseña', 'La nueva contraseña debe tener al menos 8 caracteres.', 'warning');
+                return;
+            }
+            if (pass !== confPass) {
+                mostrarModalMensaje('Seguridad de Contraseña', 'La nueva contraseña y su confirmación no coinciden.', 'warning');
+                return;
+            }
+        }
+
+        ejecutarGuardadoAdminDirecto();
+    }
+
+    async function ejecutarGuardadoAdminDirecto() {
         const btn = document.getElementById('btnGuardarMiCuentaAdmin');
-        btn.disabled = true;
+        if (btn) btn.disabled = true;
 
         const body = new URLSearchParams({
             accion: 'actualizarUsuario',
@@ -120,6 +176,7 @@
             apellidos: document.getElementById('adminLogApellidos').value.trim(),
             correo: document.getElementById('adminLogCorreo').value.trim(),
             contrasena: document.getElementById('adminLogContrasena').value.trim(),
+            confirmarContrasena: document.getElementById('adminLogConfirmarContrasena').value.trim(),
             estado: 'ACTIVO'
         });
 
@@ -134,11 +191,11 @@
                 mostrarModalMensaje('Mi Cuenta Actualizada', data.mensaje || 'Datos actualizados exitosamente.', 'success', () => window.location.reload());
             } else {
                 mostrarModalMensaje('Error', data.mensaje || 'No se pudieron actualizar los datos.', 'danger');
-                btn.disabled = false;
+                if (btn) btn.disabled = false;
             }
         } catch (err) {
             mostrarModalMensaje('Error de Conexión', 'No se pudo conectar: ' + err.message, 'danger');
-            btn.disabled = false;
+            if (btn) btn.disabled = false;
         }
     }
 </script>

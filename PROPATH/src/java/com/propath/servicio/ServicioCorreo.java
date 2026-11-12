@@ -142,7 +142,7 @@ public final class ServicioCorreo {
                 + saludo + ",\n\n"
                 + "Gracias por iniciar tu registro en ProPath. Tu código de verificación de 6 caracteres es:\n\n"
                 + "    " + codigo + "\n\n"
-                + "Este código es de un solo uso y vencerá en 10 minutos.\n"
+                + "Este código es de un solo uso y vencerá en 1 minuto (60 segundos).\n"
                 + "Para continuar, ingresa este código en el modal de verificación de la página de registro:\n"
                 + enlace + "\n\n"
                 + "Nota: Este enlace abrirá la página donde debes ingresar tu código. Nunca compartas este código con nadie.\n"
@@ -152,12 +152,13 @@ public final class ServicioCorreo {
         String cuerpoHtml = construirPlantillaHtml(
                 "Verifica tu Correo Electrónico",
                 saludo,
-                "Gracias por registrarte en ProPath. Para completar la creación de tu cuenta y verificar que eres el propietario de este correo, ingresa el siguiente código en el modal de verificación:",
+                "Gracias por registrarte en ProPath. Para completar la creación de tu cuenta y verificar que eres el propietario de este correo, ingresa el siguiente código en el modal de verificación (vigencia: 1 minuto):",
                 codigo,
                 "Verificar Correo",
                 enlace,
                 "Al hacer clic en el botón se abrirá la página de ProPath con el modal para ingresar tu código. Por tu seguridad, el enlace no autentica automáticamente.",
-                "Si no intentaste crear una cuenta en ProPath, ignora este mensaje con total seguridad. Tu correo no será registrado."
+                "Si no intentaste crear una cuenta en ProPath, ignora este mensaje con total seguridad. Tu correo no será registrado.",
+                "1 minuto (60 segundos)"
         );
 
         enviarCorreoMultipart(destinatario, asunto, textoPlano, cuerpoHtml);
@@ -228,6 +229,37 @@ public final class ServicioCorreo {
                 enlace,
                 "El enlace te llevará al formulario de recuperación de ProPath. Por seguridad, la nueva contraseña solo podrá definirse tras verificar el código.",
                 "Si no solicitaste este cambio, no te preocupes: tu cuenta sigue protegida y tu contraseña actual no ha sido modificada."
+        );
+
+        enviarCorreoMultipart(destinatario, asunto, textoPlano, cuerpoHtml);
+    }
+
+    // =========================================================================
+    // 3.1. PLANTILLA: Verificación de cambio de correo electrónico (1 minuto)
+    // =========================================================================
+    public static void enviarCodigoCambioCorreo(String destinatario, String nombre, String codigo) throws Exception {
+        String saludo = (nombre != null && !nombre.isBlank()) ? "Hola " + escaparHtml(nombre.trim()) : "Estimado(a) usuario(a)";
+        String asunto = "Código de verificación para cambio de correo - ProPath";
+
+        String textoPlano = "ProPath - Portal de Prácticas y Empleo\n\n"
+                + saludo + ",\n\n"
+                + "Has solicitado actualizar el correo electrónico de tu cuenta ProPath.\n"
+                + "Tu código de verificación de 6 dígitos es:\n\n"
+                + "    " + codigo + "\n\n"
+                + "Este código es de un solo uso y vencerá en 1 minuto (60 segundos).\n"
+                + "Ingresa este código en el modal de verificación de ProPath para confirmar tu nuevo correo.\n\n"
+                + "Si no solicitaste este cambio, puedes ignorar este mensaje; tu cuenta mantendrá su correo anterior.\n\n"
+                + "© 2026 ProPath. Todos los derechos reservados.";
+
+        String cuerpoHtml = construirPlantillaHtml(
+                "Verificación de Correo Electrónico",
+                saludo,
+                "Has solicitado cambiar el correo electrónico asociado a tu cuenta ProPath. Para confirmar que tienes acceso a este correo, ingresa el siguiente código de seguridad en el modal de verificación de tu perfil:",
+                codigo,
+                null,
+                null,
+                "Por estrictas medidas de seguridad, este código tiene una vigencia de exactamente 1 minuto (60 segundos).",
+                "Si no solicitaste modificar tu correo, puedes ignorar este mensaje. Tu correo anterior permanecerá sin cambios."
         );
 
         enviarCorreoMultipart(destinatario, asunto, textoPlano, cuerpoHtml);
@@ -328,6 +360,13 @@ public final class ServicioCorreo {
     private static String construirPlantillaHtml(String tituloHeader, String saludo, String introduccion,
                                                 String codigo, String textoBoton, String enlaceBoton,
                                                 String aclaracionEnlace, String avisoSeguridad) {
+        return construirPlantillaHtml(tituloHeader, saludo, introduccion, codigo, textoBoton, enlaceBoton, aclaracionEnlace, avisoSeguridad, "10 minutos");
+    }
+
+    private static String construirPlantillaHtml(String tituloHeader, String saludo, String introduccion,
+                                                String codigo, String textoBoton, String enlaceBoton,
+                                                String aclaracionEnlace, String avisoSeguridad, String vigenciaTexto) {
+        String vigencia = (vigenciaTexto != null && !vigenciaTexto.isBlank()) ? vigenciaTexto : "10 minutos";
         return "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'></head>"
                 + "<body style='margin:0;padding:20px;background-color:#F5F7FB;font-family:Arial,Helvetica,sans-serif;color:#17243B;'>"
                 + "<table align='center' border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width:600px;background:#ffffff;border-radius:12px;border:1px solid #DCE4EF;overflow:hidden;box-shadow:0 4px 14px rgba(16,36,72,0.06);'>"
@@ -350,7 +389,7 @@ public final class ServicioCorreo {
                 + "        </span>"
                 + "      </div>"
                 + "    </div>"
-                + "    <p style='text-align:center;color:#64748B;font-size:13px;margin:0 0 25px;'>⏰ Este código es de un solo uso y vencerá en <strong>10 minutos</strong> (máximo 5 intentos).</p>"
+                + "    <p style='text-align:center;color:#64748B;font-size:13px;margin:0 0 25px;'>⏰ Este código es de un solo uso y vencerá en <strong>" + escaparHtml(vigencia) + "</strong> (máximo 5 intentos).</p>"
                 + "    <!-- Botón hacia la aplicación -->"
                 + "    <div style='text-align:center;margin:25px 0 15px;'>"
                 + "      <a href='" + escaparHtml(enlaceBoton) + "' style='display:inline-block;background:#2563EB;color:#FFFFFF;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 28px;border-radius:6px;box-shadow:0 2px 6px rgba(37,99,235,0.3);'>" + escaparHtml(textoBoton) + "</a>"
@@ -413,6 +452,7 @@ public final class ServicioCorreo {
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(host, port), TIMEOUT_CONEXION_MS);
             }
+            socket.setTcpNoDelay(true);
             socket.setSoTimeout(TIMEOUT_LECTURA_MS);
 
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
@@ -433,7 +473,8 @@ public final class ServicioCorreo {
                 sslSocket.startHandshake();
 
                 socket = sslSocket;
-                socket.setSoTimeout(TIMEOUT_LECTURA_MS);
+                socket.setTcpNoDelay(true);
+            socket.setSoTimeout(TIMEOUT_LECTURA_MS);
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
                 writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
 

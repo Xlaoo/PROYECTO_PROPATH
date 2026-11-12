@@ -21,7 +21,7 @@
                 
                 <div class="login-header text-center mb-4">
                     <a href="${pageContext.request.contextPath}/index.jsp">
-                        <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath" class="logo-login">
+                        <img src="${pageContext.request.contextPath}/img/logo-propath.png" alt="ProPath" class="logo-login">
                     </a>
                     <div>
                         <span class="login-badge-role">
@@ -95,22 +95,22 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Contraseña *</label>
-                        <input type="password" class="form-control" name="contrasena" placeholder="Mínimo 6 caracteres" minlength="6" required>
-                    </div>
-
                     <div class="row g-2 mb-3">
                         <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Teléfono</label>
-                            <input type="tel" class="form-control" name="telefono" placeholder="01-4567890" 
-                                   value="<%= request.getAttribute("telefono") != null ? request.getAttribute("telefono") : "" %>">
+                            <label class="form-label small fw-semibold text-secondary">Contraseña *</label>
+                            <input type="password" class="form-control" name="contrasena" placeholder="Mínimo 8 caracteres (letras y números)" minlength="8" required>
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Dirección / Sede</label>
-                            <input type="text" class="form-control" name="direccion" placeholder="Av. Javier Prado 1234, Lima" 
-                                   value="<%= request.getAttribute("direccion") != null ? request.getAttribute("direccion") : "" %>">
+                            <label class="form-label small fw-semibold text-secondary">Teléfono (7 a 9 dígitos)</label>
+                            <input type="tel" class="form-control" name="telefono" placeholder="987654321" pattern="[0-9]{7,9}" maxlength="9"
+                                   value="<%= request.getAttribute("telefono") != null ? request.getAttribute("telefono") : "" %>">
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Dirección / Sede</label>
+                        <input type="text" class="form-control" name="direccion" placeholder="Av. Javier Prado 1234, Lima" 
+                               value="<%= request.getAttribute("direccion") != null ? request.getAttribute("direccion") : "" %>">
                     </div>
 
                     <div class="mb-3">
@@ -256,11 +256,16 @@
                             textoCorreoModal.innerText = data.correoMascara || correo;
                             ProPathSeguridad.limpiarAlerta(alertasArea);
                             inputCodigo.value = '';
+                            inputCodigo.disabled = false;
+                            btnConfirmar.disabled = false;
                             bsModal.show();
                             setTimeout(() => inputCodigo.focus(), 500);
 
-                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 60);
-                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 600);
+                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 30);
+                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 60, function () {
+                                inputCodigo.disabled = true;
+                                btnConfirmar.disabled = true;
+                            });
                         } else {
                             alert(data.mensaje);
                         }
@@ -348,9 +353,14 @@
                         if (data.exito) {
                             ProPathSeguridad.mostrarAlerta(alertasArea, 'info', data.mensaje);
                             inputCodigo.value = '';
+                            inputCodigo.disabled = false;
+                            btnConfirmar.disabled = false;
                             inputCodigo.focus();
-                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 60);
-                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 600);
+                            ProPathSeguridad.iniciarCooldownReenvio(btnReenviar, data.segundosEspera || 30);
+                            ProPathSeguridad.iniciarTemporizadorExpiracion(textoExpiracion, data.segundosExpiracion || 60, function () {
+                                inputCodigo.disabled = true;
+                                btnConfirmar.disabled = true;
+                            });
                         } else {
                             ProPathSeguridad.mostrarAlerta(alertasArea, 'danger', data.mensaje);
                             btnReenviar.disabled = false;

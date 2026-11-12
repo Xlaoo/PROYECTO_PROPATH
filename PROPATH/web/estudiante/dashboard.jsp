@@ -1368,7 +1368,7 @@
                 <h2 class="modal-title h5"><i class="bi bi-person-gear me-2"></i>Actualizar Mi Perfil</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form action="${pageContext.request.contextPath}/estudiante/postular" method="POST">
+            <form id="formEditarPerfilEstudiante" action="${pageContext.request.contextPath}/estudiante/postular" method="POST">
                 <input type="hidden" name="accion" value="actualizarPerfil">
                 <div class="modal-body modal-body-propath">
                     <div class="row g-3">
@@ -1394,19 +1394,32 @@
                             <input type="number" class="form-control" name="ciclo" min="1" max="14" value="<%= (miEstudiante != null && miEstudiante.getCiclo() > 0) ? miEstudiante.getCiclo() : 1 %>" required>
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label small fw-semibold">Teléfono</label>
-                            <input type="text" class="form-control" name="telefono" value="<%= miEstudiante != null ? escaparHtml(miEstudiante.getTelefono()) : "" %>">
+                            <label class="form-label small fw-semibold">DNI (8 dígitos) *</label>
+                            <input type="text" class="form-control" name="dni" maxlength="8" pattern="[0-9]{8}"
+                                   value="<%= (miEstudiante != null && miEstudiante.getDni() != null) ? escaparHtml(miEstudiante.getDni()) : "" %>"
+                                   placeholder="12345678" required>
                         </div>
                         <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Teléfono de Contacto (9 dígitos)</label>
+                            <input type="text" class="form-control" name="telefono" maxlength="9" pattern="[0-9]{9}" placeholder="987654321"
+                                   value="<%= miEstudiante != null ? escaparHtml(miEstudiante.getTelefono()) : "" %>">
+                        </div>
+                        <div class="col-12">
                             <label class="form-label small fw-semibold">Correo Electrónico *</label>
-                            <input type="email" class="form-control" name="correo" value="<%= escaparHtml(usuario.getCorreo()) %>" required>
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="correoPerfilEstudiante" name="correo"
+                                       data-correo-actual="<%= escaparHtml(usuario.getCorreo()) %>"
+                                       value="<%= escaparHtml(usuario.getCorreo()) %>" required>
+                                <button type="button" class="btn btn-primary d-none fw-semibold" id="btnValidarCorreoEstudiante">
+                                    <i class="bi bi-patch-check me-1"></i> VALIDAR CORREO
+                                </button>
+                            </div>
+                            <div class="d-none mt-1 small text-success fw-semibold" id="estadoCorreoEstudiante">
+                                <i class="bi bi-check-circle-fill me-1"></i> Correo verificado correctamente
+                            </div>
                         </div>
                         <div class="col-12 mt-2 pt-2 border-top">
                             <div class="small fw-bold text-secondary mb-2"><i class="bi bi-shield-lock me-1"></i>Cambio de Contraseña (Opcional)</div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold text-secondary">Contraseña Actual</label>
-                            <input type="password" class="form-control" name="contrasenaActual" placeholder="Requerida solo si vas a cambiar contraseña">
                         </div>
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Nueva Contraseña</label>
@@ -1425,7 +1438,7 @@
                     </button>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-check2 me-1"></i>Guardar Cambios</button>
+                        <button type="submit" id="btnGuardarPerfilEstudiante" class="btn btn-primary rounded-pill px-4"><i class="bi bi-check2 me-1"></i>Guardar Cambios</button>
                     </div>
                 </div>
             </form>
@@ -1954,5 +1967,22 @@ window.postularDesdeDetalle = postularDesdeDetalle;
 </script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module" src="${pageContext.request.contextPath}/js/script.js"></script>
+<%@include file="/includes/modal-cambio-correo.jsp"%>
+<script src="${pageContext.request.contextPath}/js/verificacion-correo-perfil.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.ProPathCambioCorreo) {
+            window.ProPathCambioCorreo.inicializar('${pageContext.request.contextPath}');
+            window.ProPathCambioCorreo.vincularCampoCorreo({
+                inputId: 'correoPerfilEstudiante',
+                btnValidarId: 'btnValidarCorreoEstudiante',
+                estadoId: 'estadoCorreoEstudiante',
+                formId: 'formEditarPerfilEstudiante',
+                btnGuardarId: 'btnGuardarPerfilEstudiante',
+                contextPath: '${pageContext.request.contextPath}'
+            });
+        }
+    });
+</script>
 </body>
 </html>
