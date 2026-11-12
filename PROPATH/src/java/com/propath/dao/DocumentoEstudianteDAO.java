@@ -142,7 +142,7 @@ public class DocumentoEstudianteDAO {
             return "El archivo supera el tamaño máximo permitido de 5 MB.";
         }
 
-        String storageDir = System.getProperty("PROPATH_STORAGE_DIR", "D:\\PROYECTO_PROPATH\\PROPATH\\storage\\documentos");
+        String storageDir = obtenerDirectorioAlmacenamiento();
         java.io.File dir = new java.io.File(storageDir);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -223,24 +223,14 @@ public class DocumentoEstudianteDAO {
         if (doc == null || doc.getArchivoRuta() == null) {
             return null;
         }
-        String storageDir = System.getProperty("PROPATH_STORAGE_DIR", "D:\\PROYECTO_PROPATH\\PROPATH\\storage\\documentos");
-        java.io.File file = new java.io.File(storageDir, doc.getArchivoRuta());
-        if (!file.exists()) {
-            return null;
-        }
-        try {
-            return java.nio.file.Files.readAllBytes(file.toPath());
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return descargarCv(doc.getArchivoRuta());
     }
 
     public byte[] descargarCv(String nombreArchivo) {
         if (nombreArchivo == null || nombreArchivo.trim().isEmpty()) {
             return null;
         }
-        String storageDir = System.getProperty("PROPATH_STORAGE_DIR", "D:\\PROYECTO_PROPATH\\PROPATH\\storage\\documentos");
+        String storageDir = obtenerDirectorioAlmacenamiento();
         java.io.File file = new java.io.File(storageDir, nombreArchivo.trim());
         if (!file.exists() || !file.isFile()) {
             return null;
@@ -258,7 +248,7 @@ public class DocumentoEstudianteDAO {
         if (doc == null) {
             return false;
         }
-        String storageDir = System.getProperty("PROPATH_STORAGE_DIR", "D:\\PROYECTO_PROPATH\\PROPATH\\storage\\documentos");
+        String storageDir = obtenerDirectorioAlmacenamiento();
         java.io.File file = new java.io.File(storageDir, doc.getArchivoRuta());
         if (file.exists()) {
             file.delete();
@@ -270,6 +260,127 @@ public class DocumentoEstudianteDAO {
             ps.executeUpdate();
         } catch (SQLException ignored) {}
         return true;
+    }
+
+    public String guardarDocumento(int idEstudiante, String tipoDocumento, String nombreOriginal, byte[] contenido) {
+        if (idEstudiante <= 0) {
+            return "ID de estudiante no válido.";
+        }
+        String tipoNorm = normalizarTipoDocumento(tipoDocumento);
+        if ("CV".equals(tipoNorm)) {
+            return guardarCv(idEstudiante, nombreOriginal, contenido);
+        }
+        if (contenido == null || contenido.length == 0) {
+            return "El archivo seleccionado está vacío.";
+        }
+        if (contenido.length > 5 * 1024 * 1024) {
+            return "El archivo supera el tamaño máximo permitido de 5 MB.";
+        }
+
+        String nombreLimpio = nombreOriginal != null ? new java.io.File(nombreOriginal).getName().trim() : "documento.pdf";
+        String lower = nombreLimpio.toLowerCase();
+        String detectedContentType = detectarTipoContenidoSeguro(contenido, lower);
+        if (detectedContentType == null) {
+            return "Formato no permitido o archivo corrupto. Solo se aceptan PDF, PNG o JPG válidos (máx. 5 MB).";
+        }
+
+        List<DocumentoEstudiante> actuales = listarPorEstudiante(idEstudiante);
+        if (actuales.size() >= 10) {
+            return "Has alcanzado el límite máximo de 10 documentos almacenados.";
+        }
+
+        String ext = "application/pdf".equals(detectedContentType) ? ".pdf"
+                : ("image/png".equals(detectedContentType) ? ".png" : ".jpg");
+        String storageDir = obtenerDirectorioAlmacenamiento();
+        java.io.File dir = new java.io.File(storageDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        String safeFileName = "doc_" + tipoNorm.toLowerCase() + "_" + idEstudiante + "_"
+                + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 10) + ext;
+        java.io.File targetFile = new java.io.File(dir, safeFileName);
+        try {
+            java.nio.file.Files.write(targetFile.toPath(), contenido);
+        } catch (java.io.IOException e) {
+            return "Error al guardar el documento en almacenamiento: " + e.getMessage();
+        }
+
+        DocumentoEstudiante doc = new DocumentoEstudiante();
+        doc.setIdEstudiante(idEstudiante);
+        doc.setTipoDocumento(tipoNorm);
+        doc.setNombreArchivo(nombreLimpio);
+        doc.setArchivoRuta(safeFileName);
+        doc.setTamanioBytes(contenido.length);
+        doc.setContentType(detectedContentType);
+        int idGen = guardar(doc);
+        if (idGen <= 0) {
+            targetFile.delete();
+            return "No se pudo registrar el documento en la base de datos.";
+        }
+        return null;
+    }
+
+    public byte[] descargarPorId(int idDocumento) {
+        DocumentoEstudiante doc = obtenerPorId(idDocumento);
+        if (doc == null || doc.getArchivoRuta() == null) {
+            return null;
+        }
+        return descargarCv(doc.getArchivoRuta());
+    }
+
+    public boolean eliminarPorId(int idDocumento, int idEstudiante) {
+        DocumentoEstudiante doc = obtenerPorId(idDocumento);
+        if (doc == null || doc.getIdEstudiante() != idEstudiante) {
+            return false;
+        }
+        if ("CV".equalsIgnoreCase(doc.getTipoDocumento())) {
+            return eliminarCv(idEstudiante);
+        }
+        String storageDir = obtenerDirectorioAlmacenamiento();
+        java.io.File file = new java.io.File(storageDir, doc.getArchivoRuta());
+        if (file.exists()) {
+            file.delete();
+        }
+        return eliminar(idDocumento);
+    }
+
+    private String normalizarTipoDocumento(String tipo) {
+        if (tipo == null) return "OTRO";
+        String t = tipo.trim().toUpperCase();
+        if ("CV".equals(t)) return "CV";
+        if ("CARTA_PRESENTACION".equals(t)) return "CARTA_PRESENTACION";
+        if ("CERTIFICADO".equals(t)) return "CERTIFICADO";
+        if ("CONSTANCIA".equals(t)) return "CONSTANCIA";
+        if ("PORTAFOLIO".equals(t)) return "PORTAFOLIO";
+        return "OTRO";
+    }
+
+    private String detectarTipoContenidoSeguro(byte[] bytes, String fileNameLower) {
+        if (bytes.length >= 4 && bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46
+                && fileNameLower.endsWith(".pdf")) {
+            return "application/pdf";
+        }
+        if (bytes.length >= 8 && (bytes[0] & 0xFF) == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && fileNameLower.endsWith(".png")) {
+            return "image/png";
+        }
+        if (bytes.length >= 3 && (bytes[0] & 0xFF) == 0xFF && (bytes[1] & 0xFF) == 0xD8 && (bytes[2] & 0xFF) == 0xFF
+                && (fileNameLower.endsWith(".jpg") || fileNameLower.endsWith(".jpeg"))) {
+            return "image/jpeg";
+        }
+        return null;
+    }
+
+    private String obtenerDirectorioAlmacenamiento() {
+        String customDir = System.getProperty("PROPATH_STORAGE_DIR");
+        if (customDir != null && !customDir.trim().isEmpty()) {
+            return customDir.trim();
+        }
+        java.io.File legacyDir = new java.io.File("D:\\PROYECTO_PROPATH");
+        if (legacyDir.exists() && legacyDir.isDirectory()) {
+            return "D:\\PROYECTO_PROPATH\\PROPATH\\storage\\documentos";
+        }
+        return java.nio.file.Paths.get(System.getProperty("user.home"), "propath_storage", "documentos").toString();
     }
 
     private DocumentoEstudiante mapearDocumento(ResultSet rs) throws SQLException {

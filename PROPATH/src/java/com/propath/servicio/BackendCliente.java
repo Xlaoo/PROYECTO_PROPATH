@@ -25,7 +25,8 @@ import java.util.Map;
 public class BackendCliente {
 
     public static String generarAuthHeader(String correo, String contrasena) {
-        if (correo == null || contrasena == null) return null;
+        if (correo == null || contrasena == null)
+            return null;
         String credencial = correo + ":" + contrasena;
         return "Basic " + Base64.getEncoder().encodeToString(credencial.getBytes(StandardCharsets.UTF_8));
     }
@@ -118,6 +119,10 @@ public class BackendCliente {
         return new OfertaPracticaDAO().listarTodas();
     }
 
+    public static List<OfertaPractica> listarOfertasPorEmpresa(int idEmpresa) {
+        return new OfertaPracticaDAO().listarPorEmpresa(idEmpresa);
+    }
+
     public static List<Postulacion> listarPostulaciones(String authHeader) {
         return listarPostulaciones();
     }
@@ -128,6 +133,30 @@ public class BackendCliente {
 
     public static List<Postulacion> listarPostulacionesPorEstudiante(int idEstudiante) {
         return new PostulacionDAO().listarPorEstudiante(idEstudiante);
+    }
+
+    public static List<Postulacion> listarPostulacionesPorEmpresa(int idEmpresa) {
+        return new PostulacionDAO().listarPorEmpresa(idEmpresa);
+    }
+
+    public static List<Entrevista> listarEntrevistasPorEmpresa(int idEmpresa) {
+        return new EntrevistaDAO().listarPorEmpresa(idEmpresa);
+    }
+
+    public static List<Entrevista> listarEntrevistasPorEstudiante(int idEstudiante) {
+        return new EntrevistaDAO().listarPorEstudiante(idEstudiante);
+    }
+
+    public static List<DocumentoEstudiante> listarDocumentosEstudiante(int idEstudiante) {
+        return new DocumentoEstudianteDAO().listarPorEstudiante(idEstudiante);
+    }
+
+    public static Map<String, Object> obtenerEstadisticasEmpresa(int idEmpresa) {
+        return new PostulacionDAO().obtenerEstadisticasEmpresa(idEmpresa);
+    }
+
+    public static Map<String, Object> obtenerEstadisticasEstudiante(int idEstudiante) {
+        return new PostulacionDAO().obtenerEstadisticasEstudiante(idEstudiante);
     }
 
     public static List<Usuario> listarUsuarios() {
@@ -179,7 +208,8 @@ public class BackendCliente {
     }
 
     public static String eliminarRegistroConDetalle(String recurso, int id) {
-        if (recurso == null || id <= 0) return "Parámetros inválidos.";
+        if (recurso == null || id <= 0)
+            return "Parámetros inválidos.";
         boolean ok = false;
         if ("usuario".equalsIgnoreCase(recurso) || "usuarios".equalsIgnoreCase(recurso)) {
             ok = new UsuarioDAO().eliminar(id);
@@ -199,7 +229,8 @@ public class BackendCliente {
 
     public static String activarCuentaEmpresa(int idEmpresa) {
         Empresa emp = new EmpresaDAO().obtenerPorId(idEmpresa);
-        if (emp == null) return "Empresa no encontrada.";
+        if (emp == null)
+            return "Empresa no encontrada.";
         new EmpresaDAO().actualizarEstado(idEmpresa, "APROBADA");
         new UsuarioDAO().actualizarEstado(emp.getIdUsuario(), "ACTIVO");
         return null;
@@ -207,22 +238,22 @@ public class BackendCliente {
 
     public static String obtenerDetallePostulacion(int idPostulacion) {
         Postulacion p = new PostulacionDAO().obtenerPorId(idPostulacion);
-        if (p == null) return null;
+        if (p == null)
+            return null;
         return String.format(
-            "{\"id\":%d,\"estado\":\"%s\",\"fechaPostulacion\":\"%s\",\"motivoRechazo\":\"%s\",\"estudiante\":{\"id\":%d,\"nombre\":\"%s\",\"apellidos\":\"%s\",\"correo\":\"%s\"},\"oferta\":{\"id\":%d,\"titulo\":\"%s\",\"empresa\":{\"id\":%d,\"razonSocial\":\"%s\"}}}",
-            p.getId(),
-            p.getEstado() != null ? p.getEstado() : "",
-            p.getFechaPostulacion() != null ? p.getFechaPostulacion() : "",
-            p.getMotivoRechazo() != null ? p.getMotivoRechazo() : "",
-            p.getIdEstudiante(),
-            p.getEstudiante() != null ? escaparJson(p.getEstudiante()) : "",
-            "",
-            "",
-            p.getIdOferta(),
-            p.getOferta() != null ? escaparJson(p.getOferta()) : "",
-            0,
-            p.getEmpresa() != null ? escaparJson(p.getEmpresa()) : ""
-        );
+                "{\"id\":%d,\"estado\":\"%s\",\"fechaPostulacion\":\"%s\",\"motivoRechazo\":\"%s\",\"estudiante\":{\"id\":%d,\"nombre\":\"%s\",\"apellidos\":\"%s\",\"correo\":\"%s\"},\"oferta\":{\"id\":%d,\"titulo\":\"%s\",\"empresa\":{\"id\":%d,\"razonSocial\":\"%s\"}}}",
+                p.getId(),
+                p.getEstado() != null ? p.getEstado() : "",
+                p.getFechaPostulacion() != null ? p.getFechaPostulacion() : "",
+                p.getMotivoRechazo() != null ? p.getMotivoRechazo() : "",
+                p.getIdEstudiante(),
+                p.getEstudiante() != null ? escaparJson(p.getEstudiante()) : "",
+                "",
+                "",
+                p.getIdOferta(),
+                p.getOferta() != null ? escaparJson(p.getOferta()) : "",
+                0,
+                p.getEmpresa() != null ? escaparJson(p.getEmpresa()) : "");
     }
 
     public static String obtenerRespuestasPostulacion(int idPostulacion, int idEstudiante) {
@@ -233,11 +264,12 @@ public class BackendCliente {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < lista.size(); i++) {
             RespuestaPostulacion r = lista.get(i);
-            if (i > 0) sb.append(",");
+            if (i > 0)
+                sb.append(",");
             sb.append("{\"numeroPregunta\":").append(r.getNumeroPregunta())
-              .append(",\"pregunta\":\"").append(escaparJson(r.getPregunta()))
-              .append("\",\"respuesta\":\"").append(escaparJson(r.getRespuesta()))
-              .append("\"}");
+                    .append(",\"pregunta\":\"").append(escaparJson(r.getPregunta()))
+                    .append("\",\"respuesta\":\"").append(escaparJson(r.getRespuesta()))
+                    .append("\"}");
         }
         sb.append("]");
         return sb.toString();
@@ -314,7 +346,8 @@ public class BackendCliente {
             String estado) {
         UsuarioDAO dao = new UsuarioDAO();
         Usuario u = dao.obtenerPorId(id);
-        if (u == null) return "Usuario no encontrado.";
+        if (u == null)
+            return "Usuario no encontrado.";
         u.setNombre(nombre);
         u.setApellidos(apellidos);
         u.setCorreo(correo);
@@ -342,13 +375,16 @@ public class BackendCliente {
     public static String actualizarEmpresa(int id, String razonSocial, String ruc, String telefono, String estado) {
         EmpresaDAO dao = new EmpresaDAO();
         Empresa emp = dao.obtenerPorId(id);
-        if (emp == null) return "Empresa no encontrada.";
+        if (emp == null)
+            return "Empresa no encontrada.";
         emp.setRazonSocial(razonSocial);
         emp.setRuc(ruc);
         emp.setTelefono(telefono);
-        if (estado != null) emp.setEstado(estado);
+        if (estado != null)
+            emp.setEstado(estado);
         boolean ok = dao.actualizar(emp);
-        if (estado != null) dao.actualizarEstado(id, estado);
+        if (estado != null)
+            dao.actualizarEstado(id, estado);
         return ok ? null : "Error al actualizar la empresa.";
     }
 
@@ -356,7 +392,8 @@ public class BackendCliente {
             String descripcion) {
         EmpresaDAO dao = new EmpresaDAO();
         Empresa emp = dao.obtenerPorId(id);
-        if (emp == null) return "Empresa no encontrada.";
+        if (emp == null)
+            return "Empresa no encontrada.";
         emp.setRazonSocial(razonSocial);
         emp.setRuc(ruc);
         emp.setTelefono(telefono);
@@ -371,15 +408,18 @@ public class BackendCliente {
             String contrasena) {
         EmpresaDAO dao = new EmpresaDAO();
         Empresa emp = dao.obtenerPorId(id);
-        if (emp == null) return "Empresa no encontrada.";
+        if (emp == null)
+            return "Empresa no encontrada.";
         emp.setRazonSocial(razonSocial);
         emp.setRuc(ruc);
         emp.setTelefono(telefono);
         emp.setDireccion(direccion);
         emp.setDescripcion(descripcion);
-        if (estado != null) emp.setEstado(estado);
+        if (estado != null)
+            emp.setEstado(estado);
         boolean ok = dao.actualizar(emp);
-        if (estado != null) dao.actualizarEstado(id, estado);
+        if (estado != null)
+            dao.actualizarEstado(id, estado);
         if (emp.getIdUsuario() > 0) {
             UsuarioDAO udao = new UsuarioDAO();
             Usuario u = udao.obtenerPorId(emp.getIdUsuario());
@@ -401,8 +441,10 @@ public class BackendCliente {
             String remuneracion, String estado) {
         OfertaPracticaDAO dao = new OfertaPracticaDAO();
         OfertaPractica o = dao.obtenerPorId(id);
-        if (o == null) return "Oferta no encontrada.";
-        if (o.getIdEmpresa() != idEmpresa) return "La oferta no pertenece a la empresa.";
+        if (o == null)
+            return "Oferta no encontrada.";
+        if (o.getIdEmpresa() != idEmpresa)
+            return "La oferta no pertenece a la empresa.";
         o.setTitulo(titulo);
         o.setDescripcion(descripcion);
         o.setRequisitos(requisitos);
@@ -412,7 +454,8 @@ public class BackendCliente {
         o.setFechaLimite(fechaLimite);
         o.setUbicacion(ubicacion);
         o.setRemuneracion(remuneracion);
-        if (estado != null) o.setEstado(estado);
+        if (estado != null)
+            o.setEstado(estado);
         boolean ok = dao.actualizar(o);
         return ok ? null : "Error al actualizar la oferta.";
     }
@@ -421,7 +464,8 @@ public class BackendCliente {
             String universidad, String carrera, int ciclo, String telefono) {
         EstudianteDAO dao = new EstudianteDAO();
         Estudiante est = dao.obtenerPorId(idEstudiante);
-        if (est == null) return "Estudiante no encontrado.";
+        if (est == null)
+            return "Estudiante no encontrado.";
         est.setNombre(nombre);
         est.setApellido(apellidos);
         est.setUniversidad(universidad);
@@ -451,7 +495,8 @@ public class BackendCliente {
         EntrevistaDAO dao = new EntrevistaDAO();
         if (idEntrevista != null && idEntrevista > 0) {
             Entrevista e = dao.obtenerPorId(idEntrevista);
-            if (e == null) return "Entrevista no encontrada.";
+            if (e == null)
+                return "Entrevista no encontrada.";
             e.setFechaEntrevista(fecha);
             e.setHoraEntrevista(hora);
             e.setModalidad(modalidad);
@@ -486,29 +531,31 @@ public class BackendCliente {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < lista.size(); i++) {
             Entrevista e = lista.get(i);
-            if (i > 0) sb.append(",");
+            if (i > 0)
+                sb.append(",");
             sb.append("{")
-              .append("\"id\":").append(e.getId()).append(",")
-              .append("\"idPostulacion\":").append(e.getIdPostulacion()).append(",")
-              .append("\"idEmpresa\":").append(e.getIdEmpresa()).append(",")
-              .append("\"idEstudiante\":").append(e.getIdEstudiante()).append(",")
-              .append("\"estudiante\":\"").append(escaparJson(e.getEstudiante())).append("\",")
-              .append("\"oferta\":\"").append(escaparJson(e.getOferta())).append("\",")
-              .append("\"empresa\":\"").append(escaparJson(e.getEmpresa())).append("\",")
-              .append("\"fecha\":\"").append(escaparJson(e.getFechaEntrevista())).append("\",")
-              .append("\"hora\":\"").append(escaparJson(e.getHoraEntrevista())).append("\",")
-              .append("\"modalidad\":\"").append(escaparJson(e.getModalidad())).append("\",")
-              .append("\"enlaceLugar\":\"").append(escaparJson(e.getLugarEnlace())).append("\",")
-              .append("\"estado\":\"").append(escaparJson(e.getEstado())).append("\",")
-              .append("\"observaciones\":\"").append(escaparJson(e.getObservaciones())).append("\"")
-              .append("}");
+                    .append("\"id\":").append(e.getId()).append(",")
+                    .append("\"idPostulacion\":").append(e.getIdPostulacion()).append(",")
+                    .append("\"idEmpresa\":").append(e.getIdEmpresa()).append(",")
+                    .append("\"idEstudiante\":").append(e.getIdEstudiante()).append(",")
+                    .append("\"estudiante\":\"").append(escaparJson(e.getEstudiante())).append("\",")
+                    .append("\"oferta\":\"").append(escaparJson(e.getOferta())).append("\",")
+                    .append("\"empresa\":\"").append(escaparJson(e.getEmpresa())).append("\",")
+                    .append("\"fecha\":\"").append(escaparJson(e.getFechaEntrevista())).append("\",")
+                    .append("\"hora\":\"").append(escaparJson(e.getHoraEntrevista())).append("\",")
+                    .append("\"modalidad\":\"").append(escaparJson(e.getModalidad())).append("\",")
+                    .append("\"enlaceLugar\":\"").append(escaparJson(e.getLugarEnlace())).append("\",")
+                    .append("\"estado\":\"").append(escaparJson(e.getEstado())).append("\",")
+                    .append("\"observaciones\":\"").append(escaparJson(e.getObservaciones())).append("\"")
+                    .append("}");
         }
         sb.append("]");
         return sb.toString();
     }
 
     private static String escaparJson(String s) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 }

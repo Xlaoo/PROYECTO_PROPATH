@@ -7,23 +7,29 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PostulacionDAO {
 
+    private static final String BASE_SELECT =
+            "SELECT p.id_postulacion, p.id_estudiante, p.id_oferta, p.fecha_postulacion, p.estado, p.motivo_rechazo, "
+            + "CONCAT(e.nombres, ' ', e.apellidos) AS estudiante, "
+            + "e.carrera AS carrera_estudiante, e.universidad AS universidad_estudiante, "
+            + "o.id_empresa, o.titulo AS oferta, emp.razon_social AS empresa, "
+            + "EXISTS(SELECT 1 FROM documentos_estudiante d WHERE d.id_estudiante = e.id_estudiante AND d.tipo_documento = 'CV') AS cv_disponible "
+            + "FROM postulaciones p "
+            + "INNER JOIN estudiantes e ON p.id_estudiante = e.id_estudiante "
+            + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
+            + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa ";
+
     public List<Postulacion> listarTodas() {
         List<Postulacion> lista = new ArrayList<>();
-        String sql = "SELECT p.id_postulacion, p.id_estudiante, p.id_oferta, p.fecha_postulacion, p.estado, p.motivo_rechazo, "
-                   + "CONCAT(e.nombres, ' ', e.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM postulaciones p "
-                   + "INNER JOIN estudiantes e ON p.id_estudiante = e.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "ORDER BY p.id_postulacion DESC";
+        String sql = BASE_SELECT + "ORDER BY p.id_postulacion DESC";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -40,16 +46,7 @@ public class PostulacionDAO {
 
     public List<Postulacion> listarPorEstudiante(int idEstudiante) {
         List<Postulacion> lista = new ArrayList<>();
-        String sql = "SELECT p.id_postulacion, p.id_estudiante, p.id_oferta, p.fecha_postulacion, p.estado, p.motivo_rechazo, "
-                   + "CONCAT(e.nombres, ' ', e.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM postulaciones p "
-                   + "INNER JOIN estudiantes e ON p.id_estudiante = e.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "WHERE p.id_estudiante = ? "
-                   + "ORDER BY p.id_postulacion DESC";
+        String sql = BASE_SELECT + "WHERE p.id_estudiante = ? ORDER BY p.id_postulacion DESC";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -66,18 +63,28 @@ public class PostulacionDAO {
         return lista;
     }
 
+    public List<Postulacion> listarPorEmpresa(int idEmpresa) {
+        List<Postulacion> lista = new ArrayList<>();
+        String sql = BASE_SELECT + "WHERE o.id_empresa = ? ORDER BY p.id_postulacion DESC";
+
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idEmpresa);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapearPostulacion(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
     public List<Postulacion> listarPorOferta(int idOferta) {
         List<Postulacion> lista = new ArrayList<>();
-        String sql = "SELECT p.id_postulacion, p.id_estudiante, p.id_oferta, p.fecha_postulacion, p.estado, p.motivo_rechazo, "
-                   + "CONCAT(e.nombres, ' ', e.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM postulaciones p "
-                   + "INNER JOIN estudiantes e ON p.id_estudiante = e.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "WHERE p.id_oferta = ? "
-                   + "ORDER BY p.id_postulacion DESC";
+        String sql = BASE_SELECT + "WHERE p.id_oferta = ? ORDER BY p.id_postulacion DESC";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -95,15 +102,7 @@ public class PostulacionDAO {
     }
 
     public Postulacion obtenerPorId(int idPostulacion) {
-        String sql = "SELECT p.id_postulacion, p.id_estudiante, p.id_oferta, p.fecha_postulacion, p.estado, p.motivo_rechazo, "
-                   + "CONCAT(e.nombres, ' ', e.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM postulaciones p "
-                   + "INNER JOIN estudiantes e ON p.id_estudiante = e.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "WHERE p.id_postulacion = ?";
+        String sql = BASE_SELECT + "WHERE p.id_postulacion = ?";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -183,6 +182,14 @@ public class PostulacionDAO {
             conn.commit();
             return idPostulacionGenerada;
 
+        } catch (SQLIntegrityConstraintViolationException dup) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {
+                }
+            }
+            return -2;
         } catch (SQLException e) {
             if (conn != null) {
                 try {
@@ -413,7 +420,205 @@ public class PostulacionDAO {
         }
         p.setEstado(rs.getString("estado"));
         p.setMotivoRechazo(rs.getString("motivo_rechazo"));
+        try {
+            p.setIdEmpresa(rs.getInt("id_empresa"));
+            p.setCarreraEstudiante(rs.getString("carrera_estudiante"));
+            p.setUniversidadEstudiante(rs.getString("universidad_estudiante"));
+            p.setCvDisponible(rs.getBoolean("cv_disponible"));
+        } catch (SQLException ignored) {
+        }
         return p;
+    }
+
+    public Map<String, Object> obtenerEstadisticasEmpresa(int idEmpresa) {
+        Map<String, Object> stats = new HashMap<>();
+        long totalOfertas = 0, ofertasActivas = 0, ofertasCerradas = 0, ofertasPendientes = 0, ofertasRechazadas = 0, totalVacantes = 0;
+        long totalPost = 0, postulados = 0, enRevision = 0, seleccionados = 0, noSeleccionados = 0;
+        long totalEnt = 0, entProgramadas = 0, entRealizadas = 0, entCanceladas = 0;
+        List<Map<String, Object>> resumenOfertas = new ArrayList<>();
+
+        String sqlOfertas = "SELECT estado, COUNT(*) AS cant, COALESCE(SUM(vacantes), 0) AS vac FROM ofertas_practicas WHERE id_empresa = ? GROUP BY estado";
+        String sqlPost = "SELECT p.estado, COUNT(*) AS cant FROM postulaciones p INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta WHERE o.id_empresa = ? GROUP BY p.estado";
+        String sqlEnt = "SELECT en.estado, COUNT(*) AS cant FROM entrevistas en INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta WHERE o.id_empresa = ? GROUP BY en.estado";
+        String sqlPorOferta =
+                "SELECT o.id_oferta, o.titulo, o.estado, o.vacantes, o.fecha_limite, "
+                + "COUNT(DISTINCT p.id_postulacion) AS total_post, "
+                + "SUM(CASE WHEN p.estado = 'POSTULADO' THEN 1 ELSE 0 END) AS postulados, "
+                + "SUM(CASE WHEN p.estado = 'EN_REVISION' THEN 1 ELSE 0 END) AS en_revision, "
+                + "SUM(CASE WHEN p.estado = 'SELECCIONADO' THEN 1 ELSE 0 END) AS seleccionados, "
+                + "SUM(CASE WHEN p.estado = 'NO_SELECCIONADO' THEN 1 ELSE 0 END) AS no_seleccionados, "
+                + "(SELECT COUNT(*) FROM entrevistas en2 INNER JOIN postulaciones p2 ON en2.id_postulacion = p2.id_postulacion WHERE p2.id_oferta = o.id_oferta AND en2.estado = 'PROGRAMADA') AS ent_programadas, "
+                + "(SELECT COUNT(*) FROM entrevistas en3 INNER JOIN postulaciones p3 ON en3.id_postulacion = p3.id_postulacion WHERE p3.id_oferta = o.id_oferta AND en3.estado = 'REALIZADA') AS ent_realizadas "
+                + "FROM ofertas_practicas o "
+                + "LEFT JOIN postulaciones p ON p.id_oferta = o.id_oferta "
+                + "WHERE o.id_empresa = ? "
+                + "GROUP BY o.id_oferta, o.titulo, o.estado, o.vacantes, o.fecha_limite "
+                + "ORDER BY o.id_oferta DESC";
+
+        try (Connection conn = ConexionBD.getConexion()) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlOfertas)) {
+                ps.setInt(1, idEmpresa);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String est = rs.getString("estado");
+                        long c = rs.getLong("cant");
+                        long v = rs.getLong("vac");
+                        totalOfertas += c;
+                        if ("ACTIVA".equalsIgnoreCase(est)) {
+                            ofertasActivas += c;
+                            totalVacantes += v;
+                        } else if ("CERRADA".equalsIgnoreCase(est) || "INACTIVA".equalsIgnoreCase(est)) {
+                            ofertasCerradas += c;
+                        } else if ("PENDIENTE".equalsIgnoreCase(est)) {
+                            ofertasPendientes += c;
+                        } else if ("RECHAZADA".equalsIgnoreCase(est)) {
+                            ofertasRechazadas += c;
+                        }
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sqlPost)) {
+                ps.setInt(1, idEmpresa);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String est = rs.getString("estado");
+                        long c = rs.getLong("cant");
+                        totalPost += c;
+                        if ("POSTULADO".equalsIgnoreCase(est)) postulados += c;
+                        else if ("EN_REVISION".equalsIgnoreCase(est)) enRevision += c;
+                        else if ("SELECCIONADO".equalsIgnoreCase(est)) seleccionados += c;
+                        else if ("NO_SELECCIONADO".equalsIgnoreCase(est)) noSeleccionados += c;
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sqlEnt)) {
+                ps.setInt(1, idEmpresa);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String est = rs.getString("estado");
+                        long c = rs.getLong("cant");
+                        totalEnt += c;
+                        if ("PROGRAMADA".equalsIgnoreCase(est)) entProgramadas += c;
+                        else if ("REALIZADA".equalsIgnoreCase(est)) entRealizadas += c;
+                        else if ("CANCELADA".equalsIgnoreCase(est)) entCanceladas += c;
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sqlPorOferta)) {
+                ps.setInt(1, idEmpresa);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("idOferta", rs.getInt("id_oferta"));
+                        row.put("titulo", rs.getString("titulo"));
+                        row.put("estado", rs.getString("estado"));
+                        row.put("vacantes", rs.getInt("vacantes"));
+                        row.put("fechaLimite", rs.getDate("fecha_limite") != null ? rs.getDate("fecha_limite").toString() : "—");
+                        row.put("totalPostulaciones", rs.getLong("total_post"));
+                        row.put("postulados", rs.getLong("postulados"));
+                        row.put("enRevision", rs.getLong("en_revision"));
+                        row.put("seleccionados", rs.getLong("seleccionados"));
+                        row.put("noSeleccionados", rs.getLong("no_seleccionados"));
+                        row.put("entProgramadas", rs.getLong("ent_programadas"));
+                        row.put("entRealizadas", rs.getLong("ent_realizadas"));
+                        resumenOfertas.add(row);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        double tasaSeleccion = totalPost > 0 ? Math.round((seleccionados * 1000.0) / totalPost) / 10.0 : 0.0;
+        double tasaRevision = totalPost > 0 ? Math.round(((enRevision + seleccionados + noSeleccionados) * 1000.0) / totalPost) / 10.0 : 0.0;
+        double tasaEntRealizada = (entProgramadas + entRealizadas) > 0 ? Math.round((entRealizadas * 1000.0) / (entProgramadas + entRealizadas)) / 10.0 : 0.0;
+
+        stats.put("totalOfertas", totalOfertas);
+        stats.put("ofertasActivas", ofertasActivas);
+        stats.put("ofertasCerradas", ofertasCerradas);
+        stats.put("ofertasPendientes", ofertasPendientes);
+        stats.put("ofertasRechazadas", ofertasRechazadas);
+        stats.put("totalVacantesActivas", totalVacantes);
+        stats.put("totalPostulaciones", totalPost);
+        stats.put("postulados", postulados);
+        stats.put("enRevision", enRevision);
+        stats.put("seleccionados", seleccionados);
+        stats.put("noSeleccionados", noSeleccionados);
+        stats.put("tasaSeleccion", tasaSeleccion);
+        stats.put("tasaRevision", tasaRevision);
+        stats.put("totalEntrevistas", totalEnt);
+        stats.put("entrevistasProgramadas", entProgramadas);
+        stats.put("entrevistasRealizadas", entRealizadas);
+        stats.put("entrevistasCanceladas", entCanceladas);
+        stats.put("tasaEntrevistaRealizada", tasaEntRealizada);
+        stats.put("resumenOfertas", resumenOfertas);
+        return stats;
+    }
+
+    public Map<String, Object> obtenerEstadisticasEstudiante(int idEstudiante) {
+        Map<String, Object> stats = new HashMap<>();
+        long totalPost = 0, postulados = 0, enRevision = 0, seleccionados = 0, noSeleccionados = 0;
+        long totalEnt = 0, entProgramadas = 0, entRealizadas = 0, entCanceladas = 0;
+        long totalDocs = 0;
+
+        String sqlPost = "SELECT estado, COUNT(*) AS cant FROM postulaciones WHERE id_estudiante = ? GROUP BY estado";
+        String sqlEnt = "SELECT en.estado, COUNT(*) AS cant FROM entrevistas en INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion WHERE p.id_estudiante = ? GROUP BY en.estado";
+        String sqlDocs = "SELECT COUNT(*) FROM documentos_estudiante WHERE id_estudiante = ?";
+
+        try (Connection conn = ConexionBD.getConexion()) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlPost)) {
+                ps.setInt(1, idEstudiante);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String est = rs.getString("estado");
+                        long c = rs.getLong("cant");
+                        totalPost += c;
+                        if ("POSTULADO".equalsIgnoreCase(est)) postulados += c;
+                        else if ("EN_REVISION".equalsIgnoreCase(est)) enRevision += c;
+                        else if ("SELECCIONADO".equalsIgnoreCase(est)) seleccionados += c;
+                        else if ("NO_SELECCIONADO".equalsIgnoreCase(est)) noSeleccionados += c;
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sqlEnt)) {
+                ps.setInt(1, idEstudiante);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String est = rs.getString("estado");
+                        long c = rs.getLong("cant");
+                        totalEnt += c;
+                        if ("PROGRAMADA".equalsIgnoreCase(est)) entProgramadas += c;
+                        else if ("REALIZADA".equalsIgnoreCase(est)) entRealizadas += c;
+                        else if ("CANCELADA".equalsIgnoreCase(est)) entCanceladas += c;
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sqlDocs)) {
+                ps.setInt(1, idEstudiante);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) totalDocs = rs.getLong(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        double tasaRespuesta = totalPost > 0 ? Math.round(((enRevision + seleccionados + noSeleccionados) * 1000.0) / totalPost) / 10.0 : 0.0;
+        double tasaSeleccion = totalPost > 0 ? Math.round((seleccionados * 1000.0) / totalPost) / 10.0 : 0.0;
+
+        stats.put("totalPostulaciones", totalPost);
+        stats.put("postulados", postulados);
+        stats.put("enRevision", enRevision);
+        stats.put("seleccionados", seleccionados);
+        stats.put("noSeleccionados", noSeleccionados);
+        stats.put("tasaRespuesta", tasaRespuesta);
+        stats.put("tasaSeleccion", tasaSeleccion);
+        stats.put("totalEntrevistas", totalEnt);
+        stats.put("entrevistasProgramadas", entProgramadas);
+        stats.put("entrevistasRealizadas", entRealizadas);
+        stats.put("entrevistasCanceladas", entCanceladas);
+        stats.put("totalDocumentos", totalDocs);
+        return stats;
     }
 
     private String normalizarEstado(String estado) {

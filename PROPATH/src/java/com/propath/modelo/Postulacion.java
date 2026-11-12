@@ -16,6 +16,10 @@ public class Postulacion implements Serializable {
     private String fechaPostulacion;
     private String estado;
     private String motivoRechazo;
+    private int idEmpresa;
+    private String carreraEstudiante;
+    private String universidadEstudiante;
+    private boolean cvDisponible;
 
     public Postulacion() {
     }
@@ -108,5 +112,37 @@ public class Postulacion implements Serializable {
 
     public void setMotivoRechazo(String motivoRechazo) {
         this.motivoRechazo = motivoRechazo;
+    }
+
+    public int getIdEmpresa() {
+        return idEmpresa;
+    }
+
+    public void setIdEmpresa(int idEmpresa) {
+        this.idEmpresa = idEmpresa;
+    }
+
+    public String getCarreraEstudiante() {
+        return carreraEstudiante;
+    }
+
+    public void setCarreraEstudiante(String carreraEstudiante) {
+        this.carreraEstudiante = carreraEstudiante;
+    }
+
+    public String getUniversidadEstudiante() {
+        return universidadEstudiante;
+    }
+
+    public void setUniversidadEstudiante(String universidadEstudiante) {
+        this.universidadEstudiante = universidadEstudiante;
+    }
+
+    public boolean isCvDisponible() {
+        return cvDisponible;
+    }
+
+    public void setCvDisponible(boolean cvDisponible) {
+        this.cvDisponible = cvDisponible;
     }
 }

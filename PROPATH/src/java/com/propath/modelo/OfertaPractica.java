@@ -14,15 +14,18 @@ public class OfertaPractica implements Serializable {
     private int vacantes;
     private String fechaPublicacion;
     private String estado;
-private String fechaLimite;
-private String ubicacion;
-private String descripcion;
-private String requisitos;
-private String remuneracion;
+    private String fechaLimite;
+    private String ubicacion;
+    private String descripcion;
+    private String requisitos;
+    private String remuneracion;
+    private int totalPostulaciones;
+
     public OfertaPractica() {
     }
 
-    public OfertaPractica(int id, String titulo, String empresa, String carrera, String modalidad, int vacantes, String fechaPublicacion, String estado) {
+    public OfertaPractica(int id, String titulo, String empresa, String carrera, String modalidad, int vacantes,
+            String fechaPublicacion, String estado) {
         this.id = id;
         this.titulo = titulo;
         this.empresa = empresa;
@@ -104,42 +107,53 @@ private String remuneracion;
     public void setEstado(String estado) {
         this.estado = estado;
     }
+
     public String getFechaLimite() {
-    return fechaLimite;
-}
+        return fechaLimite;
+    }
 
-public void setFechaLimite(String fechaLimite) {
-    this.fechaLimite = fechaLimite;
-}
+    public void setFechaLimite(String fechaLimite) {
+        this.fechaLimite = fechaLimite;
+    }
 
-public String getUbicacion() {
-    return ubicacion;
-}
+    public String getUbicacion() {
+        return ubicacion;
+    }
 
-public void setUbicacion(String ubicacion) {
-    this.ubicacion = ubicacion;
-}
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
+    }
 
-public String getDescripcion() {
-    return descripcion;
-}
+    public String getDescripcion() {
+        return descripcion;
+    }
 
-public void setDescripcion(String descripcion) {
-    this.descripcion = descripcion;
-}
-public String getRequisitos() {
-    return requisitos;
-}
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
 
-public void setRequisitos(String requisitos) {
-    this.requisitos = requisitos;
-}
-public String getRemuneracion() {
-    return remuneracion;
-}
+    public String getRequisitos() {
+        return requisitos;
+    }
 
-public void setRemuneracion(String remuneracion) {
-    this.remuneracion = remuneracion;
-}
-    
+    public void setRequisitos(String requisitos) {
+        this.requisitos = requisitos;
+    }
+
+    public String getRemuneracion() {
+        return remuneracion;
+    }
+
+    public void setRemuneracion(String remuneracion) {
+        this.remuneracion = remuneracion;
+    }
+
+    public int getTotalPostulaciones() {
+        return totalPostulaciones;
+    }
+
+    public void setTotalPostulaciones(int totalPostulaciones) {
+        this.totalPostulaciones = totalPostulaciones;
+    }
+
 }

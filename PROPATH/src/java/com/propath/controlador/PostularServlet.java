@@ -1,11 +1,13 @@
 package com.propath.controlador;
 
 import com.propath.dao.DocumentoEstudianteDAO;
+import com.propath.dao.EmpresaDAO;
 import com.propath.dao.EstudianteDAO;
 import com.propath.dao.OfertaPracticaDAO;
 import com.propath.dao.PostulacionDAO;
 import com.propath.dao.UsuarioDAO;
 import com.propath.modelo.DocumentoEstudiante;
+import com.propath.modelo.Empresa;
 import com.propath.modelo.Estudiante;
 import com.propath.modelo.OfertaPractica;
 import com.propath.modelo.Postulacion;
@@ -21,6 +23,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,8 +34,28 @@ public class PostularServlet extends HttpServlet {
     private final transient PostulacionDAO postulacionDAO = new PostulacionDAO();
     private final transient EstudianteDAO estudianteDAO = new EstudianteDAO();
     private final transient OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
+    private final transient EmpresaDAO empresaDAO = new EmpresaDAO();
     private final transient DocumentoEstudianteDAO documentoDAO = new DocumentoEstudianteDAO();
     private final transient UsuarioDAO usuarioDAO = new UsuarioDAO();
+
+    private String escaparJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
+    private void redirectDashboard(HttpServletRequest req, HttpServletResponse res,
+            String key, String value, String tab) throws IOException {
+        String url = req.getContextPath() + "/estudiante/dashboard.jsp?" + key + "="
+                + URLEncoder.encode(value, StandardCharsets.UTF_8);
+        if (tab != null && !tab.trim().isEmpty()) {
+            url += "&tab=" + URLEncoder.encode(tab.trim(), StandardCharsets.UTF_8);
+        }
+        res.sendRedirect(url);
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -86,11 +109,9 @@ public class PostularServlet extends HttpServlet {
                 json.append(",");
             }
             RespuestaPostulacion r = respuestas.get(i);
-            String preg = r.getPregunta() != null ? r.getPregunta().replace("\"", "\\\"") : "";
-            String resp = r.getRespuesta() != null ? r.getRespuesta().replace("\"", "\\\"") : "";
             json.append("{\"numeroPregunta\":").append(r.getNumeroPregunta())
-                    .append(",\"pregunta\":\"").append(preg).append("\"")
-                    .append(",\"respuesta\":\"").append(resp).append("\"}");
+                    .append(",\"pregunta\":\"").append(escaparJson(r.getPregunta())).append("\"")
+                    .append(",\"respuesta\":\"").append(escaparJson(r.getRespuesta())).append("\"}");
         }
         json.append("]");
 
@@ -158,6 +179,10 @@ public class PostularServlet extends HttpServlet {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Esta postulación no te pertenece.");
                 return;
             }
+            if (!"POSTULADO".equalsIgnoreCase(postulacion.getEstado())) {
+                redirectDashboard(request, response, "error", "Solo puedes editar respuestas mientras la postulación está en estado POSTULADO.", "postulaciones");
+                return;
+            }
 
             String[] respuestas = new String[12];
 
@@ -165,9 +190,7 @@ public class PostularServlet extends HttpServlet {
                 String valor = request.getParameter("respuesta" + (i + 1));
 
                 if (valor == null || valor.trim().isEmpty() || valor.trim().length() > 1000) {
-                    response.sendRedirect(request.getContextPath()
-                            + "/estudiante/dashboard.jsp?error="
-                            + URLEncoder.encode("Debes completar las 12 respuestas.", StandardCharsets.UTF_8));
+                    redirectDashboard(request, response, "error", "Debes completar las 12 respuestas.", "postulaciones");
                     return;
                 }
 
@@ -177,12 +200,9 @@ public class PostularServlet extends HttpServlet {
             boolean okEdicion = postulacionDAO.actualizarRespuestas(idPostulacion, respuestas);
 
             if (okEdicion) {
-                response.sendRedirect(request.getContextPath()
-                        + "/estudiante/dashboard.jsp?exito=postulacion_editada");
+                redirectDashboard(request, response, "exito", "postulacion_editada", "postulaciones");
             } else {
-                response.sendRedirect(request.getContextPath()
-                        + "/estudiante/dashboard.jsp?error="
-                        + URLEncoder.encode("Error al actualizar respuestas.", StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "Error al actualizar respuestas.", "postulaciones");
             }
             return;
         } else if ("retirar".equalsIgnoreCase(accion) || "eliminar".equalsIgnoreCase(accion)) {
@@ -191,19 +211,19 @@ public class PostularServlet extends HttpServlet {
             try {
                 idPostulacion = Integer.parseInt(request.getParameter("idPostulacion"));
             } catch (Exception e) {
-                response.sendError(400, "Postulación inválida.");
+                redirectDashboard(request, response, "error", "Postulación inválida.", "postulaciones");
                 return;
             }
 
             if (idPostulacion <= 0) {
-                response.sendError(400, "Postulación inválida.");
+                redirectDashboard(request, response, "error", "Postulación inválida.", "postulaciones");
                 return;
             }
 
             Postulacion postulacionActual = postulacionDAO.obtenerPorId(idPostulacion);
 
             if (postulacionActual == null) {
-                response.sendError(404, "Postulación no encontrada.");
+                redirectDashboard(request, response, "error", "Postulación no encontrada.", "postulaciones");
                 return;
             }
 
@@ -218,12 +238,12 @@ public class PostularServlet extends HttpServlet {
             boolean eliminar = "eliminar".equalsIgnoreCase(accion);
 
             if (retirar && !"POSTULADO".equalsIgnoreCase(estado)) {
-                response.sendError(409, "Esta postulación ya no puede retirarse.");
+                redirectDashboard(request, response, "error", "Esta postulación ya está en evaluación o finalizada y no puede retirarse.", "postulaciones");
                 return;
             }
 
             if (eliminar && !"NO_SELECCIONADO".equalsIgnoreCase(estado)) {
-                response.sendError(409, "Solo puedes eliminar postulaciones rechazadas.");
+                redirectDashboard(request, response, "error", "Solo puedes eliminar postulaciones rechazadas.", "postulaciones");
                 return;
             }
 
@@ -231,12 +251,9 @@ public class PostularServlet extends HttpServlet {
 
             if (ok) {
                 String mensaje = retirar ? "postulacion_retirada" : "postulacion_eliminada";
-                response.sendRedirect(request.getContextPath()
-                        + "/estudiante/dashboard.jsp?exito=" + mensaje);
+                redirectDashboard(request, response, "exito", mensaje, "postulaciones");
             } else {
-                response.sendRedirect(request.getContextPath()
-                        + "/estudiante/dashboard.jsp?error="
-                        + URLEncoder.encode("No se pudo eliminar la postulación.", StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "No se pudo eliminar la postulación.", "postulaciones");
             }
             return;
         } else if ("darDeBaja".equalsIgnoreCase(accion)) {
@@ -338,34 +355,39 @@ public class PostularServlet extends HttpServlet {
         }
 
         if (idOferta <= 0) {
-            response.sendRedirect(request.getContextPath() + "/estudiante/dashboard.jsp?error=" +
-                    URLEncoder.encode("Oferta no válida.", StandardCharsets.UTF_8));
+            redirectDashboard(request, response, "error", "Oferta no válida.", "ofertas");
             return;
         }
 
         DocumentoEstudiante doc = documentoDAO.obtenerCvPorEstudiante(idEstudiante);
         if (doc == null || doc.getRutaArchivo() == null) {
-            response.sendRedirect(
-                    request.getContextPath() + "/estudiante/dashboard.jsp?error="
-                            + URLEncoder.encode("Debes subir tu currículum vitae en PDF antes de postular.",
-                                    StandardCharsets.UTF_8));
+            redirectDashboard(request, response, "error", "Debes subir tu currículum vitae en PDF antes de postular.", "documentos");
             return;
         }
 
         if (postulacionDAO.yaPostulo(idEstudiante, idOferta)) {
-            response.sendRedirect(
-                    request.getContextPath() + "/estudiante/dashboard.jsp?error="
-                            + URLEncoder.encode("Ya te has postulado previamente a esta oferta.",
-                                    StandardCharsets.UTF_8));
+            redirectDashboard(request, response, "error", "Ya te has postulado previamente a esta oferta.", "ofertas");
             return;
         }
 
         OfertaPractica oferta = ofertaDAO.obtenerPorId(idOferta);
         if (oferta == null || !"ACTIVA".equalsIgnoreCase(oferta.getEstado())) {
-            response.sendRedirect(
-                    request.getContextPath() + "/estudiante/dashboard.jsp?error="
-                            + URLEncoder.encode("La oferta seleccionada ya no está disponible.",
-                                    StandardCharsets.UTF_8));
+            redirectDashboard(request, response, "error", "La oferta seleccionada ya no está disponible.", "ofertas");
+            return;
+        }
+        if (oferta.getFechaLimite() != null && !oferta.getFechaLimite().trim().isEmpty()) {
+            try {
+                if (LocalDate.parse(oferta.getFechaLimite().trim()).isBefore(LocalDate.now())) {
+                    redirectDashboard(request, response, "error", "La convocatoria ha cerrado por vencimiento de la fecha límite.", "ofertas");
+                    return;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        Empresa empOferta = empresaDAO.obtenerPorId(oferta.getIdEmpresa());
+        if (empOferta == null || !"APROBADA".equalsIgnoreCase(empOferta.getEstado())
+                || !"ACTIVO".equalsIgnoreCase(empOferta.getEstadoCuenta())) {
+            redirectDashboard(request, response, "error", "La empresa convocante no se encuentra activa en este momento.", "ofertas");
             return;
         }
 
@@ -374,10 +396,7 @@ public class PostularServlet extends HttpServlet {
             String valor = request.getParameter("respuesta" + (i + 1));
 
             if (valor == null || valor.trim().isEmpty() || valor.trim().length() > 1000) {
-                response.sendRedirect(
-                        request.getContextPath() + "/estudiante/dashboard.jsp?error="
-                                + URLEncoder.encode("Debes responder las 12 preguntas antes de postular.",
-                                        StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "Debes responder las 12 preguntas antes de postular.", "ofertas");
                 return;
             }
 
@@ -391,12 +410,11 @@ public class PostularServlet extends HttpServlet {
         int idGenerado = postulacionDAO.registrarConRespuestas(idEstudiante, idOferta, respuestasList);
 
         if (idGenerado > 0) {
-            response.sendRedirect(
-                    request.getContextPath() + "/estudiante/dashboard.jsp?exito=postulacion");
+            redirectDashboard(request, response, "exito", "postulacion", "postulaciones");
+        } else if (idGenerado == -2) {
+            redirectDashboard(request, response, "error", "Ya existe una postulación tuya registrada para esta oferta.", "ofertas");
         } else {
-            response.sendRedirect(
-                    request.getContextPath() + "/estudiante/dashboard.jsp?error="
-                            + URLEncoder.encode("Error al procesar la postulación.", StandardCharsets.UTF_8));
+            redirectDashboard(request, response, "error", "Error al procesar la postulación.", "ofertas");
         }
     }
 }

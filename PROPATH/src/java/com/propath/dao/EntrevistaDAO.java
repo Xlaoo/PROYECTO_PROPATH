@@ -12,19 +12,21 @@ import java.util.List;
 
 public class EntrevistaDAO {
 
+    private static final String BASE_SELECT =
+            "SELECT en.id_entrevista, en.id_postulacion, en.fecha, en.hora, en.modalidad, "
+            + "en.enlace_lugar, en.estado, en.observaciones, en.fecha_creacion, "
+            + "CONCAT(est.nombres, ' ', est.apellidos) AS estudiante, "
+            + "o.titulo AS oferta, emp.razon_social AS empresa, "
+            + "emp.id_empresa, est.id_estudiante "
+            + "FROM entrevistas en "
+            + "INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion "
+            + "INNER JOIN estudiantes est ON p.id_estudiante = est.id_estudiante "
+            + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
+            + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa ";
+
     public List<Entrevista> listarTodas() {
         List<Entrevista> lista = new ArrayList<>();
-        String sql = "SELECT en.id_entrevista, en.id_postulacion, en.fecha, en.hora, en.modalidad, "
-                   + "en.enlace_lugar, en.estado, en.observaciones, en.fecha_creacion, "
-                   + "CONCAT(est.nombres, ' ', est.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM entrevistas en "
-                   + "INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion "
-                   + "INNER JOIN estudiantes est ON p.id_estudiante = est.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "ORDER BY en.fecha DESC, en.hora DESC";
+        String sql = BASE_SELECT + "ORDER BY en.fecha DESC, en.hora DESC, en.id_entrevista DESC";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -41,18 +43,7 @@ public class EntrevistaDAO {
 
     public List<Entrevista> listarPorEmpresa(int idEmpresa) {
         List<Entrevista> lista = new ArrayList<>();
-        String sql = "SELECT en.id_entrevista, en.id_postulacion, en.fecha, en.hora, en.modalidad, "
-                   + "en.enlace_lugar, en.estado, en.observaciones, en.fecha_creacion, "
-                   + "CONCAT(est.nombres, ' ', est.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM entrevistas en "
-                   + "INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion "
-                   + "INNER JOIN estudiantes est ON p.id_estudiante = est.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "WHERE emp.id_empresa = ? "
-                   + "ORDER BY en.fecha DESC, en.hora DESC";
+        String sql = BASE_SELECT + "WHERE emp.id_empresa = ? ORDER BY en.fecha DESC, en.hora DESC, en.id_entrevista DESC";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -71,18 +62,7 @@ public class EntrevistaDAO {
 
     public List<Entrevista> listarPorEstudiante(int idEstudiante) {
         List<Entrevista> lista = new ArrayList<>();
-        String sql = "SELECT en.id_entrevista, en.id_postulacion, en.fecha, en.hora, en.modalidad, "
-                   + "en.enlace_lugar, en.estado, en.observaciones, en.fecha_creacion, "
-                   + "CONCAT(est.nombres, ' ', est.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM entrevistas en "
-                   + "INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion "
-                   + "INNER JOIN estudiantes est ON p.id_estudiante = est.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "WHERE est.id_estudiante = ? "
-                   + "ORDER BY en.fecha DESC, en.hora DESC";
+        String sql = BASE_SELECT + "WHERE est.id_estudiante = ? ORDER BY en.fecha DESC, en.hora DESC, en.id_entrevista DESC";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -101,18 +81,7 @@ public class EntrevistaDAO {
 
     public List<Entrevista> listarPorPostulacion(int idPostulacion) {
         List<Entrevista> lista = new ArrayList<>();
-        String sql = "SELECT en.id_entrevista, en.id_postulacion, en.fecha, en.hora, en.modalidad, "
-                   + "en.enlace_lugar, en.estado, en.observaciones, en.fecha_creacion, "
-                   + "CONCAT(est.nombres, ' ', est.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM entrevistas en "
-                   + "INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion "
-                   + "INNER JOIN estudiantes est ON p.id_estudiante = est.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "WHERE en.id_postulacion = ? "
-                   + "ORDER BY en.fecha DESC, en.hora DESC";
+        String sql = BASE_SELECT + "WHERE en.id_postulacion = ? ORDER BY en.fecha DESC, en.hora DESC, en.id_entrevista DESC";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -130,17 +99,7 @@ public class EntrevistaDAO {
     }
 
     public Entrevista obtenerPorId(int idEntrevista) {
-        String sql = "SELECT en.id_entrevista, en.id_postulacion, en.fecha, en.hora, en.modalidad, "
-                   + "en.enlace_lugar, en.estado, en.observaciones, en.fecha_creacion, "
-                   + "CONCAT(est.nombres, ' ', est.apellidos) AS estudiante, "
-                   + "o.titulo AS oferta, "
-                   + "emp.razon_social AS empresa "
-                   + "FROM entrevistas en "
-                   + "INNER JOIN postulaciones p ON en.id_postulacion = p.id_postulacion "
-                   + "INNER JOIN estudiantes est ON p.id_estudiante = est.id_estudiante "
-                   + "INNER JOIN ofertas_practicas o ON p.id_oferta = o.id_oferta "
-                   + "INNER JOIN empresas emp ON o.id_empresa = emp.id_empresa "
-                   + "WHERE en.id_entrevista = ?";
+        String sql = BASE_SELECT + "WHERE en.id_entrevista = ?";
 
         try (Connection conn = ConexionBD.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -155,6 +114,44 @@ public class EntrevistaDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public boolean tieneEntrevistaActiva(int idPostulacion) {
+        String sql = "SELECT 1 FROM entrevistas WHERE id_postulacion = ? AND estado <> 'CANCELADA' LIMIT 1";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idPostulacion);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean actualizarEstado(int idEntrevista, String nuevoEstado, String observaciones) {
+        if (idEntrevista <= 0 || nuevoEstado == null) {
+            return false;
+        }
+        boolean updateObs = observaciones != null;
+        String sql = updateObs
+                ? "UPDATE entrevistas SET estado = ?, observaciones = ? WHERE id_entrevista = ?"
+                : "UPDATE entrevistas SET estado = ? WHERE id_entrevista = ?";
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, normalizarEstado(nuevoEstado));
+            if (updateObs) {
+                ps.setString(2, observaciones.trim());
+                ps.setInt(3, idEntrevista);
+            } else {
+                ps.setInt(2, idEntrevista);
+            }
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public int crear(Entrevista entrevista) {
@@ -284,6 +281,11 @@ public class EntrevistaDAO {
         en.setEstudiante(rs.getString("estudiante"));
         en.setOferta(rs.getString("oferta"));
         en.setEmpresa(rs.getString("empresa"));
+        try {
+            en.setIdEmpresa(rs.getInt("id_empresa"));
+            en.setIdEstudiante(rs.getInt("id_estudiante"));
+        } catch (SQLException ignored) {
+        }
         return en;
     }
 

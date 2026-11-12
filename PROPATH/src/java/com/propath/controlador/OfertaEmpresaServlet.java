@@ -25,6 +25,8 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @WebServlet(name = "OfertaEmpresaServlet", urlPatterns = { "/empresa/oferta", "/OfertaEmpresaServlet" })
@@ -37,6 +39,40 @@ public class OfertaEmpresaServlet extends HttpServlet {
     private final transient EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
     private final transient DocumentoEstudianteDAO documentoDAO = new DocumentoEstudianteDAO();
     private final transient UsuarioDAO usuarioDAO = new UsuarioDAO();
+
+    private String escaparJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
+    private void redirectDashboard(HttpServletRequest req, HttpServletResponse res,
+            String key, String value, String tab) throws IOException {
+        String url = req.getContextPath() + "/empresa/dashboard.jsp?" + key + "="
+                + URLEncoder.encode(value, StandardCharsets.UTF_8);
+        if (tab != null && !tab.trim().isEmpty()) {
+            url += "&tab=" + URLEncoder.encode(tab.trim(), StandardCharsets.UTF_8);
+        }
+        res.sendRedirect(url);
+    }
+
+    private String validarFechaLimite(String fechaLimiteStr) {
+        if (fechaLimiteStr == null || fechaLimiteStr.trim().isEmpty()) {
+            return "La fecha límite de postulación es obligatoria.";
+        }
+        try {
+            LocalDate fecha = LocalDate.parse(fechaLimiteStr.trim());
+            if (fecha.isBefore(LocalDate.now())) {
+                return "La fecha límite no puede ser anterior a la fecha actual.";
+            }
+            return null;
+        } catch (DateTimeParseException e) {
+            return "El formato de fecha límite no es válido.";
+        }
+    }
 
     private int idEstudiantePostulacion(int idPostulacion, int idEmpresa) {
         Postulacion p = postulacionDAO.obtenerPorId(idPostulacion);
@@ -106,10 +142,41 @@ public class OfertaEmpresaServlet extends HttpServlet {
                 response.sendError(404, "CV PDF no disponible");
                 return;
             }
+            boolean download = "1".equals(request.getParameter("download")) || "true".equalsIgnoreCase(request.getParameter("download"));
+            String nombre = doc.getNombreArchivo() != null ? doc.getNombreArchivo() : "CV.pdf";
+            String encodedName = URLEncoder.encode(nombre, StandardCharsets.UTF_8).replace("+", "%20");
             response.setContentType("application/pdf");
-            response.setHeader("Content-Disposition", "inline; filename=CV.pdf");
+            response.setHeader("Content-Disposition",
+                    (download ? "attachment" : "inline") + "; filename=\"" + nombre + "\"; filename*=UTF-8''" + encodedName);
             response.setContentLength(pdf.length);
             response.getOutputStream().write(pdf);
+            return;
+        }
+        if ("documento".equals(accion)) {
+            int idDoc = 0;
+            try {
+                idDoc = Integer.parseInt(request.getParameter("idDocumento"));
+            } catch (Exception ignored) {
+            }
+            DocumentoEstudiante doc = documentoDAO.obtenerPorId(idDoc);
+            if (doc == null || doc.getIdEstudiante() != idEstudiante) {
+                response.sendError(404, "Documento no encontrado");
+                return;
+            }
+            byte[] bytes = documentoDAO.descargarCv(doc.getArchivoRuta());
+            if (bytes == null || bytes.length == 0) {
+                response.sendError(404, "Archivo no disponible");
+                return;
+            }
+            boolean download = "1".equals(request.getParameter("download")) || "true".equalsIgnoreCase(request.getParameter("download"));
+            String ctype = doc.getContentType() != null && !doc.getContentType().isBlank() ? doc.getContentType() : "application/pdf";
+            String nombre = doc.getNombreArchivo() != null ? doc.getNombreArchivo() : "documento";
+            String encodedName = URLEncoder.encode(nombre, StandardCharsets.UTF_8).replace("+", "%20");
+            response.setContentType(ctype);
+            response.setHeader("Content-Disposition",
+                    (download ? "attachment" : "inline") + "; filename=\"" + nombre + "\"; filename*=UTF-8''" + encodedName);
+            response.setContentLength(bytes.length);
+            response.getOutputStream().write(bytes);
             return;
         }
         if (!"evaluacion".equals(accion)) {
@@ -120,6 +187,7 @@ public class OfertaEmpresaServlet extends HttpServlet {
         EstudianteDAO estDAO = new EstudianteDAO();
         Estudiante est = estDAO.obtenerPorId(idEstudiante);
         List<RespuestaPostulacion> lista = postulacionDAO.obtenerRespuestas(idPostulacion);
+        List<DocumentoEstudiante> docs = documentoDAO.listarPorEstudiante(idEstudiante);
         DocumentoEstudiante docCv = documentoDAO.obtenerCvPorEstudiante(idEstudiante);
         boolean cvDisponible = (docCv != null && docCv.getRutaArchivo() != null && !docCv.getRutaArchivo().trim().isEmpty());
 
@@ -127,25 +195,35 @@ public class OfertaEmpresaServlet extends HttpServlet {
         sb.append("\"cvDisponible\":").append(cvDisponible).append(",");
         sb.append("\"idPostulacion\":").append(idPostulacion).append(",");
         sb.append("\"idEstudiante\":").append(idEstudiante).append(",");
-        sb.append("\"estudiante\":\"").append(est != null && est.getNombreCompleto() != null ? est.getNombreCompleto().replace("\"", "\\\"") : (post != null && post.getEstudiante() != null ? post.getEstudiante().replace("\"", "\\\"") : "")).append("\",");
-        sb.append("\"correo\":\"").append(est != null && est.getCorreo() != null ? est.getCorreo().replace("\"", "\\\"") : "").append("\",");
-        sb.append("\"universidad\":\"").append(est != null && est.getUniversidad() != null ? est.getUniversidad().replace("\"", "\\\"") : "").append("\",");
-        sb.append("\"carrera\":\"").append(est != null && est.getCarrera() != null ? est.getCarrera().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"estudiante\":\"").append(escaparJson(est != null && est.getNombreCompleto() != null ? est.getNombreCompleto() : (post != null ? post.getEstudiante() : ""))).append("\",");
+        sb.append("\"correo\":\"").append(escaparJson(est != null ? est.getCorreo() : "")).append("\",");
+        sb.append("\"universidad\":\"").append(escaparJson(est != null ? est.getUniversidad() : "")).append("\",");
+        sb.append("\"carrera\":\"").append(escaparJson(est != null ? est.getCarrera() : "")).append("\",");
         sb.append("\"ciclo\":").append(est != null ? est.getCiclo() : 0).append(",");
-        sb.append("\"telefono\":\"").append(est != null && est.getTelefono() != null ? est.getTelefono().replace("\"", "\\\"") : "").append("\",");
-        sb.append("\"oferta\":\"").append(post != null && post.getOferta() != null ? post.getOferta().replace("\"", "\\\"") : "").append("\",");
-        sb.append("\"fecha\":\"").append(post != null && post.getFechaPostulacion() != null ? post.getFechaPostulacion() : "").append("\",");
-        sb.append("\"estado\":\"").append(post != null && post.getEstado() != null ? post.getEstado() : "").append("\",");
-        sb.append("\"motivoRechazo\":\"").append(post != null && post.getMotivoRechazo() != null ? post.getMotivoRechazo().replace("\"", "\\\"") : "").append("\",");
+        sb.append("\"telefono\":\"").append(escaparJson(est != null ? est.getTelefono() : "")).append("\",");
+        sb.append("\"oferta\":\"").append(escaparJson(post != null ? post.getOferta() : "")).append("\",");
+        sb.append("\"fecha\":\"").append(escaparJson(post != null ? post.getFechaPostulacion() : "")).append("\",");
+        sb.append("\"estado\":\"").append(escaparJson(post != null ? post.getEstado() : "")).append("\",");
+        sb.append("\"motivoRechazo\":\"").append(escaparJson(post != null ? post.getMotivoRechazo() : "")).append("\",");
+        sb.append("\"documentos\":[");
+        for (int i = 0; i < docs.size(); i++) {
+            if (i > 0) sb.append(",");
+            DocumentoEstudiante d = docs.get(i);
+            sb.append("{\"id\":").append(d.getId())
+              .append(",\"tipoDocumento\":\"").append(escaparJson(d.getTipoDocumento())).append("\"")
+              .append(",\"nombreArchivo\":\"").append(escaparJson(d.getNombreArchivo())).append("\"")
+              .append(",\"tamanio\":\"").append(escaparJson(d.getTamanioFormateado())).append("\"")
+              .append(",\"contentType\":\"").append(escaparJson(d.getContentType())).append("\"")
+              .append(",\"fechaSubida\":\"").append(escaparJson(d.getFechaSubida())).append("\"}");
+        }
+        sb.append("],");
         sb.append("\"respuestas\":[");
         for (int i = 0; i < lista.size(); i++) {
             if (i > 0) sb.append(",");
             RespuestaPostulacion r = lista.get(i);
-            String preg = r.getPregunta() != null ? r.getPregunta().replace("\"", "\\\"") : "";
-            String resp = r.getRespuesta() != null ? r.getRespuesta().replace("\"", "\\\"") : "";
             sb.append("{\"numeroPregunta\":").append(r.getNumeroPregunta())
-              .append(",\"pregunta\":\"").append(preg).append("\"")
-              .append(",\"respuesta\":\"").append(resp).append("\"}");
+              .append(",\"pregunta\":\"").append(escaparJson(r.getPregunta())).append("\"")
+              .append(",\"respuesta\":\"").append(escaparJson(r.getRespuesta())).append("\"}");
         }
         sb.append("]}");
         response.setContentType("application/json;charset=UTF-8");
@@ -239,10 +317,27 @@ public class OfertaEmpresaServlet extends HttpServlet {
 
             if (id <= 0 || titulo == null || titulo.trim().isEmpty() || carrera == null || carrera.trim().isEmpty()
                     || fechaLimite == null || fechaLimite.trim().isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode("Campos obligatorios incompletos para actualizar la oferta.",
-                                StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "Campos obligatorios incompletos para actualizar la oferta.", "ofertas");
                 return;
+            }
+            if (titulo.trim().length() > 150 || carrera.trim().length() > 150) {
+                redirectDashboard(request, response, "error", "El título o carrera excede el máximo de 150 caracteres.", "ofertas");
+                return;
+            }
+            if (vacantes < 1 || vacantes > 100) {
+                redirectDashboard(request, response, "error", "El número de vacantes debe estar entre 1 y 100.", "ofertas");
+                return;
+            }
+            if (remuneracion != null && !remuneracion.trim().isEmpty()) {
+                try {
+                    if (Double.parseDouble(remuneracion.trim()) < 0) {
+                        redirectDashboard(request, response, "error", "La subvención económica no puede ser negativa.", "ofertas");
+                        return;
+                    }
+                } catch (NumberFormatException nfe) {
+                    redirectDashboard(request, response, "error", "Ingresa un monto numérico válido para la subvención.", "ofertas");
+                    return;
+                }
             }
 
             OfertaPractica existente = ofertaDAO.obtenerPorId(id);
@@ -256,17 +351,52 @@ public class OfertaEmpresaServlet extends HttpServlet {
             existente.setRequisitos(requisitos != null ? requisitos.trim() : "");
             existente.setCarrera(carrera.trim());
             existente.setModalidad(modalidad != null ? modalidad.trim() : "PRESENCIAL");
-            existente.setVacantes(vacantes > 0 ? vacantes : 1);
+            existente.setVacantes(vacantes);
             existente.setFechaLimite(fechaLimite.trim());
             existente.setUbicacion(ubicacion != null ? ubicacion.trim() : "");
             existente.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
 
             boolean ok = ofertaDAO.actualizar(existente);
             if (ok) {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=actualizada");
+                redirectDashboard(request, response, "exito", "actualizada", "ofertas");
             } else {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode("Error al actualizar la oferta.", StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "Error al actualizar la oferta.", "ofertas");
+            }
+            return;
+        } else if ("cambiarEstadoOferta".equalsIgnoreCase(accion)) {
+            int id = 0;
+            try {
+                id = Integer.parseInt(request.getParameter("id"));
+            } catch (Exception ignored) {
+            }
+            String nuevoEstado = request.getParameter("nuevoEstado");
+            if (id <= 0 || nuevoEstado == null
+                    || (!"ACTIVA".equalsIgnoreCase(nuevoEstado) && !"CERRADA".equalsIgnoreCase(nuevoEstado))) {
+                redirectDashboard(request, response, "error", "Operación de estado no válida.", "ofertas");
+                return;
+            }
+            OfertaPractica existente = ofertaDAO.obtenerPorId(id);
+            if (existente == null || existente.getIdEmpresa() != idEmpresa) {
+                response.sendError(403, "No estás autorizado para modificar esta oferta.");
+                return;
+            }
+            if ("RECHAZADA".equalsIgnoreCase(existente.getEstado())) {
+                redirectDashboard(request, response, "error", "Una oferta rechazada por administración no puede reactivarse.", "ofertas");
+                return;
+            }
+            if ("ACTIVA".equalsIgnoreCase(nuevoEstado)) {
+                String errFecha = validarFechaLimite(existente.getFechaLimite());
+                if (errFecha != null) {
+                    redirectDashboard(request, response, "error", "Actualiza la fecha límite de la oferta antes de reactivarla.", "ofertas");
+                    return;
+                }
+            }
+            boolean ok = ofertaDAO.actualizarEstado(id, nuevoEstado.toUpperCase());
+            if (ok) {
+                redirectDashboard(request, response, "exito",
+                        "ACTIVA".equalsIgnoreCase(nuevoEstado) ? "oferta_reactivada" : "oferta_cerrada", "ofertas");
+            } else {
+                redirectDashboard(request, response, "error", "No se pudo cambiar el estado de la oferta.", "ofertas");
             }
             return;
         } else if ("eliminar".equalsIgnoreCase(accion)) {
@@ -288,10 +418,10 @@ public class OfertaEmpresaServlet extends HttpServlet {
                 int cantPost = ofertaDAO.contarPostulaciones(id);
                 if (cantPost > 0) {
                     ofertaDAO.actualizarEstado(id, "CERRADA");
-                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=cerrada_por_postulaciones");
+                    redirectDashboard(request, response, "exito", "cerrada_por_postulaciones", "ofertas");
                 } else {
                     ofertaDAO.eliminar(id);
-                    response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=eliminada");
+                    redirectDashboard(request, response, "exito", "eliminada", "ofertas");
                 }
                 return;
             }
@@ -395,15 +525,16 @@ public class OfertaEmpresaServlet extends HttpServlet {
             }
 
             if (id <= 0 || estado == null
-                    || (!"SELECCIONADO".equalsIgnoreCase(estado)
+                    || (!"EN_REVISION".equalsIgnoreCase(estado)
+                            && !"SELECCIONADO".equalsIgnoreCase(estado)
                             && !"NO_SELECCIONADO".equalsIgnoreCase(estado))) {
-                response.sendError(400, "Datos de evaluación inválidos.");
+                redirectDashboard(request, response, "error", "Datos de evaluación inválidos.", "postulantes");
                 return;
             }
 
             Postulacion p = postulacionDAO.obtenerPorId(id);
             if (p == null) {
-                response.sendError(404, "Postulación no encontrada.");
+                redirectDashboard(request, response, "error", "Postulación no encontrada.", "postulantes");
                 return;
             }
 
@@ -416,44 +547,40 @@ public class OfertaEmpresaServlet extends HttpServlet {
             String estadoActual = p.getEstado();
 
             if ("NO_SELECCIONADO".equalsIgnoreCase(estadoActual)) {
-                response.sendError(409, "Esta postulación ya fue rechazada.");
+                redirectDashboard(request, response, "error", "Esta postulación ya fue finalizada como No Seleccionado.", "postulantes");
                 return;
             }
 
             if ("SELECCIONADO".equalsIgnoreCase(estadoActual)) {
-                if (!"NO_SELECCIONADO".equalsIgnoreCase(estado)) {
-                    response.sendError(409, "No puedes seleccionar nuevamente al postulante.");
+                if ("EN_REVISION".equalsIgnoreCase(estado) || "SELECCIONADO".equalsIgnoreCase(estado)) {
+                    redirectDashboard(request, response, "error", "El postulante ya se encuentra seleccionado.", "postulantes");
                     return;
                 }
-
-                List<Entrevista> entrevistas = entrevistaDAO.listarPorPostulacion(id);
-                if (entrevistas != null && !entrevistas.isEmpty()) {
-                    response.sendError(409, "No puedes rechazar al postulante porque ya tiene una entrevista registrada.");
+                if (entrevistaDAO.tieneEntrevistaActiva(id)) {
+                    redirectDashboard(request, response, "error", "No puedes rechazar al postulante porque ya tiene una entrevista activa.", "postulantes");
                     return;
                 }
             }
 
             String motivoRechazo = request.getParameter("motivoRechazo");
-
             if ("NO_SELECCIONADO".equalsIgnoreCase(estado)) {
                 if (motivoRechazo == null
                         || motivoRechazo.trim().isEmpty()
                         || motivoRechazo.trim().length() > 1000) {
-                    response.sendError(400, "Debes escribir un motivo de rechazo.");
+                    redirectDashboard(request, response, "error", "Debes escribir un motivo de rechazo válido (máx. 1000 caracteres).", "postulantes");
                     return;
                 }
+                motivoRechazo = motivoRechazo.trim();
+            } else {
+                motivoRechazo = null;
             }
 
-            boolean actualizado = postulacionDAO.evaluar(id, estado, motivoRechazo);
+            boolean actualizado = postulacionDAO.evaluar(id, estado.toUpperCase(), motivoRechazo);
 
             if (actualizado) {
-                response.sendRedirect(request.getContextPath()
-                        + "/empresa/dashboard.jsp?exito=estado_actualizado");
+                redirectDashboard(request, response, "exito", "estado_actualizado", "postulantes");
             } else {
-                response.sendRedirect(request.getContextPath()
-                        + "/empresa/dashboard.jsp?error="
-                        + URLEncoder.encode("No se pudo actualizar la postulación.",
-                                StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "No se pudo actualizar la postulación.", "postulantes");
             }
             return;
         } else {
@@ -476,20 +603,44 @@ public class OfertaEmpresaServlet extends HttpServlet {
             }
 
             if (titulo == null || titulo.trim().isEmpty() || carrera == null || carrera.trim().isEmpty()
+                    || descripcion == null || descripcion.trim().isEmpty()
                     || fechaLimite == null || fechaLimite.trim().isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode("Título, carrera y fecha límite son obligatorios.", StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "Título, carrera, descripción y fecha límite son obligatorios.", "ofertas");
                 return;
+            }
+            if (titulo.trim().length() > 150 || carrera.trim().length() > 150) {
+                redirectDashboard(request, response, "error", "El título o la carrera supera el máximo de 150 caracteres.", "ofertas");
+                return;
+            }
+            String errFecha = validarFechaLimite(fechaLimite);
+            if (errFecha != null) {
+                redirectDashboard(request, response, "error", errFecha, "ofertas");
+                return;
+            }
+            if (vacantes < 1 || vacantes > 100) {
+                redirectDashboard(request, response, "error", "El número de vacantes debe estar entre 1 y 100.", "ofertas");
+                return;
+            }
+            if (remuneracion != null && !remuneracion.trim().isEmpty()) {
+                try {
+                    if (Double.parseDouble(remuneracion.trim()) < 0) {
+                        redirectDashboard(request, response, "error", "La subvención económica no puede ser negativa.", "ofertas");
+                        return;
+                    }
+                } catch (NumberFormatException nfe) {
+                    redirectDashboard(request, response, "error", "Ingresa un monto numérico válido para la subvención.", "ofertas");
+                    return;
+                }
             }
 
             OfertaPractica nuevaOferta = new OfertaPractica();
             nuevaOferta.setIdEmpresa(idEmpresa);
             nuevaOferta.setTitulo(titulo.trim());
-            nuevaOferta.setDescripcion(descripcion != null ? descripcion.trim() : "");
+            nuevaOferta.setDescripcion(descripcion.trim());
             nuevaOferta.setRequisitos(requisitos != null ? requisitos.trim() : "");
             nuevaOferta.setCarrera(carrera.trim());
             nuevaOferta.setModalidad(modalidad != null ? modalidad.trim() : "PRESENCIAL");
-            nuevaOferta.setVacantes(vacantes > 0 ? vacantes : 1);
+            nuevaOferta.setVacantes(vacantes);
             nuevaOferta.setFechaLimite(fechaLimite.trim());
             nuevaOferta.setUbicacion(ubicacion != null ? ubicacion.trim() : "");
             nuevaOferta.setRemuneracion(remuneracion != null ? remuneracion.trim() : "");
@@ -498,11 +649,10 @@ public class OfertaEmpresaServlet extends HttpServlet {
             int idGenerado = ofertaDAO.crear(nuevaOferta);
 
             if (idGenerado > 0) {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?exito=publicada");
+                redirectDashboard(request, response, "exito", "publicada", "ofertas");
                 return;
             } else {
-                response.sendRedirect(request.getContextPath() + "/empresa/dashboard.jsp?error=" +
-                        URLEncoder.encode("No se pudo publicar la oferta.", StandardCharsets.UTF_8));
+                redirectDashboard(request, response, "error", "No se pudo publicar la oferta.", "ofertas");
                 return;
             }
         }

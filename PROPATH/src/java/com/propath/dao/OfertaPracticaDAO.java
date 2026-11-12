@@ -16,7 +16,8 @@ public class OfertaPracticaDAO {
         List<OfertaPractica> lista = new ArrayList<>();
         String sql = "SELECT o.id_oferta, o.id_empresa, o.titulo, o.descripcion, o.requisitos, o.carrera, "
                    + "o.modalidad, o.vacantes, o.fecha_publicacion, o.fecha_limite, o.estado, o.ubicacion, o.remuneracion, "
-                   + "e.razon_social AS empresa "
+                   + "e.razon_social AS empresa, "
+                   + "(SELECT COUNT(*) FROM postulaciones p WHERE p.id_oferta = o.id_oferta) AS total_postulaciones "
                    + "FROM ofertas_practicas o "
                    + "INNER JOIN empresas e ON o.id_empresa = e.id_empresa "
                    + "ORDER BY o.id_oferta DESC";
@@ -38,10 +39,13 @@ public class OfertaPracticaDAO {
         List<OfertaPractica> lista = new ArrayList<>();
         String sql = "SELECT o.id_oferta, o.id_empresa, o.titulo, o.descripcion, o.requisitos, o.carrera, "
                    + "o.modalidad, o.vacantes, o.fecha_publicacion, o.fecha_limite, o.estado, o.ubicacion, o.remuneracion, "
-                   + "e.razon_social AS empresa "
+                   + "e.razon_social AS empresa, "
+                   + "(SELECT COUNT(*) FROM postulaciones p WHERE p.id_oferta = o.id_oferta) AS total_postulaciones "
                    + "FROM ofertas_practicas o "
                    + "INNER JOIN empresas e ON o.id_empresa = e.id_empresa "
-                   + "WHERE o.estado = 'ACTIVA' AND e.estado = 'APROBADA' "
+                   + "INNER JOIN usuarios u ON e.id_usuario = u.id_usuario "
+                   + "WHERE o.estado = 'ACTIVA' AND e.estado = 'APROBADA' AND u.estado = 'ACTIVO' "
+                   + "AND (o.fecha_limite IS NULL OR o.fecha_limite >= CURDATE()) "
                    + "ORDER BY o.id_oferta DESC";
 
         try (Connection conn = ConexionBD.getConexion();
@@ -61,7 +65,8 @@ public class OfertaPracticaDAO {
         List<OfertaPractica> lista = new ArrayList<>();
         String sql = "SELECT o.id_oferta, o.id_empresa, o.titulo, o.descripcion, o.requisitos, o.carrera, "
                    + "o.modalidad, o.vacantes, o.fecha_publicacion, o.fecha_limite, o.estado, o.ubicacion, o.remuneracion, "
-                   + "e.razon_social AS empresa "
+                   + "e.razon_social AS empresa, "
+                   + "(SELECT COUNT(*) FROM postulaciones p WHERE p.id_oferta = o.id_oferta) AS total_postulaciones "
                    + "FROM ofertas_practicas o "
                    + "INNER JOIN empresas e ON o.id_empresa = e.id_empresa "
                    + "WHERE o.id_empresa = ? "
@@ -85,7 +90,8 @@ public class OfertaPracticaDAO {
     public OfertaPractica obtenerPorId(int idOferta) {
         String sql = "SELECT o.id_oferta, o.id_empresa, o.titulo, o.descripcion, o.requisitos, o.carrera, "
                    + "o.modalidad, o.vacantes, o.fecha_publicacion, o.fecha_limite, o.estado, o.ubicacion, o.remuneracion, "
-                   + "e.razon_social AS empresa "
+                   + "e.razon_social AS empresa, "
+                   + "(SELECT COUNT(*) FROM postulaciones p WHERE p.id_oferta = o.id_oferta) AS total_postulaciones "
                    + "FROM ofertas_practicas o "
                    + "INNER JOIN empresas e ON o.id_empresa = e.id_empresa "
                    + "WHERE o.id_oferta = ?";
@@ -276,6 +282,10 @@ public class OfertaPracticaDAO {
         o.setUbicacion(rs.getString("ubicacion"));
         o.setRemuneracion(rs.getString("remuneracion"));
         o.setEmpresa(rs.getString("empresa"));
+        try {
+            o.setTotalPostulaciones(rs.getInt("total_postulaciones"));
+        } catch (SQLException ignored) {
+        }
         return o;
     }
 

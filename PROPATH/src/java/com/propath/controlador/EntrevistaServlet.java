@@ -1,8 +1,10 @@
 package com.propath.controlador;
 
+import com.propath.dao.EmpresaDAO;
 import com.propath.dao.EntrevistaDAO;
 import com.propath.dao.OfertaPracticaDAO;
 import com.propath.dao.PostulacionDAO;
+import com.propath.modelo.Empresa;
 import com.propath.modelo.Entrevista;
 import com.propath.modelo.OfertaPractica;
 import com.propath.modelo.Postulacion;
@@ -15,6 +17,8 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 @WebServlet("/empresa/entrevista")
 public class EntrevistaServlet extends HttpServlet {
@@ -23,12 +27,18 @@ public class EntrevistaServlet extends HttpServlet {
     private final transient EntrevistaDAO entrevistaDAO = new EntrevistaDAO();
     private final transient PostulacionDAO postulacionDAO = new PostulacionDAO();
     private final transient OfertaPracticaDAO ofertaDAO = new OfertaPracticaDAO();
+    private final transient EmpresaDAO empresaDAO = new EmpresaDAO();
 
     private void volver(HttpServletRequest req, HttpServletResponse res,
             String tipo, String mensaje) throws IOException {
+        String tab = req.getParameter("redirectTab");
+        if (tab == null || tab.trim().isEmpty()) {
+            tab = "entrevistas";
+        }
         res.sendRedirect(req.getContextPath()
                 + "/empresa/dashboard.jsp?" + tipo + "="
-                + URLEncoder.encode(mensaje, StandardCharsets.UTF_8));
+                + URLEncoder.encode(mensaje, StandardCharsets.UTF_8)
+                + "&tab=" + URLEncoder.encode(tab.trim(), StandardCharsets.UTF_8));
     }
 
     @Override
@@ -45,24 +55,42 @@ public class EntrevistaServlet extends HttpServlet {
 
         Usuario usuario = (Usuario) sesion.getAttribute("usuarioLogueado");
 
-        if (!"EMPRESA".equalsIgnoreCase(usuario.getRol())
-                || usuario.getIdEmpresa() == null
-                || usuario.getIdEmpresa() <= 0) {
+        if (!"EMPRESA".equalsIgnoreCase(usuario.getRol())) {
             res.sendError(403);
             return;
         }
 
-        int idEmpresa = usuario.getIdEmpresa();
+        Integer idEmpresaObj = usuario.getIdEmpresa();
+        if (idEmpresaObj == null || idEmpresaObj <= 0) {
+            Empresa emp = empresaDAO.obtenerPorUsuarioId(usuario.getId());
+            if (emp != null) {
+                idEmpresaObj = emp.getId();
+                usuario.setIdEmpresa(idEmpresaObj);
+            }
+        }
+        if (idEmpresaObj == null || idEmpresaObj <= 0) {
+            res.sendError(403, "Empresa no identificada.");
+            return;
+        }
+
+        Empresa empActual = empresaDAO.obtenerPorId(idEmpresaObj);
+        if (empActual == null || !"APROBADA".equalsIgnoreCase(empActual.getEstado())
+                || !"ACTIVO".equalsIgnoreCase(empActual.getEstadoCuenta())) {
+            volver(req, res, "error", "Tu empresa debe estar aprobada y activa para gestionar entrevistas.");
+            return;
+        }
+
+        int idEmpresa = idEmpresaObj;
 
         try {
             String accion = req.getParameter("accion");
 
-            if ("eliminar".equals(accion)) {
+            if ("eliminar".equalsIgnoreCase(accion)) {
                 int id = Integer.parseInt(req.getParameter("idEntrevista"));
 
                 Entrevista entrevista = entrevistaDAO.obtenerPorId(id);
                 if (entrevista == null) {
-                    res.sendError(404);
+                    volver(req, res, "error", "La entrevista seleccionada no existe.");
                     return;
                 }
 
@@ -84,6 +112,36 @@ public class EntrevistaServlet extends HttpServlet {
                 return;
             }
 
+            if ("cambiarEstado".equalsIgnoreCase(accion)) {
+                int id = Integer.parseInt(req.getParameter("idEntrevista"));
+                String nuevoEstado = req.getParameter("estado");
+                String obs = req.getParameter("observaciones");
+                if (nuevoEstado == null || (!"PROGRAMADA".equalsIgnoreCase(nuevoEstado)
+                        && !"REALIZADA".equalsIgnoreCase(nuevoEstado)
+                        && !"CANCELADA".equalsIgnoreCase(nuevoEstado))) {
+                    volver(req, res, "error", "Estado de entrevista no válido.");
+                    return;
+                }
+
+                Entrevista entrevista = entrevistaDAO.obtenerPorId(id);
+                if (entrevista == null) {
+                    volver(req, res, "error", "Entrevista no encontrada.");
+                    return;
+                }
+
+                Postulacion p = postulacionDAO.obtenerPorId(entrevista.getIdPostulacion());
+                OfertaPractica o = p != null ? ofertaDAO.obtenerPorId(p.getIdOferta()) : null;
+                if (o == null || o.getIdEmpresa() != idEmpresa) {
+                    res.sendError(403, "No estás autorizado para modificar esta entrevista.");
+                    return;
+                }
+
+                boolean ok = entrevistaDAO.actualizarEstado(id, nuevoEstado.toUpperCase(), obs);
+                volver(req, res, ok ? "exito" : "error",
+                        ok ? "entrevista_estado_actualizado" : "No se pudo actualizar el estado de la entrevista.");
+                return;
+            }
+
             int idPostulacion = Integer.parseInt(req.getParameter("idPostulacion"));
 
             String fecha = req.getParameter("fecha");
@@ -93,21 +151,34 @@ public class EntrevistaServlet extends HttpServlet {
             String estado = req.getParameter("estado");
             String observaciones = req.getParameter("observaciones");
 
-            if (fecha == null || hora == null || modalidad == null
-                    || lugar == null || lugar.isBlank()) {
-                volver(req, res, "error", "Completa los campos obligatorios.");
+            if (fecha == null || fecha.isBlank() || hora == null || hora.isBlank()
+                    || modalidad == null || lugar == null || lugar.isBlank()) {
+                volver(req, res, "error", "Completa los campos obligatorios de la entrevista.");
+                return;
+            }
+
+            LocalDate fechaEnt;
+            try {
+                fechaEnt = LocalDate.parse(fecha.trim());
+            } catch (DateTimeParseException ex) {
+                volver(req, res, "error", "Formato de fecha inválido.");
+                return;
+            }
+
+            if ("crear".equalsIgnoreCase(accion) && fechaEnt.isBefore(LocalDate.now())) {
+                volver(req, res, "error", "No puedes programar una nueva entrevista en una fecha pasada.");
                 return;
             }
 
             if ("VIRTUAL".equalsIgnoreCase(modalidad)
-                    && !lugar.matches("https://[^\\s]+")) {
-                volver(req, res, "error", "Ingresa un enlace HTTPS válido.");
+                    && !lugar.trim().matches("https?://[^\\s]+")) {
+                volver(req, res, "error", "Ingresa un enlace válido (https://...) para la entrevista virtual.");
                 return;
             }
 
             Postulacion p = postulacionDAO.obtenerPorId(idPostulacion);
             if (p == null) {
-                res.sendError(404, "Postulación no encontrada.");
+                volver(req, res, "error", "Postulación no encontrada.");
                 return;
             }
 
@@ -123,7 +194,7 @@ public class EntrevistaServlet extends HttpServlet {
                 return;
             }
 
-            if ("actualizar".equals(accion)) {
+            if ("actualizar".equalsIgnoreCase(accion)) {
                 int idEntrevista = Integer.parseInt(req.getParameter("idEntrevista"));
 
                 Entrevista existente = entrevistaDAO.obtenerPorId(idEntrevista);
@@ -132,25 +203,29 @@ public class EntrevistaServlet extends HttpServlet {
                     return;
                 }
 
-                existente.setFecha(fecha);
-                existente.setHora(hora);
-                existente.setModalidad(modalidad);
-                existente.setEnlaceLugar(lugar);
-                existente.setEstado(estado == null ? "PROGRAMADA" : estado);
-                existente.setObservaciones(observaciones == null ? "" : observaciones);
+                existente.setFecha(fecha.trim());
+                existente.setHora(hora.trim());
+                existente.setModalidad(modalidad.trim());
+                existente.setEnlaceLugar(lugar.trim());
+                existente.setEstado(estado == null ? "PROGRAMADA" : estado.trim());
+                existente.setObservaciones(observaciones == null ? "" : observaciones.trim());
 
                 boolean ok = entrevistaDAO.actualizar(existente);
                 volver(req, res, ok ? "exito" : "error",
                         ok ? "entrevista_guardada" : "Error al actualizar la entrevista.");
-            } else if ("crear".equals(accion)) {
+            } else if ("crear".equalsIgnoreCase(accion)) {
+                if (entrevistaDAO.tieneEntrevistaActiva(idPostulacion)) {
+                    volver(req, res, "error", "Este postulante ya tiene una entrevista activa programada.");
+                    return;
+                }
                 Entrevista nueva = new Entrevista();
                 nueva.setIdPostulacion(idPostulacion);
-                nueva.setFecha(fecha);
-                nueva.setHora(hora);
-                nueva.setModalidad(modalidad);
-                nueva.setEnlaceLugar(lugar);
-                nueva.setEstado(estado == null ? "PROGRAMADA" : estado);
-                nueva.setObservaciones(observaciones == null ? "" : observaciones);
+                nueva.setFecha(fecha.trim());
+                nueva.setHora(hora.trim());
+                nueva.setModalidad(modalidad.trim());
+                nueva.setEnlaceLugar(lugar.trim());
+                nueva.setEstado(estado == null ? "PROGRAMADA" : estado.trim());
+                nueva.setObservaciones(observaciones == null ? "" : observaciones.trim());
 
                 int idGen = entrevistaDAO.crear(nueva);
                 volver(req, res, idGen > 0 ? "exito" : "error",
