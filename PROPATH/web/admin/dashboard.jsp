@@ -1,20 +1,27 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="com.propath.servicio.BackendCliente"%>
 <%@page import="java.util.Map"%>
 <%
-    request.setAttribute("activePage", "dashboard");
-    Map<String, Object> stats = BackendCliente.obtenerEstadisticasAdmin();
-    long totalEstudiantes = stats.containsKey("totalEstudiantes") ? (Long) stats.get("totalEstudiantes") : 0L;
-    long estudiantesSemana = stats.containsKey("estudiantesEstaSemana") ? (Long) stats.get("estudiantesEstaSemana") : 0L;
-    long totalEmpresas = stats.containsKey("totalEmpresas") ? (Long) stats.get("totalEmpresas") : 0L;
-    long empresasAprobadas = stats.containsKey("empresasAprobadas") ? (Long) stats.get("empresasAprobadas") : 0L;
-    long empresasPendientes = stats.containsKey("empresasPendientes") ? (Long) stats.get("empresasPendientes") : 0L;
-    long totalOfertas = stats.containsKey("totalOfertas") ? (Long) stats.get("totalOfertas") : 0L;
-    long ofertasActivas = stats.containsKey("ofertasActivas") ? (Long) stats.get("ofertasActivas") : 0L;
-    long ofertasPendientes = stats.containsKey("ofertasPendientes") ? (Long) stats.get("ofertasPendientes") : 0L;
-    long totalPostulaciones = stats.containsKey("totalPostulaciones") ? (Long) stats.get("totalPostulaciones") : 0L;
-    long postRevision = stats.containsKey("postulacionesEnRevision") ? (Long) stats.get("postulacionesEnRevision") : 0L;
-    long postSeleccionadas = stats.containsKey("postulacionesSeleccionadas") ? (Long) stats.get("postulacionesSeleccionadas") : 0L;
+    // Si se accede directamente al JSP sin pasar por el controlador AdminServlet, redirigir
+    if (request.getAttribute("stats") == null) {
+        response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+        return;
+    }
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stats = (Map<String, Object>) request.getAttribute("stats");
+    long totalEstudiantes = request.getAttribute("totalEstudiantes") != null ? (Long) request.getAttribute("totalEstudiantes") : 0L;
+    long estudiantesSemana = request.getAttribute("estudiantesSemana") != null ? (Long) request.getAttribute("estudiantesSemana") : 0L;
+    long estudiantesActivos = request.getAttribute("estudiantesActivos") != null ? (Long) request.getAttribute("estudiantesActivos") : 0L;
+    long totalEmpresas = request.getAttribute("totalEmpresas") != null ? (Long) request.getAttribute("totalEmpresas") : 0L;
+    long empresasAprobadas = request.getAttribute("empresasAprobadas") != null ? (Long) request.getAttribute("empresasAprobadas") : 0L;
+    long empresasPendientes = request.getAttribute("empresasPendientes") != null ? (Long) request.getAttribute("empresasPendientes") : 0L;
+    long totalUsuarios = request.getAttribute("totalUsuarios") != null ? (Long) request.getAttribute("totalUsuarios") : 0L;
+    long totalOfertas = request.getAttribute("totalOfertas") != null ? (Long) request.getAttribute("totalOfertas") : 0L;
+    long ofertasActivas = request.getAttribute("ofertasActivas") != null ? (Long) request.getAttribute("ofertasActivas") : 0L;
+    long ofertasPendientes = request.getAttribute("ofertasPendientes") != null ? (Long) request.getAttribute("ofertasPendientes") : 0L;
+    long totalPostulaciones = request.getAttribute("totalPostulaciones") != null ? (Long) request.getAttribute("totalPostulaciones") : 0L;
+    long postRevision = request.getAttribute("postRevision") != null ? (Long) request.getAttribute("postRevision") : 0L;
+    long postSeleccionadas = request.getAttribute("postSeleccionadas") != null ? (Long) request.getAttribute("postSeleccionadas") : 0L;
 %>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="light">
@@ -42,11 +49,14 @@
                                 ProPath &bull; <span class="fw-medium text-primary">“Tu camino hacia el éxito profesional”</span>
                             </p>
                         </div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="${pageContext.request.contextPath}/admin/usuarios" class="btn btn-outline-secondary rounded-3 px-3 py-2 fw-semibold" style="font-size: 0.9rem;">
+                                <i class="bi bi-people me-1"></i> Usuarios (<%= totalUsuarios %>)
+                            </a>
                             <a href="${pageContext.request.contextPath}/admin/ofertas.jsp" class="btn btn-outline-primary rounded-3 px-3 py-2 fw-semibold" style="font-size: 0.9rem;">
                                 <i class="bi bi-briefcase me-1"></i> Ver Ofertas
                             </a>
-                            <a href="${pageContext.request.contextPath}/admin/estudiantes.jsp" class="btn btn-primary rounded-3 px-3 py-2 fw-semibold" style="font-size: 0.9rem; background: var(--propath-turquoise); border-color: var(--propath-turquoise);">
+                            <a href="${pageContext.request.contextPath}/admin/estudiantes" class="btn btn-primary rounded-3 px-3 py-2 fw-semibold" style="font-size: 0.9rem; background: var(--propath-turquoise); border-color: var(--propath-turquoise);">
                                 <i class="bi bi-mortarboard me-1"></i> Ver Estudiantes
                             </a>
                         </div>
@@ -72,7 +82,7 @@
                                             <i class="bi bi-dash text-muted"></i> Sin altas esta semana
                                         <% } %>
                                     </span>
-                                    <a href="${pageContext.request.contextPath}/admin/estudiantes.jsp" class="text-decoration-none fw-semibold text-primary">Gestionar &rarr;</a>
+                                    <a href="${pageContext.request.contextPath}/admin/estudiantes" class="text-decoration-none fw-semibold text-primary">Gestionar &rarr;</a>
                                 </div>
                             </div>
                         </div>
@@ -90,7 +100,7 @@
                                 </div>
                                 <div class="mt-3 pt-2 border-top d-flex align-items-center justify-content-between small text-muted">
                                     <span><i class="bi bi-shield-check text-info fw-bold"></i> <%= empresasAprobadas %> verificadas &bull; <%= empresasPendientes %> pendientes</span>
-                                    <a href="${pageContext.request.contextPath}/admin/empresas.jsp" class="text-decoration-none fw-semibold text-primary">Gestionar &rarr;</a>
+                                    <a href="${pageContext.request.contextPath}/admin/empresas" class="text-decoration-none fw-semibold text-primary">Gestionar &rarr;</a>
                                 </div>
                             </div>
                         </div>
@@ -168,7 +178,7 @@
                                                         Supervisa y activa/bloquea el acceso de los alumnos postulantes de diversas universidades.
                                                     </p>
                                                 </div>
-                                                <a href="${pageContext.request.contextPath}/admin/estudiantes.jsp" class="btn btn-sm btn-outline-primary rounded-pill align-self-start">
+                                                <a href="${pageContext.request.contextPath}/admin/estudiantes" class="btn btn-sm btn-outline-primary rounded-pill align-self-start">
                                                     Ir a Estudiantes
                                                 </a>
                                             </div>
@@ -185,7 +195,7 @@
                                                         Valida RUC, aprueba empresas nuevas o bloquea cuentas que incumplan normativas.
                                                     </p>
                                                 </div>
-                                                <a href="${pageContext.request.contextPath}/admin/empresas.jsp" class="btn btn-sm btn-outline-info rounded-pill align-self-start" style="color: #0891b2; border-color: #0891b2;">
+                                                <a href="${pageContext.request.contextPath}/admin/empresas" class="btn btn-sm btn-outline-info rounded-pill align-self-start" style="color: #0891b2; border-color: #0891b2;">
                                                     Ir a Empresas
                                                 </a>
                                             </div>
@@ -221,6 +231,24 @@
                                                 </div>
                                                 <a href="${pageContext.request.contextPath}/admin/postulaciones.jsp" class="btn btn-sm btn-outline-primary rounded-pill align-self-start" style="color: #4338ca; border-color: #4338ca;">
                                                     Ir a Postulaciones
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="p-3 border rounded-3 bg-light-subtle h-100 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
+                                                <div>
+                                                    <div class="d-flex align-items-center gap-2 mb-1 text-dark fw-bold">
+                                                        <i class="bi bi-people-fill fs-5 text-primary"></i>
+                                                        <span>Gestión Integral de Usuarios</span>
+                                                        <span class="badge bg-secondary-subtle text-secondary small"><%= totalUsuarios %> cuentas</span>
+                                                    </div>
+                                                    <p class="small text-muted mb-0">
+                                                        Supervisa y administra el total de cuentas registradas (Estudiantes, Empresas y Administradores), con filtros por rol y estado.
+                                                    </p>
+                                                </div>
+                                                <a href="${pageContext.request.contextPath}/admin/usuarios" class="btn btn-sm btn-primary rounded-pill text-nowrap align-self-start align-self-sm-center">
+                                                    Gestionar Usuarios &rarr;
                                                 </a>
                                             </div>
                                         </div>

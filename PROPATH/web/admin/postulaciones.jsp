@@ -1,4 +1,4 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.Postulacion"%>
 <%@page import="com.propath.servicio.BackendCliente"%>
@@ -41,7 +41,7 @@
                         <div>
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb mb-1 small">
-                                    <li class="breadcrumb-item"><a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="text-decoration-none">Inicio</a></li>
+                                    <li class="breadcrumb-item"><a href="${pageContext.request.contextPath}/admin/dashboard" class="text-decoration-none">Inicio</a></li>
                                     <li class="breadcrumb-item active" aria-current="page">Postulaciones</li>
                                 </ol>
                             </nav>

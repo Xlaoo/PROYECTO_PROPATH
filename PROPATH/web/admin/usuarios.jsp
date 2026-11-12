@@ -1,14 +1,36 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
-    <%@page import="java.util.List" %>
-        <%@page import="com.propath.modelo.Usuario" %>
-            <%@page import="com.propath.modelo.Estudiante" %>
-                <%@page import="com.propath.modelo.Empresa" %>
-                    <%@page import="com.propath.servicio.BackendCliente" %>
-                        <% request.setAttribute("activePage", "usuarios" ); List<Usuario> listaUsuarios =
-                            BackendCliente.listarUsuarios();
-                            List<Estudiante> listaEstudiantes = BackendCliente.listarEstudiantes();
-                                List<Empresa> listaEmpresas = BackendCliente.listarEmpresas();
-                                    %>
+<%@page import="java.util.List" %>
+<%@page import="com.propath.modelo.Usuario" %>
+<%@page import="com.propath.modelo.Estudiante" %>
+<%@page import="com.propath.modelo.Empresa" %>
+<%@page import="com.propath.util.HtmlUtil" %>
+<%
+    // Si se accede directamente al JSP sin pasar por el controlador AdminServlet, redirigir
+    if (request.getAttribute("listaUsuarios") == null) {
+        String query = request.getQueryString();
+        String destino = request.getContextPath() + "/admin/usuarios" + (query != null && !query.isEmpty() ? "?" + query : "");
+        response.sendRedirect(destino);
+        return;
+    }
+
+    @SuppressWarnings("unchecked")
+    List<Usuario> listaUsuarios = (List<Usuario>) request.getAttribute("listaUsuarios");
+    @SuppressWarnings("unchecked")
+    List<Estudiante> listaEstudiantes = (List<Estudiante>) request.getAttribute("listaEstudiantes");
+    @SuppressWarnings("unchecked")
+    List<Empresa> listaEmpresas = (List<Empresa>) request.getAttribute("listaEmpresas");
+    String busqueda = (String) request.getAttribute("busqueda");
+    String rol = (String) request.getAttribute("rol");
+    String estado = (String) request.getAttribute("estado");
+    Integer totalUsuariosObj = (Integer) request.getAttribute("totalUsuarios");
+    int totalUsuarios = (totalUsuariosObj != null) ? totalUsuariosObj : (listaUsuarios != null ? listaUsuarios.size() : 0);
+    Boolean filtrosActivosObj = (Boolean) request.getAttribute("filtrosActivos");
+    boolean filtrosActivos = (filtrosActivosObj != null) ? filtrosActivosObj : false;
+
+    if (busqueda == null) busqueda = "";
+    if (rol == null) rol = "TODOS";
+    if (estado == null) estado = "TODOS";
+%>
                                     <!DOCTYPE html>
                                     <html lang="es" data-bs-theme="light">
 
@@ -42,7 +64,7 @@
                                                             <nav aria-label="breadcrumb">
                                                                 <ol class="breadcrumb mb-1 small">
                                                                     <li class="breadcrumb-item"><a
-                                                                            href="${pageContext.request.contextPath}/admin/dashboard.jsp"
+                                                                            href="${pageContext.request.contextPath}/admin/dashboard"
                                                                             class="text-decoration-none">Inicio</a></li>
                                                                     <li class="breadcrumb-item active"
                                                                         aria-current="page">Usuarios</li>
@@ -53,20 +75,71 @@
                                                             <p class="text-muted small mb-0">Supervisión y consulta de
                                                                 cuentas registradas</p>
                                                         </div>
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <a href="${pageContext.request.contextPath}/admin/usuarios.jsp"
-                                                                class="btn btn-primary rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm"
-                                                                title="Consultar y refrescar lista desde MariaDB">
+                                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                            <a href="${pageContext.request.contextPath}/admin/reporte-usuarios?busqueda=<%= java.net.URLEncoder.encode(busqueda, "UTF-8") %>&rol=<%= java.net.URLEncoder.encode(rol, "UTF-8") %>&estado=<%= java.net.URLEncoder.encode(estado, "UTF-8") %>"
+                                                               target="_blank"
+                                                               class="btn btn-outline-danger rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm"
+                                                               title="Generar vista imprimible o guardar como PDF">
+                                                                <i class="bi bi-file-earmark-pdf-fill fs-6"></i> Reporte PDF
+                                                            </a>
+                                                            <a href="${pageContext.request.contextPath}/admin/usuarios"
+                                                                class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm"
+                                                                title="Consultar y refrescar lista">
                                                                 <i class="bi bi-arrow-clockwise fs-6"></i> Actualizar
                                                             </a>
                                                             <span
                                                                 class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold">
                                                                 <i class="bi bi-people-fill me-1"></i>
-                                                                <%= (listaUsuarios !=null ? listaUsuarios.size() : 0) %>
-                                                                    Usuarios en base de datos
+                                                                <%= totalUsuarios %> Usuarios <%= filtrosActivos ? "encontrados" : "en base de datos" %>
                                                             </span>
                                                         </div>
                                                     </div>
+
+                                                    <!-- Barra de Búsqueda y Filtros de Usuarios -->
+                                                    <form method="GET" action="${pageContext.request.contextPath}/admin/usuarios" class="mb-4">
+                                                        <div class="propath-card p-3 shadow-sm border-0">
+                                                            <div class="row g-2 align-items-center">
+                                                                <div class="col-12 col-md-4">
+                                                                    <div class="input-group">
+                                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                                                        <input type="text" 
+                                                                               name="busqueda" 
+                                                                               class="form-control border-start-0" 
+                                                                               placeholder="Buscar por nombre o correo..." 
+                                                                               value="<%= HtmlUtil.escape(busqueda) %>">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-6 col-md-3">
+                                                                    <select name="rol" class="form-select">
+                                                                        <option value="TODOS" <%= "TODOS".equals(rol) ? "selected" : "" %>>Todos los roles</option>
+                                                                        <option value="ADMIN" <%= "ADMIN".equals(rol) ? "selected" : "" %>>Administrador (ADMIN)</option>
+                                                                        <option value="ESTUDIANTE" <%= "ESTUDIANTE".equals(rol) ? "selected" : "" %>>Estudiante (ESTUDIANTE)</option>
+                                                                        <option value="EMPRESA" <%= "EMPRESA".equals(rol) ? "selected" : "" %>>Empresa (EMPRESA)</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-6 col-md-3">
+                                                                    <select name="estado" class="form-select">
+                                                                        <option value="TODOS" <%= "TODOS".equals(estado) ? "selected" : "" %>>Todos los estados</option>
+                                                                        <option value="ACTIVO" <%= "ACTIVO".equals(estado) ? "selected" : "" %>>Activo</option>
+                                                                        <option value="INACTIVO" <%= "INACTIVO".equals(estado) ? "selected" : "" %>>Inactivo</option>
+                                                                        <option value="BLOQUEADO" <%= "BLOQUEADO".equals(estado) ? "selected" : "" %>>Bloqueado</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-12 col-md-2 d-flex gap-2">
+                                                                    <button type="submit" class="btn btn-primary rounded-pill px-3 py-2 flex-grow-1 fw-semibold shadow-sm">
+                                                                        <i class="bi bi-funnel-fill me-1"></i> Filtrar
+                                                                    </button>
+                                                                    <% if (filtrosActivos) { %>
+                                                                    <a href="${pageContext.request.contextPath}/admin/usuarios" 
+                                                                       class="btn btn-outline-secondary rounded-pill px-3 py-2" 
+                                                                       title="Limpiar búsqueda y filtros">
+                                                                        <i class="bi bi-x-circle"></i>
+                                                                    </a>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </form>
 
                                                     <div class="propath-card">
                                                         <div class="propath-card-header">
@@ -79,7 +152,7 @@
                                                                 <input type="text"
                                                                     class="form-control table-search-input"
                                                                     data-table="tablaUsuarios"
-                                                                    placeholder="Buscar usuario...">
+                                                                    placeholder="Filtrado rápido en tabla...">
                                                             </div>
                                                         </div>
 
@@ -100,12 +173,15 @@
                                                                     <% if (listaUsuarios==null ||
                                                                         listaUsuarios.isEmpty()) { %>
                                                                         <tr>
-                                                                            <td colspan="7"
-                                                                                class="text-center py-4 text-muted">
-                                                                                <i
-                                                                                    class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
-                                                                                <span>No hay registros
-                                                                                    disponibles</span>
+                                                                            <td colspan="7" class="text-center py-5 text-muted">
+                                                                                <i class="bi bi-search fs-2 d-block mb-2 text-secondary"></i>
+                                                                                <h6 class="fw-bold text-dark">No se encontraron usuarios</h6>
+                                                                                <p class="small text-muted mb-3">No existen cuentas registradas que coincidan con los criterios de búsqueda o filtros aplicados.</p>
+                                                                                <% if (filtrosActivos) { %>
+                                                                                <a href="${pageContext.request.contextPath}/admin/usuarios" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Restablecer y mostrar todos
+                                                                                </a>
+                                                                                <% } %>
                                                                             </td>
                                                                         </tr>
                                                                         <% } else { for (Usuario u : listaUsuarios) {
@@ -169,23 +245,23 @@
                                                                                             class="btn-action btn-action-view"
                                                                                             title="Ver detalles del usuario"
                                                                                             data-id="<%= u.getId() %>"
-                                                                                            data-nombre="<%= u.getNombre() %>"
-                                                                                            data-apellidos="<%= u.getApellidos() != null ? u.getApellidos() : "" %>"
-                                                                                            data-correo="<%= u.getCorreo() %>"
-                                                                                            data-rol="<%= u.getRol() %>"
-                                                                                            data-estado="<%= u.getEstado() %>"
-                                                                                            data-fecharegistro="<%= u.getFechaRegistro() %>"
-                                                                                            data-universidad="<%= est != null && est.getUniversidad() != null ? est.getUniversidad() : "" %>"
-                                                                                            data-carrera="<%= est != null && est.getCarrera() != null ? est.getCarrera() : "" %>"
+                                                                                            data-nombre="<%= HtmlUtil.escape(u.getNombre()) %>"
+                                                                                            data-apellidos="<%= HtmlUtil.escape(u.getApellidos() != null ? u.getApellidos() : "") %>"
+                                                                                            data-correo="<%= HtmlUtil.escape(u.getCorreo()) %>"
+                                                                                            data-rol="<%= HtmlUtil.escape(u.getRol()) %>"
+                                                                                            data-estado="<%= HtmlUtil.escape(u.getEstado()) %>"
+                                                                                            data-fecharegistro="<%= HtmlUtil.escape(u.getFechaRegistro()) %>"
+                                                                                            data-universidad="<%= HtmlUtil.escape(est != null && est.getUniversidad() != null ? est.getUniversidad() : "") %>"
+                                                                                            data-carrera="<%= HtmlUtil.escape(est != null && est.getCarrera() != null ? est.getCarrera() : "") %>"
                                                                                             data-ciclo="<%= est != null && est.getCiclo() > 0 ? est.getCiclo() : "" %>"
-                                                                                            data-telefono="<%= est != null && est.getTelefono() != null ? est.getTelefono() : (emp != null && emp.getTelefono() != null ? emp.getTelefono() : "") %>"
-                                                                                            data-cv="<%= est != null && est.getCv() != null ? est.getCv() : "" %>"
-                                                                                            data-razonsocial="<%= emp != null && emp.getRazonSocial() != null ? emp.getRazonSocial() : "" %>"
-                                                                                            data-ruc="<%= emp != null && emp.getRuc() != null ? emp.getRuc() : "" %>"
-                                                                                            data-representante="<%= emp != null ? (emp.getRepresentanteNombre() + " " + emp.getRepresentanteApellidos()).trim() : (u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : "")).trim() %>"
-                                                                                            data-direccion="<%= emp != null && emp.getDireccion() != null ? emp.getDireccion() : "" %>"
-                                                                                            data-descripcion="<%= emp != null && emp.getDescripcion() != null ? emp.getDescripcion() : "" %>"
-                                                                                            data-cargo="<%= esAdmin ? (u.getId() == 60 ? "Administrador Principal del Sistema" : "Administrador del Sistema") : "" %>"
+                                                                                            data-telefono="<%= HtmlUtil.escape(est != null && est.getTelefono() != null ? est.getTelefono() : (emp != null && emp.getTelefono() != null ? emp.getTelefono() : "")) %>"
+                                                                                            data-cv="<%= HtmlUtil.escape(est != null && est.getCv() != null ? est.getCv() : "") %>"
+                                                                                            data-razonsocial="<%= HtmlUtil.escape(emp != null && emp.getRazonSocial() != null ? emp.getRazonSocial() : "") %>"
+                                                                                            data-ruc="<%= HtmlUtil.escape(emp != null && emp.getRuc() != null ? emp.getRuc() : "") %>"
+                                                                                            data-representante="<%= HtmlUtil.escape(emp != null ? (emp.getRepresentanteNombre() + " " + emp.getRepresentanteApellidos()).trim() : (u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : "")).trim()) %>"
+                                                                                            data-direccion="<%= HtmlUtil.escape(emp != null && emp.getDireccion() != null ? emp.getDireccion() : "") %>"
+                                                                                            data-descripcion="<%= HtmlUtil.escape(emp != null && emp.getDescripcion() != null ? emp.getDescripcion() : "") %>"
+                                                                                            data-cargo="<%= HtmlUtil.escape(esAdmin ? (u.getId() == 60 ? "Administrador Principal del Sistema" : "Administrador del Sistema") : "") %>"
                                                                                             onclick="verDetallesUsuario(this)">
                                                                                             <i class="bi bi-eye"></i>
                                                                                         </button>
@@ -193,7 +269,7 @@
                                                                                             class="btn-action btn-action-danger"
                                                                                             title="Eliminar usuario"
                                                                                             data-id="<%= u.getId() %>"
-                                                                                            data-nombre="<%= u.getNombre() %> <%= u.getApellidos() != null ? u.getApellidos() : "" %>"
+                                                                                            data-nombre="<%= HtmlUtil.escape(u.getNombre() + (u.getApellidos() != null ? " " + u.getApellidos() : "")) %>"
                                                                                             onclick="eliminarUsuario(this.dataset.id, this.dataset.nombre)">
                                                                                             <i class="bi bi-trash"></i>
                                                                                         </button>
@@ -464,8 +540,8 @@
 
                                                     if (window.mostrarModalConfirmacion) {
                                                         mostrarModalConfirmacion(
-                                                            'Eliminar Usuario',
-                                                            '¿Estás seguro de eliminar al usuario #' + id + ' "' + nombre + '"? Esta acción verificará y eliminará las relaciones de la cuenta.',
+                                                            'Eliminar o Dar de Baja Usuario',
+                                                            '¿Estás seguro de proceder con la baja o eliminación del usuario #' + id + ' "' + nombre + '"? Si la cuenta tiene registros asociados (como ofertas o postulaciones), se desactivará (estado INACTIVO) para conservar el historial; de lo contrario, se eliminará definitivamente.',
                                                             async function () {
                                                                 const body = new URLSearchParams({
                                                                     accion: 'eliminar',
@@ -485,12 +561,12 @@
                                                                     }
                                                                     const data = await res.json();
                                                                     if (data.exito) {
-                                                                        if (window.mostrarModalMensaje) mostrarModalMensaje('Usuario Eliminado', data.mensaje || 'Usuario eliminado con éxito.', 'success', () => window.location.reload());
+                                                                        if (window.mostrarModalMensaje) mostrarModalMensaje('Operación Exitosa', data.mensaje || 'Usuario procesado con éxito.', 'success', () => window.location.reload());
                                                                     } else {
                                                                         if (data.prohibido) {
                                                                             if (window.mostrarModalProhibido) mostrarModalProhibido(data.mensaje);
                                                                         } else {
-                                                                            if (window.mostrarModalMensaje) mostrarModalMensaje('Error al Eliminar', data.mensaje || 'No se pudo eliminar el usuario.', 'danger');
+                                                                            if (window.mostrarModalMensaje) mostrarModalMensaje('Error al Procesar', data.mensaje || 'No se pudo eliminar el usuario.', 'danger');
                                                                         }
                                                                     }
                                                                 } catch (err) {

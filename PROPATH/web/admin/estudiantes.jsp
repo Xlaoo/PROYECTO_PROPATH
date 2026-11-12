@@ -1,10 +1,16 @@
 ﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="com.propath.modelo.Estudiante"%>
-<%@page import="com.propath.servicio.BackendCliente"%>
+<%@page import="com.propath.util.HtmlUtil"%>
 <%
-    request.setAttribute("activePage", "estudiantes");
-    List<Estudiante> listaEstudiantes = BackendCliente.listarEstudiantes();
+    // Si se accede directamente al JSP sin pasar por el controlador AdminServlet, redirigir
+    if (request.getAttribute("listaEstudiantes") == null) {
+        response.sendRedirect(request.getContextPath() + "/admin/estudiantes");
+        return;
+    }
+
+    @SuppressWarnings("unchecked")
+    List<Estudiante> listaEstudiantes = (List<Estudiante>) request.getAttribute("listaEstudiantes");
 %>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="light">
@@ -41,16 +47,24 @@
                         <div>
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb mb-1 small">
-                                    <li class="breadcrumb-item"><a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="text-decoration-none">Inicio</a></li>
+                                    <li class="breadcrumb-item"><a href="${pageContext.request.contextPath}/admin/dashboard" class="text-decoration-none">Inicio</a></li>
                                     <li class="breadcrumb-item active" aria-current="page">Estudiantes</li>
                                 </ol>
                             </nav>
                             <h1 class="h3 fw-bold text-dark mb-0">Gestión de Estudiantes</h1>
                             <p class="text-muted small mb-0">Administra los estudiantes postulantes registrados para prácticas preprofesionales</p>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <a href="${pageContext.request.contextPath}/admin/estudiantes/dashboard" 
+                               class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm">
+                                <i class="bi bi-bar-chart-line-fill me-1"></i> Ver dashboard de estudiantes
+                            </a>
+                            <a href="${pageContext.request.contextPath}/admin/estudiantes" 
+                               class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold shadow-sm">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+                            </a>
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold">
-                                <i class="bi bi-people-fill me-1"></i> <%= listaEstudiantes.size() %> Estudiantes en vista
+                                <i class="bi bi-people-fill me-1"></i> <%= (listaEstudiantes != null ? listaEstudiantes.size() : 0) %> Estudiantes registrados
                             </span>
                         </div>
                     </div>
@@ -90,9 +104,9 @@
                                 <tbody>
                                     <% if (listaEstudiantes == null || listaEstudiantes.isEmpty()) { %>
                                     <tr>
-                                        <td colspan="9" class="text-center py-4 text-muted">
-                                            <i class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
-                                            <span>No hay registros disponibles</span>
+                                        <td colspan="9" class="text-center py-5 text-muted">
+                                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                            <span class="fw-medium">No se encontraron postulantes que coincidan con los filtros aplicados</span>
                                         </td>
                                     </tr>
                                     <% } else {
@@ -157,14 +171,14 @@
                                                         title="Ver detalle"
                                                         data-bs-toggle="tooltip"
                                                         data-id="<%= est.getId() %>"
-                                                        data-nombre="<%= est.getNombreCompleto() %>"
-                                                        data-correo="<%= est.getCorreo() %>"
-                                                        data-universidad="<%= est.getUniversidad() %>"
-                                                        data-carrera="<%= est.getCarrera() %>"
+                                                        data-nombre="<%= HtmlUtil.escape(est.getNombreCompleto()) %>"
+                                                        data-correo="<%= HtmlUtil.escape(est.getCorreo()) %>"
+                                                        data-universidad="<%= HtmlUtil.escape(est.getUniversidad()) %>"
+                                                        data-carrera="<%= HtmlUtil.escape(est.getCarrera()) %>"
                                                         data-ciclo="<%= est.getCiclo() %>"
-                                                        data-telefono="<%= est.getTelefono() != null ? est.getTelefono() : "" %>"
-                                                        data-cv="<%= est.getCv() != null ? est.getCv() : "" %>"
-                                                        data-estado="<%= est.getEstado() %>"
+                                                        data-telefono="<%= HtmlUtil.escape(est.getTelefono() != null ? est.getTelefono() : "") %>"
+                                                        data-cv="<%= HtmlUtil.escape(est.getCv() != null ? est.getCv() : "") %>"
+                                                        data-estado="<%= HtmlUtil.escape(est.getEstado()) %>"
                                                         onclick="mostrarFichaEstudianteAdmin(this)">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
      viewBox="0 0 24 24" fill="none"
@@ -181,14 +195,14 @@
                                                         title="Editar estudiante"
                                                         data-bs-toggle="tooltip"
                                                         data-id="<%= est.getId() %>"
-                                                        data-nombres="<%= est.getNombre() != null ? est.getNombre() : "" %>"
-                                                        data-apellidos="<%= est.getApellido() != null ? est.getApellido() : "" %>"
-                                                        data-correo="<%= est.getCorreo() %>"
-                                                        data-universidad="<%= est.getUniversidad() != null ? est.getUniversidad() : "" %>"
-                                                        data-carrera="<%= est.getCarrera() != null ? est.getCarrera() : "" %>"
+                                                        data-nombres="<%= HtmlUtil.escape(est.getNombre() != null ? est.getNombre() : "") %>"
+                                                        data-apellidos="<%= HtmlUtil.escape(est.getApellido() != null ? est.getApellido() : "") %>"
+                                                        data-correo="<%= HtmlUtil.escape(est.getCorreo()) %>"
+                                                        data-universidad="<%= HtmlUtil.escape(est.getUniversidad() != null ? est.getUniversidad() : "") %>"
+                                                        data-carrera="<%= HtmlUtil.escape(est.getCarrera() != null ? est.getCarrera() : "") %>"
                                                         data-ciclo="<%= est.getCiclo() %>"
-                                                        data-telefono="<%= est.getTelefono() != null ? est.getTelefono() : "" %>"
-                                                        data-estado="<%= est.getEstado() %>"
+                                                        data-telefono="<%= HtmlUtil.escape(est.getTelefono() != null ? est.getTelefono() : "") %>"
+                                                        data-estado="<%= HtmlUtil.escape(est.getEstado()) %>"
                                                         onclick="abrirModalEditarEstudiante(this)">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
@@ -199,7 +213,7 @@
                                                         title="Eliminar estudiante"
                                                         data-bs-toggle="tooltip"
                                                         data-id="<%= est.getId() %>"
-                                                        data-nombre="<%= est.getNombreCompleto() %>"
+                                                        data-nombre="<%= HtmlUtil.escape(est.getNombreCompleto()) %>"
                                                         onclick="eliminarEstudiante(this.dataset.id, this.dataset.nombre)">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -436,8 +450,8 @@ badge.className = 'badge-status ' +
 
             function eliminarEstudiante(id, nombre) {
                 mostrarModalConfirmacion(
-                    'Eliminar Estudiante',
-                    '¿Estás seguro de eliminar al estudiante "' + nombre + '"? Esta acción verificará y eliminará las relaciones del estudiante.',
+                    'Eliminar o Dar de Baja Estudiante',
+                    '¿Estás seguro de proceder con la baja del estudiante "' + nombre + '"? Si tiene postulaciones o historial registrado, la cuenta pasará a estado INACTIVO para conservar sus registros; de lo contrario, se eliminará del sistema.',
                     async function () {
                         const body = new URLSearchParams({
                             accion: 'eliminar',
@@ -454,9 +468,9 @@ badge.className = 'badge-status ' +
 
                             const data = await res.json();
                             if (data.exito) {
-                                mostrarModalMensaje('Estudiante Eliminado', data.mensaje || 'Estudiante eliminado con éxito.', 'success', () => window.location.reload());
+                                mostrarModalMensaje('Operación Exitosa', data.mensaje || 'Estudiante procesado con éxito.', 'success', () => window.location.reload());
                             } else {
-                                mostrarModalMensaje('Error al Eliminar', data.mensaje || 'No se pudo eliminar el estudiante.', 'danger');
+                                mostrarModalMensaje('Error al Procesar', data.mensaje || 'No se pudo eliminar el estudiante.', 'danger');
                             }
                         } catch (err) {
                             mostrarModalMensaje('Error de Conexión', 'No se pudo conectar con el servidor: ' + err.message, 'danger');

@@ -41,7 +41,7 @@ public class BackendCliente {
             String universidad, String carrera, int ciclo, String telefono) {
         UsuarioDAO usuarioDAO = new UsuarioDAO();
         if (usuarioDAO.obtenerPorCorreo(correo.trim()) != null) {
-            return "El correo electrónico ya se encuentra registrado.";
+            return "El correo electrÃ³nico ya se encuentra registrado.";
         }
 
         Estudiante est = new Estudiante();
@@ -63,7 +63,7 @@ public class BackendCliente {
         EmpresaDAO empresaDAO = new EmpresaDAO();
 
         if (usuarioDAO.obtenerPorCorreo(correo.trim()) != null) {
-            return "El correo electrónico ya se encuentra registrado.";
+            return "El correo electrÃ³nico ya se encuentra registrado.";
         }
         if (empresaDAO.obtenerPorRuc(ruc.trim()) != null) {
             return "El RUC ya se encuentra registrado por otra empresa.";
@@ -134,6 +134,11 @@ public class BackendCliente {
         return new UsuarioDAO().listarTodos();
     }
 
+    
+    public static List<Usuario> buscarYFiltrarUsuarios(String busqueda, String rol, String estado) {
+        return new UsuarioDAO().buscarYFiltrar(busqueda, rol, estado);
+    }
+
     public static boolean actualizarEstadoEmpresa(int id, String nuevoEstado) {
         return new EmpresaDAO().actualizarEstado(id, nuevoEstado);
     }
@@ -179,7 +184,7 @@ public class BackendCliente {
     }
 
     public static String eliminarRegistroConDetalle(String recurso, int id) {
-        if (recurso == null || id <= 0) return "Parámetros inválidos.";
+        if (recurso == null || id <= 0) return "ParÃ¡metros invÃ¡lidos.";
         boolean ok = false;
         if ("usuario".equalsIgnoreCase(recurso) || "usuarios".equalsIgnoreCase(recurso)) {
             ok = new UsuarioDAO().eliminar(id);
@@ -252,19 +257,19 @@ public class BackendCliente {
         }
         PostulacionDAO dao = new PostulacionDAO();
         if (dao.existePostulacion(idEstudiante, idOferta)) {
-            return "Ya te has postulado a esta oferta de prácticas.";
+            return "Ya te has postulado a esta oferta de prÃ¡cticas.";
         }
         Postulacion post = new Postulacion();
         post.setIdEstudiante(idEstudiante);
         post.setIdOferta(idOferta);
         post.setEstado("POSTULADO");
         int idPost = dao.crearConRespuestas(post, respuestas);
-        return idPost > 0 ? null : "Error al registrar la postulación.";
+        return idPost > 0 ? null : "Error al registrar la postulaciÃ³n.";
     }
 
     public static String actualizarRespuestasPostulacion(int idPostulacion, int idEstudiante, String[] respuestas) {
         boolean ok = new PostulacionDAO().guardarRespuestas(idPostulacion, respuestas);
-        return ok ? null : "Error al actualizar las respuestas de la postulación.";
+        return ok ? null : "Error al actualizar las respuestas de la postulaciÃ³n.";
     }
 
     public static String publicarOferta(int idEmpresa, String titulo, String descripcion, String requisitos,
@@ -282,7 +287,7 @@ public class BackendCliente {
         o.setRemuneracion(remuneracion);
         o.setEstado("ACTIVA");
         int id = new OfertaPracticaDAO().crear(o);
-        return id > 0 ? null : "Error al publicar la oferta de prácticas.";
+        return id > 0 ? null : "Error al publicar la oferta de prÃ¡cticas.";
     }
 
     public static String crearUsuario(String nombre, String correo, String contrasena, String rol, String estado) {

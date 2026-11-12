@@ -217,7 +217,7 @@ public class LoginServlet extends HttpServlet {
         String redirectUrl = request.getContextPath();
         String rol = usuario.getRol();
         if ("ADMIN".equalsIgnoreCase(rol)) {
-            redirectUrl += "/admin/dashboard.jsp";
+            redirectUrl += "/admin/dashboard";
         } else if ("ESTUDIANTE".equalsIgnoreCase(rol)) {
             redirectUrl += "/estudiante/dashboard.jsp";
         } else if ("EMPRESA".equalsIgnoreCase(rol)) {

@@ -17,6 +17,9 @@ public class Empresa implements Serializable {
     private String representanteApellidos;
     private int idUsuario;
     private String estadoCuenta;
+    private String fechaRegistro;
+    private int totalOfertas;
+    private int ofertasActivas;
 
     public Empresa() {
     }
@@ -145,5 +148,29 @@ public class Empresa implements Serializable {
         if (n.isEmpty()) return a;
         if (a.isEmpty()) return n;
         return n + " " + a;
+    }
+
+    public String getFechaRegistro() {
+        return fechaRegistro != null ? fechaRegistro : "";
+    }
+
+    public void setFechaRegistro(String fechaRegistro) {
+        this.fechaRegistro = fechaRegistro;
+    }
+
+    public int getTotalOfertas() {
+        return totalOfertas;
+    }
+
+    public void setTotalOfertas(int totalOfertas) {
+        this.totalOfertas = totalOfertas;
+    }
+
+    public int getOfertasActivas() {
+        return ofertasActivas;
+    }
+
+    public void setOfertasActivas(int ofertasActivas) {
+        this.ofertasActivas = ofertasActivas;
     }
 }
