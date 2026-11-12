@@ -1,6 +1,8 @@
 /PROPATH/nbproject/private/
 /PROPATH/build/
 /PROPATH/dist/
+/PROPATH/target/
+target/
 /storage/
 /PROPATH/storage/
 *.pdf
