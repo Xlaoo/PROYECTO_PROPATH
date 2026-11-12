@@ -1848,7 +1848,7 @@ select.form-control,
 
 .admin-sidebar {
   width: var(--sidebar-width);
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(180deg, var(--propath-navy-dark) 0%, var(--propath-navy) 60%, #16243b 100%);
   color: #e2e8f0;
   display: flex;
@@ -1889,14 +1889,16 @@ select.form-control,
   display: block;
   width: 150px;
   max-width: 100%;
+  max-height: 58px;
   height: auto;
   object-fit: contain;
   margin: auto;
 }
 
 .sidebar-nav-container {
-  padding: 20px 14px;
+  padding: 16px 14px;
   flex-grow: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 

@@ -160,7 +160,7 @@
         <div class="sidebar-brand">
             <div class="sidebar-logo-container">
                 <a href="${pageContext.request.contextPath}/empresa/dashboard.jsp" class="d-block text-decoration-none">
-                    <img src="${pageContext.request.contextPath}/img/logo.png" alt="ProPath" class="sidebar-logo">
+                    <img src="${pageContext.request.contextPath}/img/logo-propath.png" alt="ProPath" class="sidebar-logo" style="object-fit: contain;">
                 </a>
             </div>
         </div>
