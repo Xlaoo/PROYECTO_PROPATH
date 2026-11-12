@@ -471,8 +471,8 @@
                                 </button>
                                 <% } else { %>
                                 <div class="d-flex align-items-center gap-3 mb-3">
-                                    <div class="rounded-3 p-3 bg-danger-subtle text-danger"><i class="bi bi-file-earmark-pdf-fill fs-3"></i></div>
-                                    <div>
+                                    <div class="rounded-3 p-3 bg-danger-subtle text-danger flex-shrink-0"><i class="bi bi-file-earmark-pdf-fill fs-3"></i></div>
+                                    <div class="min-w-0">
                                         <div class="fw-bold text-dark small text-break"><%= escaparHtml(miCv.getNombreArchivo()) %></div>
                                         <div class="small text-muted"><%= escaparHtml(miCv.getTamanioFormateado()) %> &bull; <%= escaparHtml(miCv.getFechaSubida()) %></div>
                                     </div>
@@ -498,7 +498,7 @@
                             </div>
                             <div class="propath-card-body">
                                 <h3 class="h5 fw-bold text-dark mb-1"><%= escaparHtml(nombreMostrar) %></h3>
-                                <p class="small text-muted mb-3"><i class="bi bi-envelope me-1"></i><%= escaparHtml(usuario.getCorreo()) %></p>
+                                <p class="small text-muted mb-3 text-break"><i class="bi bi-envelope me-1"></i><%= escaparHtml(usuario.getCorreo()) %></p>
                                 <div class="small text-secondary mb-2"><i class="bi bi-bank me-2 text-primary"></i><strong>Universidad:</strong> <%= (miEstudiante != null && miEstudiante.getUniversidad() != null && !miEstudiante.getUniversidad().isEmpty()) ? escaparHtml(miEstudiante.getUniversidad()) : "No especificada" %></div>
                                 <div class="small text-secondary mb-2"><i class="bi bi-mortarboard me-2 text-primary"></i><strong>Carrera:</strong> <%= (miEstudiante != null && miEstudiante.getCarrera() != null && !miEstudiante.getCarrera().isEmpty()) ? escaparHtml(miEstudiante.getCarrera()) : "No especificada" %></div>
                                 <div class="small text-secondary mb-2"><i class="bi bi-calendar3 me-2 text-primary"></i><strong>Ciclo Actual:</strong> <%= (miEstudiante != null && miEstudiante.getCiclo() > 0) ? miEstudiante.getCiclo() : 1 %>° ciclo</div>

@@ -1843,6 +1843,8 @@ select.form-control,
   display: flex;
   min-height: 100vh;
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   position: relative;
 }
 
@@ -1974,7 +1976,10 @@ select.form-control,
 }
 
 .admin-main {
-  flex-grow: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: calc(100% - var(--sidebar-width));
+  max-width: calc(100% - var(--sidebar-width));
   margin-left: var(--sidebar-width);
   min-height: 100vh;
   display: flex;
@@ -2081,8 +2086,10 @@ select.form-control,
 }
 
 .admin-content {
-  padding: 32px;
+  padding: 28px;
   flex-grow: 1;
+  min-width: 0;
+  width: 100%;
 }
 
 .stat-card {
@@ -2463,6 +2470,8 @@ select.form-control,
 
   .admin-main {
     margin-left: 0;
+    width: 100%;
+    max-width: 100%;
   }
 
   .sidebar-toggle-btn {
