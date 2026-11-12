@@ -1,10 +1,17 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8" %>
-    <%@page import="java.util.List" %>
-        <%@page import="com.propath.modelo.Empresa" %>
-            <%@page import="com.propath.servicio.BackendCliente" %>
-                <% request.setAttribute("activePage", "empresas" ); List<Empresa> listaEmpresas =
-                    BackendCliente.listarEmpresas();
-                    %>
+<%@page contentType="text/html" pageEncoding="UTF-8" %>
+<%@page import="java.util.List" %>
+<%@page import="com.propath.modelo.Empresa" %>
+<%@page import="com.propath.util.HtmlUtil" %>
+<%
+    // Si se accede directamente al JSP sin pasar por el controlador AdminServlet, redirigir
+    if (request.getAttribute("listaEmpresas") == null) {
+        response.sendRedirect(request.getContextPath() + "/admin/empresas");
+        return;
+    }
+
+    @SuppressWarnings("unchecked")
+    List<Empresa> listaEmpresas = (List<Empresa>) request.getAttribute("listaEmpresas");
+%>
                     <!DOCTYPE html>
                     <html lang="es" data-bs-theme="light">
 
@@ -48,7 +55,7 @@
                                             <nav aria-label="breadcrumb">
                                                 <ol class="breadcrumb mb-1 small">
                                                     <li class="breadcrumb-item"><a
-                                                            href="${pageContext.request.contextPath}/admin/dashboard.jsp"
+                                                            href="${pageContext.request.contextPath}/admin/dashboard"
                                                             class="text-decoration-none">Inicio</a></li>
                                                     <li class="breadcrumb-item active" aria-current="page">Empresas</li>
                                                 </ol>
@@ -57,23 +64,25 @@
                                             <p class="text-muted small mb-0">Valida y autoriza a las organizaciones
                                                 empleadoras registradas en ProPath</p>
                                         </div>
-                                        <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <a href="${pageContext.request.contextPath}/admin/empresas/dashboard"
+                                                class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm">
+                                                <i class="bi bi-bar-chart-line-fill me-1"></i> Ver dashboard de empresas
+                                            </a>
+                                            <a href="${pageContext.request.contextPath}/admin/empresas"
+                                                class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold shadow-sm">
+                                                <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+                                            </a>
                                             <span
                                                 class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2 rounded-pill fw-semibold"
                                                 style="color: #0891b2 !important; border-color: #0891b2 !important;">
                                                 <i class="bi bi-building-fill me-1"></i>
-                                                <%= (listaEmpresas !=null ? listaEmpresas.size() : 0) %> Empresas
-                                                    registradas
+                                                <%= (listaEmpresas != null ? listaEmpresas.size() : 0) %> Empresas registradas
                                             </span>
                                             <button type="button"
                                                 class="btn btn-success rounded-pill px-3 py-2 fw-semibold shadow-sm"
                                                 data-bs-toggle="modal" data-bs-target="#modalNuevaEmpresa">
                                                 <i class="bi bi-plus-circle me-1"></i> Nueva Empresa
-                                            </button>
-                                            <button type="button"
-                                                class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm"
-                                                onclick="window.location.reload()">
-                                                <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
                                             </button>
                                         </div>
                                     </div>
@@ -109,10 +118,9 @@
                                                 <tbody>
                                                     <% if (listaEmpresas==null || listaEmpresas.isEmpty()) { %>
                                                         <tr>
-                                                            <td colspan="6" class="text-center py-4 text-muted">
-                                                                <i
-                                                                    class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
-                                                                <span>No hay registros disponibles</span>
+                                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                                                <span class="fw-medium">No se encontraron organizaciones empleadoras que coincidan con los filtros aplicados</span>
                                                             </td>
                                                         </tr>
                                                         <% } else { for (Empresa emp : listaEmpresas) { boolean
@@ -192,15 +200,15 @@
                                                                             class="btn-action btn-action-view"
                                                                             title="Ver detalle" data-bs-toggle="tooltip"
                                                                             data-id="<%= emp.getId() %>"
-                                                                            data-razon="<%= emp.getRazonSocial() %>"
-                                                                            data-ruc="<%= emp.getRuc() %>"
-                                                                            data-correo="<%= emp.getCorreo() %>"
-                                                                            data-telefono="<%= emp.getTelefono() %>"
-                                                                            data-direccion="<%= emp.getDireccion() != null ? emp.getDireccion() : "" %>"
-                                                                            data-descripcion="<%= emp.getDescripcion() != null ? emp.getDescripcion() : "" %>"
-                                                                            data-representante="<%= emp.getRepresentanteCompleto() %>"
-                                                                            data-estado="<%= emp.getEstado() %>"
-                                                                            data-estado-cuenta="<%= emp.getEstadoCuenta() %>"
+                                                                            data-razon="<%= HtmlUtil.escape(emp.getRazonSocial()) %>"
+                                                                            data-ruc="<%= HtmlUtil.escape(emp.getRuc()) %>"
+                                                                            data-correo="<%= HtmlUtil.escape(emp.getCorreo()) %>"
+                                                                            data-telefono="<%= HtmlUtil.escape(emp.getTelefono()) %>"
+                                                                            data-direccion="<%= HtmlUtil.escape(emp.getDireccion() != null ? emp.getDireccion() : "") %>"
+                                                                            data-descripcion="<%= HtmlUtil.escape(emp.getDescripcion() != null ? emp.getDescripcion() : "") %>"
+                                                                            data-representante="<%= HtmlUtil.escape(emp.getRepresentanteCompleto()) %>"
+                                                                            data-estado="<%= HtmlUtil.escape(emp.getEstado()) %>"
+                                                                            data-estado-cuenta="<%= HtmlUtil.escape(emp.getEstadoCuenta()) %>"
                                                                             onclick="verDetalleEmpresaBtn(this)">
                                                                             <i class="bi bi-eye"></i>
                                                                         </button>
@@ -210,14 +218,14 @@
         title="Editar empresa"
         data-bs-toggle="tooltip"
         data-id="<%= emp.getId() %>"
-        data-razon="<%= emp.getRazonSocial() %>"
-        data-ruc="<%= emp.getRuc() %>"
-        data-correo="<%= emp.getCorreo() %>"
-        data-telefono="<%= emp.getTelefono() != null ? emp.getTelefono() : "" %>"
-        data-direccion="<%= emp.getDireccion() != null ? emp.getDireccion() : "" %>"
-        data-descripcion="<%= emp.getDescripcion() != null ? emp.getDescripcion() : "" %>"
-        data-estado="<%= emp.getEstado() %>"
-        data-estado-cuenta="<%= emp.getEstadoCuenta() %>"
+        data-razon="<%= HtmlUtil.escape(emp.getRazonSocial()) %>"
+        data-ruc="<%= HtmlUtil.escape(emp.getRuc()) %>"
+        data-correo="<%= HtmlUtil.escape(emp.getCorreo()) %>"
+        data-telefono="<%= HtmlUtil.escape(emp.getTelefono() != null ? emp.getTelefono() : "") %>"
+        data-direccion="<%= HtmlUtil.escape(emp.getDireccion() != null ? emp.getDireccion() : "") %>"
+        data-descripcion="<%= HtmlUtil.escape(emp.getDescripcion() != null ? emp.getDescripcion() : "") %>"
+        data-estado="<%= HtmlUtil.escape(emp.getEstado()) %>"
+        data-estado-cuenta="<%= HtmlUtil.escape(emp.getEstadoCuenta()) %>"
         onclick="abrirModalEditarEmpresa(this)">
     <i class="bi bi-pencil-square"></i>
 </button>
@@ -228,7 +236,7 @@
         title="Eliminar empresa"
         data-bs-toggle="tooltip"
         data-id="<%= emp.getId() %>"
-        data-razon="<%= emp.getRazonSocial() %>"
+        data-razon="<%= HtmlUtil.escape(emp.getRazonSocial()) %>"
         onclick="confirmarEliminarEmpresa(this.dataset.id, this.dataset.razon)">
     <i class="bi bi-trash"></i>
 </button>
@@ -372,117 +380,7 @@
                             </div>
                         </div>
 
-<div class="modal fade" id="modalNuevaEmpresa" tabindex="-1"
-                            aria-labelledby="modalNuevaEmpresaLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered modal-lg">
-                                <div class="modal-content modal-content-propath">
-                                    <div class="modal-header modal-header-propath">
-                                        <h2 class="modal-title h5" id="modalNuevaEmpresaLabel">
-                                            <i class="bi bi-building-add me-2"></i> Registrar Nueva Empresa
-                                        </h2>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Cerrar"></button>
-                                    </div>
-                                    <form id="formNuevaEmpresa" onsubmit="guardarNuevaEmpresa(event)">
-                                        <div class="modal-body modal-body-propath">
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label small fw-semibold">Razón Social *</label>
-                                                    <input type="text" class="form-control" id="nuevaRazonSocial"
-                                                        required>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label small fw-semibold">RUC (11 dígitos)
-                                                        *</label>
-                                                    <input type="text" class="form-control" id="nuevoRuc" maxlength="11"
-                                                        pattern="\d{11}" required>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label small fw-semibold">Correo Corporativo
-                                                        *</label>
-                                                    <input type="email" class="form-control" id="nuevoCorreoEmpresa"
-                                                        required>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label small fw-semibold">Contraseña Inicial
-                                                        *</label>
-                                                    <input type="password" class="form-control" id="nuevaClaveEmpresa"
-                                                        minlength="6" required>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label small fw-semibold">Teléfono de
-                                                        Contacto</label>
-                                                    <input type="text" class="form-control" id="nuevoTelEmpresa">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label small fw-semibold">Estado Inicial</label>
-                                                    <select class="form-select" id="nuevoEstadoEmpresa">
-                                                        <option value="Aprobada" selected>Aprobada</option>
-                                                        <option value="Pendiente">Pendiente</option>
-                                                        <option value="Bloqueada">Bloqueada</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label small fw-semibold">Dirección</label>
-                                                    <input type="text" class="form-control" id="nuevaDirEmpresa"
-                                                        placeholder="Av. Principal 123, Lima">
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label small fw-semibold">Descripción</label>
-                                                    <textarea class="form-control" id="nuevaDescEmpresa" rows="2"
-                                                        placeholder="Giro del negocio o rubro..."></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer bg-light border-0">
-                                            <button type="button" class="btn btn-secondary rounded-pill px-4"
-                                                data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" class="btn btn-primary rounded-pill px-4"
-                                                id="btnGuardarNuevaEmpresa">
-                                                <i class="bi bi-check2 me-1"></i> Registrar Empresa
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
                         <script>
-                            async function guardarNuevaEmpresa(e) {
-                                e.preventDefault();
-                                const btn = document.getElementById('btnGuardarNuevaEmpresa');
-                                btn.disabled = true;
-                                const body = new URLSearchParams({
-                                    accion: 'crearEmpresa',
-                                    nombre: document.getElementById('nuevaRazonSocial').value.trim(),
-                                    razonSocial: document.getElementById('nuevaRazonSocial').value.trim(),
-                                    ruc: document.getElementById('nuevoRuc').value.trim(),
-                                    correo: document.getElementById('nuevoCorreoEmpresa').value.trim(),
-                                    contrasena: document.getElementById('nuevaClaveEmpresa').value.trim(),
-                                    telefono: document.getElementById('nuevoTelEmpresa').value.trim(),
-                                    direccion: document.getElementById('nuevaDirEmpresa').value.trim(),
-                                    descripcion: document.getElementById('nuevaDescEmpresa').value.trim(),
-                                    estado: document.getElementById('nuevoEstadoEmpresa').value
-                                });
-
-                                try {
-                                    const res = await fetch('${pageContext.request.contextPath}/admin/accion', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                                        body: body.toString()
-                                    });
-                                    const data = await res.json();
-                                    if (data.exito) {
-                                        mostrarModalMensaje('Empresa Registrada', data.mensaje || 'Empresa registrada exitosamente en el sistema.', 'success', () => window.location.reload());
-                                    } else {
-                                        mostrarModalMensaje('Error al Registrar', data.mensaje || 'No se pudo registrar la empresa.', 'danger');
-                                        btn.disabled = false;
-                                    }
-                                } catch (err) {
-                                    mostrarModalMensaje('Error de Conexión', 'No se pudo conectar con el servidor: ' + err.message, 'danger');
-                                    btn.disabled = false;
-                                }
-                            }
-
                             function confirmarActivarEmpresa(id, razon) {
                                 mostrarModalConfirmacion(
                                     'Activar Empresa',
@@ -513,8 +411,8 @@
 
                             function confirmarEliminarEmpresa(id, razon) {
                                 mostrarModalConfirmacion(
-                                    'Eliminar Empresa',
-                                    '¿Está seguro de eliminar definitivamente a la empresa "' + razon + '"? Esta acción no se puede deshacer y validará que la cuenta esté inactiva y no tenga ofertas asociadas.',
+                                    'Eliminar o Dar de Baja Empresa',
+                                    '¿Está seguro de proceder con la baja de la empresa "' + razon + '"? Si la empresa tiene ofertas o registros asociados, se desactivará su cuenta (estado INACTIVO) para conservar el historial; de lo contrario, se eliminará del sistema.',
                                     async function () {
                                         const body = new URLSearchParams({
                                             accion: 'eliminar',
@@ -529,7 +427,7 @@
                                             });
                                             const data = await res.json();
                                             if (data.exito) {
-                                                mostrarModalMensaje('Empresa Eliminada', data.mensaje || 'Empresa eliminada con éxito.', 'success', () => window.location.reload());
+                                                mostrarModalMensaje('Operación Exitosa', data.mensaje || 'Empresa procesada con éxito.', 'success', () => window.location.reload());
                                             } else {
                                                 mostrarModalMensaje('No se puede eliminar', data.mensaje || 'No se pudo eliminar la empresa.', 'danger');
                                             }
@@ -595,6 +493,8 @@
                                 const estEmp = (btn.getAttribute('data-estado') || 'APROBADA').trim().toUpperCase();
                                 if (estEmp === 'PENDIENTE') {
                                     document.getElementById('editEmpresaEstadoEmpresa').value = 'PENDIENTE';
+                                } else if (estEmp === 'SUSPENDIDA') {
+                                    document.getElementById('editEmpresaEstadoEmpresa').value = 'SUSPENDIDA';
                                 } else if (estEmp === 'RECHAZADA' || estEmp === 'BLOQUEADA') {
                                     document.getElementById('editEmpresaEstadoEmpresa').value = 'RECHAZADA';
                                 } else {

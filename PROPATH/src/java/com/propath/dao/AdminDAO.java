@@ -15,9 +15,13 @@ public class AdminDAO {
         try (Connection conn = ConexionBD.getConexion()) {
             map.put("totalEstudiantes", contar(conn, "SELECT COUNT(*) FROM estudiantes"));
             map.put("estudiantesEstaSemana", contar(conn, "SELECT COUNT(*) FROM estudiantes e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario WHERE u.fecha_registro >= DATE_SUB(NOW(), INTERVAL 7 DAY)"));
+            map.put("estudiantesActivos", contar(conn, "SELECT COUNT(*) FROM estudiantes e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario WHERE u.estado = 'ACTIVO'"));
+            map.put("estudiantesInactivos", contar(conn, "SELECT COUNT(*) FROM estudiantes e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario WHERE u.estado = 'INACTIVO'"));
             map.put("totalEmpresas", contar(conn, "SELECT COUNT(*) FROM empresas"));
             map.put("empresasAprobadas", contar(conn, "SELECT COUNT(*) FROM empresas WHERE estado = 'APROBADA'"));
             map.put("empresasPendientes", contar(conn, "SELECT COUNT(*) FROM empresas WHERE estado = 'PENDIENTE'"));
+            map.put("empresasInactivas", contar(conn, "SELECT COUNT(*) FROM empresas e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario WHERE u.estado = 'INACTIVO'"));
+            map.put("totalUsuarios", contar(conn, "SELECT COUNT(*) FROM usuarios"));
             map.put("totalOfertas", contar(conn, "SELECT COUNT(*) FROM ofertas_practicas"));
             map.put("ofertasActivas", contar(conn, "SELECT COUNT(*) FROM ofertas_practicas WHERE estado = 'ACTIVA'"));
             map.put("ofertasPendientes", contar(conn, "SELECT COUNT(*) FROM ofertas_practicas WHERE estado = 'PENDIENTE'"));

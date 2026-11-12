@@ -83,30 +83,63 @@ public class UsuarioDAO {
     }
 
     public List<Usuario> listarTodos() {
+        return buscarYFiltrar(null, null, null);
+    }
+
+    public List<Usuario> buscarYFiltrar(String busqueda, String rol, String estado) {
         List<Usuario> lista = new ArrayList<>();
-        String sql = "SELECT u.id_usuario, u.nombre, u.apellidos, u.correo, u.contrasena, u.rol, u.estado, u.fecha_registro, "
-                   + "e.id_estudiante, emp.id_empresa, emp.razon_social "
-                   + "FROM usuarios u "
-                   + "LEFT JOIN estudiantes e ON u.id_usuario = e.id_usuario "
-                   + "LEFT JOIN empresas emp ON u.id_usuario = emp.id_usuario "
-                   + "ORDER BY u.id_usuario DESC";
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT u.id_usuario, u.nombre, u.apellidos, u.correo, u.contrasena, u.rol, u.estado, u.fecha_registro, ")
+           .append("e.id_estudiante, emp.id_empresa, emp.razon_social ")
+           .append("FROM usuarios u ")
+           .append("LEFT JOIN estudiantes e ON u.id_usuario = e.id_usuario ")
+           .append("LEFT JOIN empresas emp ON u.id_usuario = emp.id_usuario ")
+           .append("WHERE 1=1 ");
+
+        List<Object> parametros = new ArrayList<>();
+
+        if (busqueda != null && !busqueda.trim().isEmpty()) {
+            sql.append("AND (LOWER(u.nombre) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(u.correo) LIKE ? OR LOWER(emp.razon_social) LIKE ?) ");
+            String term = "%" + busqueda.trim().toLowerCase() + "%";
+            parametros.add(term);
+            parametros.add(term);
+            parametros.add(term);
+            parametros.add(term);
+        }
+
+        if (rol != null && !rol.trim().isEmpty() && !"TODOS".equalsIgnoreCase(rol.trim())) {
+            sql.append("AND UPPER(u.rol) = ? ");
+            parametros.add(rol.trim().toUpperCase());
+        }
+
+        if (estado != null && !estado.trim().isEmpty() && !"TODOS".equalsIgnoreCase(estado.trim())) {
+            sql.append("AND UPPER(u.estado) = ? ");
+            parametros.add(estado.trim().toUpperCase());
+        }
+
+        sql.append("ORDER BY u.id_usuario DESC");
 
         try (Connection conn = ConexionBD.getConexion();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
-            while (rs.next()) {
-                Usuario u = mapearUsuario(rs);
-                int idEst = rs.getInt("id_estudiante");
-                if (!rs.wasNull()) {
-                    u.setIdEstudiante(idEst);
+            for (int i = 0; i < parametros.size(); i++) {
+                ps.setObject(i + 1, parametros.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Usuario u = mapearUsuario(rs);
+                    int idEst = rs.getInt("id_estudiante");
+                    if (!rs.wasNull()) {
+                        u.setIdEstudiante(idEst);
+                    }
+                    int idEmp = rs.getInt("id_empresa");
+                    if (!rs.wasNull()) {
+                        u.setIdEmpresa(idEmp);
+                        u.setRazonSocial(rs.getString("razon_social"));
+                    }
+                    lista.add(u);
                 }
-                int idEmp = rs.getInt("id_empresa");
-                if (!rs.wasNull()) {
-                    u.setIdEmpresa(idEmp);
-                    u.setRazonSocial(rs.getString("razon_social"));
-                }
-                lista.add(u);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -340,7 +373,7 @@ public class UsuarioDAO {
                 return false;
             }
 
-            // Código válido: Marcar como USADO y actualizar el correo del usuario
+            // CÃƒÂ³digo vÃƒÂ¡lido: Marcar como USADO y actualizar el correo del usuario
             try (PreparedStatement psUsado = conn.prepareStatement("UPDATE codigos_verificacion_correo SET estado = 'USADO' WHERE id_codigo = ?")) {
                 psUsado.setInt(1, idCodigo);
                 psUsado.executeUpdate();

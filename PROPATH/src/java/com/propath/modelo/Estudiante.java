@@ -17,6 +17,7 @@ public class Estudiante implements Serializable {
     private String telefono;
     private String cv;
     private String estado;
+    private String fechaRegistro;
 
     public Estudiante() {
     }
@@ -163,5 +164,13 @@ public class Estudiante implements Serializable {
         if (n.isEmpty()) return a;
         if (a.isEmpty()) return n;
         return n + " " + a;
+    }
+
+    public String getFechaRegistro() {
+        return fechaRegistro != null ? fechaRegistro : "";
+    }
+
+    public void setFechaRegistro(String fechaRegistro) {
+        this.fechaRegistro = fechaRegistro;
     }
 }

@@ -1,4 +1,4 @@
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%
     String activePage = (String) request.getAttribute("activePage");
     if (activePage == null) {
@@ -10,7 +10,7 @@
     
     <div class="sidebar-brand">
         <div class="sidebar-logo-container">
-            <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="d-block text-decoration-none">
+            <a href="${pageContext.request.contextPath}/admin/dashboard" class="d-block text-decoration-none">
                 <img src="${pageContext.request.contextPath}/img/logo-propath.png" 
                      alt="ProPath" 
                      class="sidebar-logo"
@@ -26,21 +26,21 @@
         <nav class="nav flex-column">
             
             <a class="nav-link-admin <%= "dashboard".equals(activePage) ? "active" : "" %>" 
-               href="${pageContext.request.contextPath}/admin/dashboard.jsp">
+               href="${pageContext.request.contextPath}/admin/dashboard">
                 <i class="bi bi-grid-1x2-fill"></i>
                 <span>Inicio</span>
             </a>
 
             
             <a class="nav-link-admin <%= "estudiantes".equals(activePage) ? "active" : "" %>" 
-               href="${pageContext.request.contextPath}/admin/estudiantes.jsp">
+               href="${pageContext.request.contextPath}/admin/estudiantes">
                 <i class="bi bi-mortarboard-fill"></i>
                 <span>Estudiantes</span>
             </a>
 
             
             <a class="nav-link-admin <%= "empresas".equals(activePage) ? "active" : "" %>" 
-               href="${pageContext.request.contextPath}/admin/empresas.jsp">
+               href="${pageContext.request.contextPath}/admin/empresas">
                 <i class="bi bi-building-fill"></i>
                 <span>Empresas</span>
             </a>
@@ -60,7 +60,7 @@
             </a>
 
             <a class="nav-link-admin <%= "usuarios".equals(activePage) ? "active" : "" %>" 
-               href="${pageContext.request.contextPath}/admin/usuarios.jsp">
+               href="${pageContext.request.contextPath}/admin/usuarios">
                 <i class="bi bi-people-fill"></i>
                 <span>Usuarios</span>
             </a>

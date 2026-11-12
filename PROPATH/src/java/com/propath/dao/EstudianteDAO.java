@@ -3,6 +3,16 @@ package com.propath.dao;
 import com.propath.conexion.ConexionBD;
 import com.propath.conexion.SeguridadUtil;
 import com.propath.modelo.Estudiante;
+import com.propath.dto.DashboardEstudiantesDTO;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -480,6 +490,290 @@ public class EstudianteDAO {
                 }
             }
         }
+    }
+
+    /**
+     * Obtiene el DTO completo del Dashboard interactivo de Estudiantes para los segmentadores
+     * combinables: universidad, carrera, ciclo, estado de cuenta y presencia de CV.
+     */
+    public DashboardEstudiantesDTO obtenerDashboardEstudiantes(
+            String universidad, String carrera, int ciclo,
+            String estadoCuenta, String cv) {
+        return obtenerDashboardEstudiantes(universidad, carrera, ciclo, estadoCuenta, cv, "", "", "");
+    }
+
+    /**
+     * Obtiene el DTO completo del Dashboard de Estudiantes con sus segmentadores,
+     * indicadores KPI, mapas de distribuciÃƒÂ³n y lista de postulantes filtrados.
+     */
+    public DashboardEstudiantesDTO obtenerDashboardEstudiantes(
+            String universidad, String carrera, int ciclo,
+            String estadoCuenta, String cv,
+            String fechaDesde, String fechaHasta, String busqueda) {
+
+        DashboardEstudiantesDTO dto = new DashboardEstudiantesDTO();
+        dto.setUniversidad(universidad != null ? universidad : "TODOS");
+        dto.setCarrera(carrera != null ? carrera : "TODOS");
+        dto.setCiclo(ciclo);
+        dto.setEstadoCuenta(estadoCuenta != null ? estadoCuenta : "TODOS");
+        dto.setCv(cv != null ? cv : "TODOS");
+        dto.setFechaDesde(fechaDesde != null ? fechaDesde : "");
+        dto.setFechaHasta(fechaHasta != null ? fechaHasta : "");
+        dto.setBusqueda(busqueda != null ? busqueda : "");
+
+        boolean filtrosActivos = (universidad != null && !universidad.trim().isEmpty() && !"TODOS".equalsIgnoreCase(universidad.trim()))
+                || (carrera != null && !carrera.trim().isEmpty() && !"TODOS".equalsIgnoreCase(carrera.trim()))
+                || (ciclo > 0)
+                || (estadoCuenta != null && !estadoCuenta.trim().isEmpty() && !"TODOS".equalsIgnoreCase(estadoCuenta.trim()))
+                || (cv != null && !cv.trim().isEmpty() && !"TODOS".equalsIgnoreCase(cv.trim()))
+                || (fechaDesde != null && !fechaDesde.trim().isEmpty())
+                || (fechaHasta != null && !fechaHasta.trim().isEmpty())
+                || (busqueda != null && !busqueda.trim().isEmpty());
+        dto.setFiltrosActivos(filtrosActivos);
+
+        try (Connection conn = ConexionBD.getConexion()) {
+            // 1. Opciones dinÃƒÂ¡micas para selects de Universidad y Carrera
+            List<String> opcionesUniv = new ArrayList<>();
+            String sqlUniv = "SELECT DISTINCT TRIM(universidad) AS u FROM estudiantes WHERE universidad IS NOT NULL AND TRIM(universidad) != '' ORDER BY 1";
+            try (PreparedStatement psU = conn.prepareStatement(sqlUniv);
+                 ResultSet rsU = psU.executeQuery()) {
+                while (rsU.next()) {
+                    opcionesUniv.add(rsU.getString("u"));
+                }
+            }
+            dto.setOpcionesUniversidades(opcionesUniv);
+
+            List<String> opcionesCarr = new ArrayList<>();
+            String sqlCarr = "SELECT DISTINCT TRIM(carrera) AS c FROM estudiantes WHERE carrera IS NOT NULL AND TRIM(carrera) != '' ORDER BY 1";
+            try (PreparedStatement psC = conn.prepareStatement(sqlCarr);
+                 ResultSet rsC = psC.executeQuery()) {
+                while (rsC.next()) {
+                    opcionesCarr.add(rsC.getString("c"));
+                }
+            }
+            dto.setOpcionesCarreras(opcionesCarr);
+
+            // 2. Consulta filtrada
+            StringBuilder sql = new StringBuilder();
+            sql.append("SELECT e.id_estudiante, e.id_usuario, e.nombres, e.apellidos, u.correo, ")
+               .append("e.universidad, e.carrera, e.ciclo, e.telefono, e.cv, u.estado AS estado_cuenta, ")
+               .append("u.fecha_registro, ")
+               .append("(CASE WHEN (e.cv IS NOT NULL AND TRIM(e.cv) != '') OR EXISTS (SELECT 1 FROM documentos_estudiante d WHERE d.id_estudiante = e.id_estudiante) THEN 1 ELSE 0 END) AS tiene_cv ")
+               .append("FROM estudiantes e ")
+               .append("INNER JOIN usuarios u ON e.id_usuario = u.id_usuario ")
+               .append("WHERE 1=1 ");
+
+            List<Object> params = new ArrayList<>();
+
+            if (universidad != null && !universidad.trim().isEmpty() && !"TODOS".equalsIgnoreCase(universidad.trim())) {
+                sql.append("AND LOWER(TRIM(e.universidad)) = LOWER(?) ");
+                params.add(universidad.trim());
+            }
+
+            if (carrera != null && !carrera.trim().isEmpty() && !"TODOS".equalsIgnoreCase(carrera.trim())) {
+                sql.append("AND LOWER(TRIM(e.carrera)) = LOWER(?) ");
+                params.add(carrera.trim());
+            }
+
+            if (ciclo > 0) {
+                sql.append("AND e.ciclo = ? ");
+                params.add(ciclo);
+            }
+
+            if (estadoCuenta != null && !estadoCuenta.trim().isEmpty() && !"TODOS".equalsIgnoreCase(estadoCuenta.trim())) {
+                sql.append("AND UPPER(u.estado) = ? ");
+                params.add(estadoCuenta.trim().toUpperCase());
+            }
+
+            if ("CON_CV".equalsIgnoreCase(cv)) {
+                sql.append("AND ((e.cv IS NOT NULL AND TRIM(e.cv) != '') OR EXISTS (SELECT 1 FROM documentos_estudiante d WHERE d.id_estudiante = e.id_estudiante)) ");
+            } else if ("SIN_CV".equalsIgnoreCase(cv)) {
+                sql.append("AND ((e.cv IS NULL OR TRIM(e.cv) = '') AND NOT EXISTS (SELECT 1 FROM documentos_estudiante d WHERE d.id_estudiante = e.id_estudiante)) ");
+            }
+
+            if (fechaDesde != null && !fechaDesde.trim().isEmpty()) {
+                sql.append("AND u.fecha_registro >= ? ");
+                params.add(fechaDesde.trim() + " 00:00:00");
+            }
+
+            if (fechaHasta != null && !fechaHasta.trim().isEmpty()) {
+                sql.append("AND u.fecha_registro <= ? ");
+                params.add(fechaHasta.trim() + " 23:59:59");
+            }
+
+            if (busqueda != null && !busqueda.trim().isEmpty()) {
+                String pattern = "%" + busqueda.trim().toLowerCase() + "%";
+                sql.append("AND (LOWER(e.nombres) LIKE ? OR LOWER(e.apellidos) LIKE ? OR LOWER(u.correo) LIKE ? OR LOWER(e.universidad) LIKE ? OR LOWER(e.carrera) LIKE ?) ");
+                params.add(pattern);
+                params.add(pattern);
+                params.add(pattern);
+                params.add(pattern);
+                params.add(pattern);
+            }
+
+            sql.append("ORDER BY e.id_estudiante DESC");
+
+            List<Estudiante> lista = new ArrayList<>();
+            Set<String> univSet = new HashSet<>();
+            Set<String> carrSet = new HashSet<>();
+            Map<String, Integer> mapUniv = new HashMap<>();
+            Map<String, Integer> mapCarr = new HashMap<>();
+            Map<Integer, Integer> mapCiclo = new LinkedHashMap<>();
+            for (int i = 1; i <= 12; i++) {
+                mapCiclo.put(i, 0);
+            }
+            Map<String, Integer> mapEstado = new LinkedHashMap<>();
+            mapEstado.put("Activo", 0);
+            mapEstado.put("Inactivo", 0);
+            mapEstado.put("Bloqueado", 0);
+
+            Map<String, Integer> mapCv = new LinkedHashMap<>();
+            mapCv.put("Con CV", 0);
+            mapCv.put("Sin CV", 0);
+
+            Map<String, Integer> mapMeses = new TreeMap<>();
+
+            int activos = 0;
+            int inactivos = 0;
+            int bloqueados = 0;
+            int conCvCount = 0;
+            int sinCvCount = 0;
+
+            SimpleDateFormat sdfRegistro = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            SimpleDateFormat sdfMesClave = new SimpleDateFormat("yyyy-MM");
+
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                for (int i = 0; i < params.size(); i++) {
+                    ps.setObject(i + 1, params.get(i));
+                }
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Estudiante est = new Estudiante();
+                        est.setId(rs.getInt("id_estudiante"));
+                        est.setIdUsuario(rs.getInt("id_usuario"));
+                        est.setNombre(rs.getString("nombres"));
+                        est.setApellido(rs.getString("apellidos"));
+                        est.setCorreo(rs.getString("correo"));
+                        est.setUniversidad(rs.getString("universidad"));
+                        est.setCarrera(rs.getString("carrera"));
+                        est.setCiclo(rs.getInt("ciclo"));
+                        est.setTelefono(rs.getString("telefono"));
+                        est.setCv(rs.getString("cv"));
+                        est.setEstado(rs.getString("estado_cuenta"));
+
+                        java.sql.Timestamp ts = rs.getTimestamp("fecha_registro");
+                        if (ts != null) {
+                            est.setFechaRegistro(sdfRegistro.format(ts));
+                            String mesClave = sdfMesClave.format(ts);
+                            mapMeses.put(mesClave, mapMeses.getOrDefault(mesClave, 0) + 1);
+                        }
+
+                        boolean tieneCv = rs.getInt("tiene_cv") == 1;
+                        if (tieneCv && (est.getCv() == null || est.getCv().trim().isEmpty())) {
+                            est.setCv("doc");
+                        }
+
+                        // MÃƒÂ©tricas
+                        String st = est.getEstado() != null ? est.getEstado().toUpperCase() : "ACTIVO";
+                        if ("ACTIVO".equals(st)) {
+                            activos++;
+                            mapEstado.put("Activo", mapEstado.get("Activo") + 1);
+                        } else if ("INACTIVO".equals(st)) {
+                            inactivos++;
+                            mapEstado.put("Inactivo", mapEstado.get("Inactivo") + 1);
+                        } else if ("BLOQUEADO".equals(st)) {
+                            bloqueados++;
+                            mapEstado.put("Bloqueado", mapEstado.get("Bloqueado") + 1);
+                        }
+
+                        if (tieneCv) {
+                            conCvCount++;
+                            mapCv.put("Con CV", mapCv.get("Con CV") + 1);
+                        } else {
+                            sinCvCount++;
+                            mapCv.put("Sin CV", mapCv.get("Sin CV") + 1);
+                        }
+
+                        if (est.getUniversidad() != null && !est.getUniversidad().trim().isEmpty()) {
+                            String uNorm = est.getUniversidad().trim();
+                            univSet.add(uNorm);
+                            mapUniv.put(uNorm, mapUniv.getOrDefault(uNorm, 0) + 1);
+                        }
+
+                        if (est.getCarrera() != null && !est.getCarrera().trim().isEmpty()) {
+                            String cNorm = est.getCarrera().trim();
+                            carrSet.add(cNorm);
+                            mapCarr.put(cNorm, mapCarr.getOrDefault(cNorm, 0) + 1);
+                        }
+
+                        int c = est.getCiclo();
+                        if (c >= 1 && c <= 12) {
+                            mapCiclo.put(c, mapCiclo.get(c) + 1);
+                        }
+
+                        lista.add(est);
+                    }
+                }
+            }
+
+            dto.setTotalEstudiantes(lista.size());
+            dto.setActivos(activos);
+            dto.setInactivos(inactivos);
+            dto.setBloqueados(bloqueados);
+            dto.setConCv(conCvCount);
+            dto.setSinCv(sinCvCount);
+            dto.setTotalUniversidades(univSet.size());
+            dto.setTotalCarreras(carrSet.size());
+            dto.setRegistrosPeriodo(lista.size());
+
+            // Top universidades ordenadas de mayor a menor
+            Map<String, Integer> sortedUniv = mapUniv.entrySet().stream()
+                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (e1, e2) -> e1,
+                            LinkedHashMap::new));
+            dto.setDistribucionUniversidades(sortedUniv);
+
+            // Top carreras ordenadas de mayor a menor
+            Map<String, Integer> sortedCarr = mapCarr.entrySet().stream()
+                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (e1, e2) -> e1,
+                            LinkedHashMap::new));
+            dto.setDistribucionCarreras(sortedCarr);
+
+            dto.setDistribucionCiclos(mapCiclo);
+            dto.setDistribucionEstados(mapEstado);
+            dto.setDistribucionCv(mapCv);
+
+            // Formatear meses en espaÃƒÂ±ol
+            Map<String, Integer> tendenciaFormateada = new LinkedHashMap<>();
+            String[] nombresMeses = {"Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"};
+            for (Map.Entry<String, Integer> entry : mapMeses.entrySet()) {
+                String ym = entry.getKey();
+                try {
+                    String[] parts = ym.split("-");
+                    int mesIdx = Integer.parseInt(parts[1]) - 1;
+                    String etiqueta = nombresMeses[mesIdx] + " " + parts[0];
+                    tendenciaFormateada.put(etiqueta, entry.getValue());
+                } catch (Exception ex) {
+                    tendenciaFormateada.put(ym, entry.getValue());
+                }
+            }
+            dto.setTendenciaMeses(tendenciaFormateada);
+
+            dto.setEstudiantesFiltrados(lista);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return dto;
     }
 
     private Estudiante mapearEstudiante(ResultSet rs) throws SQLException {
